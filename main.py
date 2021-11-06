@@ -24,9 +24,33 @@ with app.app_context():
         for i in result:
             print(i)
 
-    @app.route('/',methods=['GET', 'POST'])
-    def main():
-        return render_template('test.html')
+    @app.route('/')
+    def homepage():
+        return render_template('homepage.html')
+
+    @app.route('/401')
+    def access_denied():
+        return render_template('401.html')
+
+    @app.route('/404')
+    def page_not_found():
+        return render_template('404.html')
+
+    @app.route('/500')
+    def server_error():
+        return render_template('500.html')
+
+    @app.route('/table')
+    def table():
+        return render_template('table.html')
+
+    @app.route('/login',methods=['GET', 'POST'])
+    def login():
+        return render_template('login.html')
+
+    @app.route('/passwordreset',methods=['GET', 'POST'])
+    def passwordreset():
+        return render_template('passwordreset.html')
 
     if __name__ == "__main__":
         app.run()
