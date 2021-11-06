@@ -24,9 +24,9 @@ with app.app_context():
         for i in result:
             print(i)
 
-    @app.route('/main',methods=['GET', 'POST'])
+    @app.route('/',methods=['GET', 'POST'])
     def main():
-        return render_template('helloworld.html')
+        return render_template('test.html')
 
     if __name__ == "__main__":
         app.run()
