@@ -4,7 +4,6 @@ import hashlib
 import json
 from time import time
 
-
 class Blockchain(object):
     def __init__(self):
         self.chain = []
@@ -47,7 +46,6 @@ class Blockchain(object):
 
         return hex_hash
 
-
 blockchain = Blockchain()
 
 
@@ -75,7 +73,7 @@ with app.app_context():
         for i in result:
             print(i)
 
-    @app.route('/')
+    @app.route('/homepage')
     def homepage():
         return render_template('homepage.html')
 
@@ -95,7 +93,7 @@ with app.app_context():
     def table():
         return render_template('table.html')
 
-    @app.route('/login',methods=['GET', 'POST'])
+    @app.route('/',methods=['GET', 'POST'])
     def login():
         return render_template('login.html')
 
@@ -104,9 +102,24 @@ with app.app_context():
         return render_template('passwordreset.html')
 
     @app.route('/submission',methods=['GET', 'POST'])
-    def blockchain():
-
+    def submission():
         return render_template('submission.html')
+
+    @app.route('/verification')
+    def verification():
+        return render_template('verification.html')
+
+    @app.route('/charts')
+    def charts():
+        return render_template('charts.html')
+
+    @app.route('/tables')
+    def tables():
+        return render_template('table.html')
+
+    @app.route('/register')
+    def register():
+        return render_template('register.html')
 
     if __name__ == "__main__":
         app.run()
