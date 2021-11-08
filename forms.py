@@ -1,5 +1,8 @@
-from wtforms import Form, BooleanField, StringField, validators, FileField, TextAreaField
+from flask_wtf import FlaskForm
+from wtforms import StringField, validators, SubmitField, FileField
 
-class File_submit(Form):
-    document = FileField("Document Submission", [validators.regexp('^[^/\\]\.jpg$')])
-    description = TextAreaField("Document Submission")
+class File_submit(FlaskForm):
+    sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
+    recipient = StringField("Recipient",[validators.Length(min=1, max=400), validators.DataRequired()] )
+    submission = FileField("hello")
+    submit = SubmitField("Submit")

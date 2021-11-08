@@ -1,15 +1,28 @@
-from flask import Flask, render_template, g
+import shelve
+import hashlib
+from flask import Flask, request, render_template, g
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField
+
+from wtforms import StringField, SubmitField, validators
 import sqlite3
 import hashlib
 import json
 from time import time
+from forms import File_submit
+
+
+class FileSubmit(FlaskForm):
+    sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
+    recipient = StringField("Recipient",[validators.Length(min=1, max=400), validators.DataRequired()] )
+    submission = FileField("Submission" )
+    submit = SubmitField("Submit")
 
 class Blockchain(object):
     def __init__(self):
         self.chain = []
         self.pending_transactions = []
-
-        self.new_block(previous_hash="The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.", proof = 100)
+        self.new_block(previous_hash="hashhashhashhashhashhashhashhashhashhashhashhashhashhashhash", proof = 100)
 
     def new_block(self, proof, previous_hash=None):
         block = {
@@ -28,11 +41,11 @@ class Blockchain(object):
     def last_block(self):
         return self.chain[-1]
 
-    def new_transaction(self, sender, recipient, amount):
+    def new_transaction(self, sender, recipient, hashval):
         transaction = {
             'sender': sender,
             'recipient': recipient,
-            'amount': amount
+            'hash': hashval
         }
         self.pending_transactions.append(transaction)
         return self.last_block['index'] + 1
@@ -51,6 +64,7 @@ blockchain = Blockchain()
 
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = "secret key"
 with app.app_context():
 
     def connect_db():
@@ -103,7 +117,18 @@ with app.app_context():
 
     @app.route('/submission',methods=['GET', 'POST'])
     def submission():
-        return render_template('submission.html')
+        file_submit = FileSubmit()
+        if request.method == "POST":
+            z=file_submit.submission.data.filename
+            file_submit.submission.data.save(z)
+            file = open(file_submit.submission.data.filename)
+            readFile = file.read()
+            md5Hash = hashlib.md5(readFile.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
+            blockchain.new_block('123')
+            return render_template('test.html',chain = blockchain.chain)
+        return render_template('submission.html',form = file_submit)
 
     @app.route('/verification')
     def verification():
