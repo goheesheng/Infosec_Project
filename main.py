@@ -126,21 +126,13 @@ with app.app_context():
 
     @app.route('/validation')
     def otpvalidation():
-        secret = pyotp.random_base32()
-        return render_template("loginotp.html", secret=secret)
-        # otpForm = Otp()
-        # otp = request.args['otp']
-        # if request.method == "POST":
-        #     userOtp = otpForm.otp.data
-        #     if userOtp == otp:
-        #         return render_template("homepage.html")
-        #     else:
-        #         return redirect(url_for("otpvalidation", otp=otp))
-        # return render_template('loginotp.html',form = otpForm)
+        return render_template("loginotp.html")
 
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
+        # retrive encrypted key
+        # decrypt with user password
         secret = '6HDZKEGUIHTZLF35LPKKOX56XYGHUF7E'
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
