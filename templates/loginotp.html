@@ -10,17 +10,16 @@
                         <div class="card shadow-lg border-0 rounded-lg mt-5">
                             <div class="card-header"><h3 class="text-center font-weight-light my-4">Login</h3></div>
                             <div class="card-body">
-                                <form method="POST" action="" enctype="multipart/form-data">
-                                      <div class="form-group">
-                                        {{ render_field(form.email, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.password, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.submit, class="form-control") }}
-                                      </div>
-                                </form>
+                              <form method="POST">
+                                <div class="form-group">
+                                  <label for="otp">Generated OTP</label>
+                                  <input type="hidden" name="secret" value="{{ secret }}" required>
+                                  <input type="number" class="form-control" id="otp" name="otp" required>
+                                </div>
+                                <div class="text-center">
+                                  <button type="submit" class="btn btn-primary">Authenticate User</button>
+                                </div>
+                              </form>
                             </div>
                             <div class="card-footer text-center py-3">
                                 <div class="small"><a href="/register">Need an account? Sign up!</a></div>

@@ -1,23 +1,25 @@
 import shelve
 import hashlib
-from flask import Flask, request, render_template, g
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from flask import Flask, request, render_template, g, redirect, url_for, flash
+import pyotp
+import cryptography
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
-
+import smtplib
 from wtforms import StringField, SubmitField, validators
 import sqlite3
 import hashlib
 import json
 from time import time
-from forms import File_submit
+from forms import FileSubmit, Login_form, Otp
+import random
 
-class FileSubmit(FlaskForm):
-    sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    recipient = StringField("Recipient",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    submission = FileField("Submission" )
-    submit = SubmitField("Submit")
-
-
+context = ssl.create_default_context()
+sender = "IT2566proj@gmail.com"
+senderpass = 'FishNugget123'
 
 class Blockchain(object):
     def __init__(self):
@@ -110,7 +112,47 @@ with app.app_context():
 
     @app.route('/',methods=['GET', 'POST'])
     def login():
-        return render_template('login.html')
+        login_form = Login_form()
+        if request.method == "POST":
+            email = login_form.email.data
+            password = login_form.email.data
+            PassHash = hashlib.md5(password.encode("utf-8"))
+            PassHashed = PassHash.hexdigest()
+            #Insert MSSQL to check email and password
+            if True:
+                return redirect(url_for("otpvalidation"))
+        return render_template('login.html',form = login_form)
+
+
+    @app.route('/validation')
+    def otpvalidation():
+        secret = pyotp.random_base32()
+        return render_template("loginotp.html", secret=secret)
+        # otpForm = Otp()
+        # otp = request.args['otp']
+        # if request.method == "POST":
+        #     userOtp = otpForm.otp.data
+        #     if userOtp == otp:
+        #         return render_template("homepage.html")
+        #     else:
+        #         return redirect(url_for("otpvalidation", otp=otp))
+        # return render_template('loginotp.html',form = otpForm)
+
+
+    @app.route("/validation", methods=["POST"])
+    def otpvalidation2():
+        secret = '6HDZKEGUIHTZLF35LPKKOX56XYGHUF7E'
+        # getting OTP provided by user
+        otp = int(request.form.get("otp"))
+
+        # verifying submitted OTP with PyOTP
+        if pyotp.TOTP(secret).verify(otp):
+            # inform users if OTP is valid
+            return redirect(url_for("homepage"))
+        else:
+            # inform users if OTP is invalid
+            flash("You have supplied an invalid 2FA token!", "danger")
+            return redirect(url_for("login"))
 
     @app.route('/passwordreset',methods=['GET', 'POST'])
     def passwordreset():
