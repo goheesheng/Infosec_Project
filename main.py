@@ -11,12 +11,13 @@ import json
 from time import time
 from forms import File_submit
 
-
 class FileSubmit(FlaskForm):
     sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
     recipient = StringField("Recipient",[validators.Length(min=1, max=400), validators.DataRequired()] )
     submission = FileField("Submission" )
     submit = SubmitField("Submit")
+
+
 
 class Blockchain(object):
     def __init__(self):
