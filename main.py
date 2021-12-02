@@ -1,4 +1,3 @@
-
 import hashlib
 import ssl
 from email.mime.text import MIMEText
@@ -37,6 +36,7 @@ insert_query = textwrap.dedent('''
     INSERT INTO users (username, first_name, last_name, pass_hash, otp_code,email) 
     VALUES (?, ?, ?, ?, ?, ?);
 ''')
+
 
 class Blockchain(object):
     def __init__(self):
@@ -85,15 +85,19 @@ blockchain = Blockchain()
 app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
+
+
 def login_required(requireslogin):
     @wraps(requireslogin)
     def decorated_func(*args, **kwargs):
-        if "access" not in session: #No session info or user not in db
+        if "access" not in session:  # No session info or user not in db
             flash("Invalid User")
             return redirect(url_for('login'))
         else:
             return requireslogin(*args, **kwargs)
+
     return decorated_func
+
 
 def researcher_needed(needresearcher):
     @wraps(needresearcher)
@@ -103,7 +107,9 @@ def researcher_needed(needresearcher):
             return redirect(url_for('home'))
         else:
             return needresearcher(*args, **kwargs)
+
     return decorated_func
+
 
 def patient_needed(needpatient):
     @wraps(needpatient)
@@ -113,7 +119,9 @@ def patient_needed(needpatient):
             return redirect(url_for('home'))
         else:
             return needpatient(*args, **kwargs)
+
     return decorated_func
+
 
 def doctor_needed(needdoctor):
     @wraps(needdoctor)
@@ -123,6 +131,7 @@ def doctor_needed(needdoctor):
             return redirect(url_for('home'))
         else:
             return needdoctor(*args, **kwargs)
+
     return decorated_func
 
 
@@ -134,7 +143,9 @@ def admin_needed(needadmin):
             return redirect(url_for('home'))
         else:
             return needadmin(*args, **kwargs)
+
     return decorated_func
+
 
 def head_admin_needed(needhadmin):
     @wraps(needhadmin)
@@ -144,41 +155,30 @@ def head_admin_needed(needhadmin):
             return redirect(url_for('home'))
         else:
             return needhadmin(*args, **kwargs)
+
     return decorated_func
 
+
 with app.app_context():
-    def connect_db():
-        con = sqlite3.connect('patient.db')
-        con.row_factory = sqlite3.Row
-        return con
-
-
-    def get_db():
-        if not hasattr(g, 'sqlite3'):  # checks if there is a database already connected
-            g.sqlite3_db = connect_db()
-        return g.sqlite3_db
-
-
-    # test code to access db
-    db = get_db()
-    cursor = db.execute('select * from patient')
-    results = cursor.fetchall()
-    db.close()
-    for result in results:
-        for i in result:
-            print(i)
-
-
     @app.route('/homepage')
     @login_required
     def homepage():
-        return render_template('homepage.html')
+        return render_template('homepage.html', session=session)
 
 
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        return render_template('dashboard.html')
+        cnxn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + server + '; \
+                                    DATABASE=' + database + ';\
+                                    Trusted_Connection=yes;'
+        )
+        cursor = cnxn.cursor()
+        users = cursor.execute("SELECT * FROM users")
+        print(users)
+        return render_template('dashboard.html', users=users)
 
 
     @app.route('/401')
@@ -217,7 +217,8 @@ with app.app_context():
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
-            user_id = cursor.execute("select user_id from users where email=\'"+email+"\' and pass_hash=\'"+md5Hashed+"\'").fetchval()
+            user_id = cursor.execute(
+                "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval()
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -231,13 +232,11 @@ with app.app_context():
 
 
     @app.route('/validation')
-
     def otpvalidation():
         return render_template("loginotp.html")
 
 
     @app.route("/validation", methods=["POST"])
-
     def otpvalidation2():
         cnxn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -246,30 +245,38 @@ with app.app_context():
                                     Trusted_Connection=yes;'
         )
         cursor = cnxn.cursor()
-        otp_seed = cursor.execute("select otp_code from users where user_id=\'"+str(session['user_id'])+"\'").fetchval()
-
+        otp_seed = cursor.execute(
+            "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
 
         # verifying submitted OTP with PyOTP
         if pyotp.TOTP(otp_seed).verify(otp):
-            info = cursor.execute("select username, first_name, last_name, user_access_level  from users where otp_code=\'"+str(otp_seed)+"\'").fetchall()
-            (username,first_name,last_name,access_level) = info[0]
+            info = cursor.execute(
+                "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
+                    otp_seed) + "\'").fetchall()
+            (username, first_name, last_name, verification) = info[0]
             session['username'] = username
             session['first_name'] = first_name
             session['last_name'] = last_name
-            session['access'] = access_level
+            session['verification'] = verification
             cursor.close()
             cnxn.close()
-            if access_level == 0:
-                return redirect(url_for("homepage"))
-            elif access_level == 1:
-                return redirect(url_for('dashboard'))
-            elif access_level == 2:
-                return redirect(url_for('dashboard'))
-            elif access_level == 3:
-                return redirect(url_for('dashboard'))
+            '''
+            if verification == 'unverified':
+                return redirect(url_for("unverified"))
+            elif verification == 'patient':
+                return redirect(url_for('patient'))
+            elif verification == 'doctor':
+                return redirect(url_for('doctor'))
+            elif verification == 'admin':
+                return redirect(url_for('admin'))
+            elif verification == 'head_admin':
+                return redirect(url_for('head_admin'))
+            elif verification == 'researcher':
+                return redirect(url_for('researcher'))'''
+            return redirect(url_for('homepage'))
         else:
             print("wrong")
             cursor.close()
@@ -281,6 +288,13 @@ with app.app_context():
     @login_required
     def passwordreset():
         return render_template('passwordreset.html')
+
+
+    @app.route('/logout', methods=['GET', 'POST'])
+    @login_required
+    def logout():
+        session.clear()
+        return render_template('login.html')
 
 
     @app.route('/submission', methods=['GET', 'POST'])
@@ -345,11 +359,27 @@ with app.app_context():
             cnxn.commit()
             cursor.close()
             cnxn.close()
-            qr = 'otpauth://totp/AngelHealth:'+username+'?secret='+otp_code
+            qr = 'otpauth://totp/AngelHealth:' + username + '?secret=' + otp_code
             return render_template('displayotp.html', otp=otp_code, qrotp=qr)
 
         return render_template('register.html', form=register)
 
+
+    @app.route('/<variable>/remove', methods=['GET', 'POST'])
+    def remove(variable):
+        return redirect(url_for('homepage'))
+
+    @app.route('/<variable>/patient', methods=['GET', 'POST'])
+    def patient(variable):
+        return redirect(url_for('homepage'))
+
+    @app.route('/<variable>/doctor', methods=['GET', 'POST'])
+    def doctor(variable):
+        return redirect(url_for('homepage'))
+
+    @app.route('/<variable>/admin', methods=['GET', 'POST'])
+    def admin(variable):
+        return redirect(url_for('homepage'))
 
     if __name__ == "__main__":
         app.run()
