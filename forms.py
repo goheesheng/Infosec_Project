@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, validators, SubmitField, FileField
+from wtforms import StringField, validators, SubmitField, FileField, PasswordField
 
 class FileSubmit(FlaskForm):
     sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
@@ -17,9 +17,9 @@ class Otp(FlaskForm):
     submit = SubmitField("Submit")
 
 class Register(FlaskForm):
-    username = StringField("Username", [validators.Length(min=1, max=400), validators.DataRequired()])
+    username = StringField("Username", [validators.Length(min=1, max=20), validators.DataRequired()])
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     email = StringField("Email", [validators.Length(min=1, max=400), validators.DataRequired()])
-    password = StringField("Password", [validators.Length(min=1, max=400), validators.DataRequired()])
+    password = PasswordField("Password", [validators.Length(min=1, max=400), validators.DataRequired()])
     submit = SubmitField("Submit")
