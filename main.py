@@ -3,7 +3,7 @@ import hashlib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, render_template, g, redirect, url_for, flash
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session
 import pyotp
 from cryptography.fernet import Fernet
 from flask_wtf import FlaskForm
@@ -16,10 +16,12 @@ import json
 import bcrypt
 from time import time
 from forms import FileSubmit, Login_form, Otp, Register
+from functools import wraps
 import random
 import pyodbc
 import textwrap
 from mssql_auth import database, server
+from flask_qrcode import QRcode
 
 context = ssl.create_default_context()
 sender = "IT2566proj@gmail.com"
@@ -32,7 +34,7 @@ cnxn = pyodbc.connect(
     Trusted_Connection=yes;'
 )
 insert_query = textwrap.dedent('''
-    INSERT INTO user_login (username, first_name, last_name, pass_hash, otp_code,email) 
+    INSERT INTO users (username, first_name, last_name, pass_hash, otp_code,email) 
     VALUES (?, ?, ?, ?, ?, ?);
 ''')
 
@@ -81,7 +83,69 @@ class Blockchain(object):
 blockchain = Blockchain()
 
 app = Flask(__name__)
+QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
+def login_required(requireslogin):
+    @wraps(requireslogin)
+    def decorated_func(*args, **kwargs):
+        if "access" not in session: #No session info or user not in db
+            flash("Invalid User")
+            return redirect(url_for('login'))
+        else:
+            return requireslogin(*args, **kwargs)
+    return decorated_func
+
+def researcher_needed(needresearcher):
+    @wraps(needresearcher)
+    def decorated_func(*args, **kwargs):
+        if session['access'] != '0':
+            flash("Invalid User")
+            return redirect(url_for('home'))
+        else:
+            return needresearcher(*args, **kwargs)
+    return decorated_func
+
+def patient_needed(needpatient):
+    @wraps(needpatient)
+    def decorated_func(*args, **kwargs):
+        if session['access'] != '1':
+            flash("Invalid User")
+            return redirect(url_for('home'))
+        else:
+            return needpatient(*args, **kwargs)
+    return decorated_func
+
+def doctor_needed(needdoctor):
+    @wraps(needdoctor)
+    def decorated_func(*args, **kwargs):
+        if session['access'] != '2':
+            flash("Invalid User")
+            return redirect(url_for('home'))
+        else:
+            return needdoctor(*args, **kwargs)
+    return decorated_func
+
+
+def admin_needed(needadmin):
+    @wraps(needadmin)
+    def decorated_func(*args, **kwargs):
+        if session['access'] < '3':
+            flash("Invalid User")
+            return redirect(url_for('home'))
+        else:
+            return needadmin(*args, **kwargs)
+    return decorated_func
+
+def head_admin_needed(needhadmin):
+    @wraps(needhadmin)
+    def decorated_func(*args, **kwargs):
+        if session['access'] < '4':
+            flash("Invalid User")
+            return redirect(url_for('home'))
+        else:
+            return needhadmin(*args, **kwargs)
+    return decorated_func
+
 with app.app_context():
     def connect_db():
         con = sqlite3.connect('patient.db')
@@ -106,11 +170,13 @@ with app.app_context():
 
 
     @app.route('/homepage')
+    @login_required
     def homepage():
         return render_template('homepage.html')
 
 
     @app.route('/dashboard')
+    @login_required
     def dashboard():
         return render_template('dashboard.html')
 
@@ -131,6 +197,7 @@ with app.app_context():
 
 
     @app.route('/table')
+    @login_required
     def table():
         return render_template('table.html')
 
@@ -139,47 +206,85 @@ with app.app_context():
     def login():
         login_form = Login_form()
         if request.method == "POST":
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+            )
             email = login_form.email.data
-            password = login_form.email.data
-            PassHash = hashlib.md5(password.encode("utf-8"))
-            PassHashed = PassHash.hexdigest()
-            # Insert MSSQL to check email and password
-            if True:
+            password = login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            user_id = cursor.execute("select user_id from users where email=\'"+email+"\' and pass_hash=\'"+md5Hashed+"\'").fetchval()
+            if user_id:
+                session['user_id'] = user_id
+                cursor.close()
+                cnxn.close()
                 return redirect(url_for("otpvalidation"))
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
         return render_template('login.html', form=login_form)
 
 
     @app.route('/validation')
+
     def otpvalidation():
         return render_template("loginotp.html")
 
 
     @app.route("/validation", methods=["POST"])
+
     def otpvalidation2():
-        # retrive encrypted key
-        # decrypt with user password
-        gen_otp = pyotp.random_base32()
-        secret_example = '6HDZKEGUIHTZLF35LPKKOX56XYGHUF7E'
+        cnxn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + server + '; \
+                                    DATABASE=' + database + ';\
+                                    Trusted_Connection=yes;'
+        )
+        cursor = cnxn.cursor()
+        otp_seed = cursor.execute("select otp_code from users where user_id=\'"+str(session['user_id'])+"\'").fetchval()
+
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
 
         # verifying submitted OTP with PyOTP
-        if pyotp.TOTP(secret).verify(otp):
-            # inform users if OTP is valid
-            return redirect(url_for("homepage"))
+        if pyotp.TOTP(otp_seed).verify(otp):
+            info = cursor.execute("select username, first_name, last_name, user_access_level  from users where otp_code=\'"+str(otp_seed)+"\'").fetchall()
+            (username,first_name,last_name,access_level) = info[0]
+            session['username'] = username
+            session['first_name'] = first_name
+            session['last_name'] = last_name
+            session['access'] = access_level
+            cursor.close()
+            cnxn.close()
+            if access_level == 0:
+                return redirect(url_for("homepage"))
+            elif access_level == 1:
+                return redirect(url_for('dashboard'))
+            elif access_level == 2:
+                return redirect(url_for('dashboard'))
+            elif access_level == 3:
+                return redirect(url_for('dashboard'))
         else:
-            # inform users if OTP is invalid
-            flash("You have supplied an invalid 2FA token!", "danger")
+            print("wrong")
+            cursor.close()
+            cnxn.close()
             return redirect(url_for("login"))
 
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
+    @login_required
     def passwordreset():
         return render_template('passwordreset.html')
 
 
     @app.route('/submission', methods=['GET', 'POST'])
+    @login_required
     def submission():
         file_submit = FileSubmit()
         if request.method == "POST":
@@ -196,16 +301,19 @@ with app.app_context():
 
 
     @app.route('/verification')
+    @login_required
     def verification():
         return render_template('verification.html')
 
 
     @app.route('/charts')
+    @login_required
     def charts():
         return render_template('charts.html')
 
 
     @app.route('/tables')
+    @login_required
     def tables():
         return render_template('table.html')
 
@@ -229,7 +337,7 @@ with app.app_context():
             otp_code = pyotp.random_base32()
             values = (username, firstname, lastname, md5Hashed, otp_code, email)
             cursor = cnxn.cursor()
-            cursor.execute('SELECT username, email FROM user_login')
+            cursor.execute('SELECT username, email FROM users')
             for x in cursor:
                 if x.username == username or x.email == email:
                     return render_template('exists.html')
@@ -237,7 +345,8 @@ with app.app_context():
             cnxn.commit()
             cursor.close()
             cnxn.close()
-            return render_template('displayotp.html', otp=otp_code)
+            qr = 'otpauth://totp/AngelHealth:'+username+'?secret='+otp_code
+            return render_template('displayotp.html', otp=otp_code, qrotp=qr)
 
         return render_template('register.html', form=register)
 
