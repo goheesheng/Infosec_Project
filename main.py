@@ -2,6 +2,7 @@ import hashlib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from typing import TypeGuard
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session
 import pyotp
 from cryptography.fernet import Fernet
@@ -198,6 +199,131 @@ with app.app_context():
         return render_template('table.html')
 
 
+    def add_admin():
+        # cnxn = pyodbc.connect(
+        #     'DRIVER={ODBC Driver 17 for SQL Server}; \
+        #     SERVER=' + server + '; \
+        #     DATABASE=' + database + ';\
+        #     Trusted_Connection=yes;'
+        # )
+        while True:
+            key = input("Do you want to create Head Admin ID and password? (Y/N)").capitalize()
+            if key == "Y":
+                try:
+                    username = input("Enter New Head Admin ID: ")
+                    firstname = input("Enter New Head Admin First Name: ")
+                    lastname = input("Enter New Head Admin last Name: ")
+                    email = input("Enter New Head Admin email: ")
+                    admin_password = input("Enter New Head Admin Password: ")
+                    md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                    md5Hashed = md5Hash.hexdigest()
+        
+                 
+                    cursor = cnxn.cursor()
+                    check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
+                    for x in check:
+                        a = x.username.strip()
+                        print(check)
+                        print(a)
+                    while str(a) == str(username):
+                        print("Head Admin already exist!")
+                        username = input("Enter New Head Admin ID again: ")
+                        firstname = input("Enter New Head Admin First Name: ")
+                        lastname = input("Enter New Head Admin last Name: ")
+                        email = input("Enter New Head Admin email: ")
+                        admin_password = input("Enter New Head Admin Password: ")
+                        md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                        md5Hashed = md5Hash.hexdigest()
+                        continue
+                    else:
+                        break
+                    cursor.close()
+
+                    cursor = cnxn.cursor()
+                    insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                        VALUES (?, ?, ?, ?, ?); "
+                    values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                    cursor.execute(insert_query, values)
+                    cursor.commit()
+                    cursor.close()
+                    print('Successful creating Head Admin')
+                except:
+                    print("Error in adding Head Admin to MSSQL Database!")
+                
+                key = input("Do you want to more create Admin ID and password? (Y/N)").capitalize()
+                if key == "N":
+                    break
+                elif key == 'Delete':
+                    try:
+                        cursor = cnxn.cursor()
+                        key = input("Enter the Head Admin ID to delete: ")
+                        check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(username)) # prevent sql injection
+                        cursor.commit()
+                        cursor.close()
+                        if check == True:
+                            print(f"{key} was removed as Head Admin.")
+                    except:
+                        print('Error in deleting Head Admin in MSSQL Database')
+
+                elif key == "Y":
+                    try:
+                        username = input("Enter New Head Admin ID: ")
+                        firstname = input("Enter New Head Admin First Name: ")
+                        lastname = input("Enter New Head Admin last Name: ")
+                        email = input("Enter New Head Admin email: ")
+                        admin_password = input("Enter New Head Admin Password: ")
+                        md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                        md5Hashed = md5Hash.hexdigest()
+                    
+                    
+                        cursor = cnxn.cursor()
+                        check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchall()# prevent sql injection
+                        for x in check:
+                            a = x.username.strip()
+                            while str(a) == str(username):
+                                print("Head Admin already exist!")
+                                username = input("Enter New Head Admin ID again: ")
+                                firstname = input("Enter New Head Admin First Name: ")
+                                lastname = input("Enter New Head Admin last Name: ")
+                                email = input("Enter New Head Admin email: ")
+                                admin_password = input("Enter New Head Admin Password: ")
+                                md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                                md5Hashed = md5Hash.hexdigest()
+                            else:
+                                break
+                        cursor.close()
+
+                        cursor = cnxn.cursor()
+                        insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                            VALUES (?, ?, ?, ?, ?); "
+                        values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                        cursor.execute(insert_query, values)
+                        cursor.commit()
+                        cursor.close()
+                        print('Successful creating Head Admin')
+                    except:
+                        print("Error in adding Head Admin to MSSQL Database!")
+               
+                else:
+                    print("Please enter Y or N or Delete only!")
+                    continue
+            elif key == "N":
+                break
+            elif key == 'Delete':
+                try:
+                    cursor = cnxn.cursor()
+                    key = input("Enter the Head Admin ID to delete: ")
+                    check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(username)) # prevent sql injection
+                    cursor.commit()
+                    cursor.close()
+                    if check == True:
+                        print(f"{key} was removed as Head Admin.")
+                except:
+                    print('Error in deleting Head Admin in MSSQL Database')
+            else:
+                print("Please enter Y or N or Delete only!")
+                continue
+
     @app.route('/', methods=['GET', 'POST'])
     def login():
         login_form = Login_form()
@@ -301,21 +427,21 @@ with app.app_context():
         return render_template('login.html')
 
 
-    @app.route('/submission', methods=['GET', 'POST'])
-    # @login_required
-    def submission():
-        file_submit = FileSubmit()
-        if request.method == "POST":
-            z = file_submit.submission.data.filename
-            file_submit.submission.data.save(z)
-            file = open(file_submit.submission.data.filename)
-            readFile = file.read()
-            md5Hash = hashlib.md5(readFile.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
-            blockchain.new_block('123')
-            return render_template('test.html', chain=blockchain.chain)
-        return render_template('submission.html', form=file_submit)
+    # @app.route('/submission', methods=['GET', 'POST'])
+    # # @login_required
+    # def submission():
+    #     file_submit = FileSubmit()
+    #     if request.method == "POST":
+    #         z = file_submit.submission.data.filename
+    #         file_submit.submission.data.save(z)
+    #         file = open(file_submit.submission.data.filename)
+    #         readFile = file.read()
+    #         md5Hash = hashlib.md5(readFile.encode("utf-8"))
+    #         md5Hashed = md5Hash.hexdigest()
+    #         transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
+    #         blockchain.new_block('123')
+    #         return render_template('test.html', chain=blockchain.chain)
+    #     return render_template('submission.html', form=file_submit)
 
 
     @app.route('/verification')
@@ -394,4 +520,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
+    add_admin()
     app.run()
