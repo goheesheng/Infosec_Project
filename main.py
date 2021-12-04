@@ -32,55 +32,51 @@ cnxn = pyodbc.connect(
     DATABASE=' + database + ';\
     Trusted_Connection=yes;'
 )
-insert_query = textwrap.dedent('''
-    INSERT INTO users (username, first_name, last_name, pass_hash, otp_code,email) 
-    VALUES (?, ?, ?, ?, ?, ?);
-''')
+
+# dont u touch u gay boi
+# class Blockchain(object):
+#     def __init__(self):
+#         self.chain = []
+#         self.pending_transactions = []
+#         self.new_block(previous_hash="hashhashhashhashhashhashhashhashhashhashhashhashhashhashhash", proof=100)
+
+#     def new_block(self, proof, previous_hash=None):
+#         block = {
+#             "index": len(self.chain) + 1,
+#             'timestamp': time(),
+#             'transactions': self.pending_transactions,
+#             'proof': proof,
+#             'previous_hash': previous_hash or self.hash(self.chain[-1]),
+#         }
+#         self.pending_transactions = []
+#         self.chain.append(block)
+
+#         return block
+
+#     @property
+#     def last_block(self):
+#         return self.chain[-1]
+
+#     def new_transaction(self, sender, recipient, hashval):
+#         transaction = {
+#             'sender': sender,
+#             'recipient': recipient,
+#             'hash': hashval
+#         }
+#         self.pending_transactions.append(transaction)
+#         return self.last_block['index'] + 1
+
+#     def hash(self, block):
+#         string_object = json.dumps(block, sort_keys=True)
+#         block_string = string_object.encode()
+
+#         raw_hash = hashlib.sha256(block_string)
+#         hex_hash = raw_hash.hexdigest()
+
+#         return hex_hash
 
 
-class Blockchain(object):
-    def __init__(self):
-        self.chain = []
-        self.pending_transactions = []
-        self.new_block(previous_hash="hashhashhashhashhashhashhashhashhashhashhashhashhashhashhash", proof=100)
-
-    def new_block(self, proof, previous_hash=None):
-        block = {
-            "index": len(self.chain) + 1,
-            'timestamp': time(),
-            'transactions': self.pending_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1]),
-        }
-        self.pending_transactions = []
-        self.chain.append(block)
-
-        return block
-
-    @property
-    def last_block(self):
-        return self.chain[-1]
-
-    def new_transaction(self, sender, recipient, hashval):
-        transaction = {
-            'sender': sender,
-            'recipient': recipient,
-            'hash': hashval
-        }
-        self.pending_transactions.append(transaction)
-        return self.last_block['index'] + 1
-
-    def hash(self, block):
-        string_object = json.dumps(block, sort_keys=True)
-        block_string = string_object.encode()
-
-        raw_hash = hashlib.sha256(block_string)
-        hex_hash = raw_hash.hexdigest()
-
-        return hex_hash
-
-
-blockchain = Blockchain()
+# blockchain = Blockchain()
 
 app = Flask(__name__)
 QRcode(app)
@@ -161,13 +157,13 @@ def head_admin_needed(needhadmin):
 
 with app.app_context():
     @app.route('/homepage')
-    @login_required
+    # @login_required
     def homepage():
         return render_template('homepage.html', session=session)
 
 
     @app.route('/dashboard')
-    @login_required
+    # @login_required
     def dashboard():
         cnxn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -197,7 +193,7 @@ with app.app_context():
 
 
     @app.route('/table')
-    @login_required
+    # @login_required
     def table():
         return render_template('table.html')
 
@@ -217,8 +213,10 @@ with app.app_context():
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
+            # user_id = cursor.execute(
+            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval()
+                "select user_id from users where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection 
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -245,17 +243,23 @@ with app.app_context():
                                     Trusted_Connection=yes;'
         )
         cursor = cnxn.cursor()
+        # otp_seed = cursor.execute(
+        #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
+        session_userid = str(session['user_id']) 
         otp_seed = cursor.execute(
-            "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
+            "select otp_code from users where user_id= ? ",(session_userid)).fetchval()
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
 
         # verifying submitted OTP with PyOTP
         if pyotp.TOTP(otp_seed).verify(otp):
+            string_otpseed = str(otp_seed)
+            # info = cursor.execute(
+            #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
+            #         otp_seed) + "\'").fetchall()
             info = cursor.execute(
-                "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
-                    otp_seed) + "\'").fetchall()
+                "select username, first_name, last_name, verification  from users where otp_code = ?",(string_otpseed)).fetchval()
             (username, first_name, last_name, verification) = info[0]
             session['username'] = username
             session['first_name'] = first_name
@@ -285,20 +289,20 @@ with app.app_context():
 
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
-    @login_required
+    # @login_required
     def passwordreset():
         return render_template('passwordreset.html')
 
 
     @app.route('/logout', methods=['GET', 'POST'])
-    @login_required
+    # @login_required
     def logout():
         session.clear()
         return render_template('login.html')
 
 
     @app.route('/submission', methods=['GET', 'POST'])
-    @login_required
+    # @login_required
     def submission():
         file_submit = FileSubmit()
         if request.method == "POST":
@@ -315,19 +319,19 @@ with app.app_context():
 
 
     @app.route('/verification')
-    @login_required
+    # @login_required
     def verification():
         return render_template('verification.html')
 
 
     @app.route('/charts')
-    @login_required
+    # @login_required
     def charts():
         return render_template('charts.html')
 
 
     @app.route('/tables')
-    @login_required
+    # @login_required
     def tables():
         return render_template('table.html')
 
@@ -349,12 +353,18 @@ with app.app_context():
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
+            insert_query = textwrap.dedent('''
+                INSERT INTO users (username, first_name, last_name, pass_hash, otp_code,email) 
+                VALUES (?, ?, ?, ?, ?, ?); 
+            ''')
             values = (username, firstname, lastname, md5Hashed, otp_code, email)
+            
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM users')
             for x in cursor:
                 if x.username == username or x.email == email:
                     return render_template('exists.html')
+  
             cursor.execute(insert_query, values)
             cnxn.commit()
             cursor.close()
