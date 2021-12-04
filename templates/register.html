@@ -20,12 +20,19 @@
                                         {{ render_field(form.lastname, class="form-control") }}
                                       </div>
                                     <div class="col-auto">
+                                        {{ render_field(form.hospital, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.tending_physician, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
                                         {{ render_field(form.email, class="form-control") }}
                                       </div>
                                     <div class="col-auto">
                                         {{ render_field(form.password, class="form-control") }}
                                             <span id="passwordHelpInline" class="form-text">Must be 8-20 characters long.</span>
                                       </div>
+
                                       <div class="col-auto">
                                         {{ render_field(form.submit, class="form-control") }}
                                       </div>

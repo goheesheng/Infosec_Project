@@ -216,7 +216,7 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select user_id from users where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection 
+                "select patient_id from patients where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -247,7 +247,7 @@ with app.app_context():
         #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
         session_userid = str(session['user_id']) 
         otp_seed = cursor.execute(
-            "select otp_code from users where user_id= ? ",(session_userid)).fetchval()
+            "select otp_code from patients where patient_id= ? ",(session_userid)).fetchval()
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
@@ -259,12 +259,12 @@ with app.app_context():
             #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
             #         otp_seed) + "\'").fetchall()
             info = cursor.execute(
-                "select username, first_name, last_name, verification  from users where otp_code = ?",(string_otpseed)).fetchval()
-            (username, first_name, last_name, verification) = info[0]
+                "select username, first_name, last_name, patient_id  from patients where otp_code = ?",(string_otpseed)).fetchall()
+            (username, first_name, last_name, patient_id) = info[0]
             session['username'] = username
             session['first_name'] = first_name
             session['last_name'] = last_name
-            session['verification'] = verification
+            session['patient_id'] = patient_id
             cursor.close()
             cnxn.close()
             '''
@@ -350,17 +350,19 @@ with app.app_context():
             firstname = register.firstname.data
             lastname = register.lastname.data
             email = register.email.data
+            hospital = register.hospital.data
+            tending_physician = register.tending_physician.data
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
             insert_query = textwrap.dedent('''
-                INSERT INTO users (username, first_name, last_name, pass_hash, otp_code,email) 
-                VALUES (?, ?, ?, ?, ?, ?); 
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,hospital,tending_physician) 
+                VALUES (?, ?, ?, ?, ?, ?,?,?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code, email)
+            values = (username, firstname, lastname, md5Hashed, otp_code, email, hospital, tending_physician)
             
             cursor = cnxn.cursor()
-            cursor.execute('SELECT username, email FROM users')
+            cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
                 if x.username == username or x.email == email:
                     return render_template('exists.html')
@@ -391,5 +393,5 @@ with app.app_context():
     def admin(variable):
         return redirect(url_for('homepage'))
 
-    if __name__ == "__main__":
-        app.run()
+if __name__ == "__main__":
+    app.run()
