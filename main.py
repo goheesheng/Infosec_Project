@@ -209,8 +209,10 @@ with app.app_context():
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N)").capitalize()
             if key == "Y":
-                try:
                     username = input("Enter New Head Admin ID: ")
+                    cursor = cnxn.cursor()
+                    check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
+                    
                     firstname = input("Enter New Head Admin First Name: ")
                     lastname = input("Enter New Head Admin last Name: ")
                     email = input("Enter New Head Admin email: ")
@@ -221,79 +223,7 @@ with app.app_context():
                  
                     cursor = cnxn.cursor()
                     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                    for x in check:
-                        a = x.username.strip()
-                        print(check)
-                        print(a)
-                    while str(a) == str(username):
-                        print("Head Admin already exist!")
-                        username = input("Enter New Head Admin ID again: ")
-                        firstname = input("Enter New Head Admin First Name: ")
-                        lastname = input("Enter New Head Admin last Name: ")
-                        email = input("Enter New Head Admin email: ")
-                        admin_password = input("Enter New Head Admin Password: ")
-                        md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                        md5Hashed = md5Hash.hexdigest()
-                        continue
-                    else:
-                        break
-                    cursor.close()
-
-                    cursor = cnxn.cursor()
-                    insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                        VALUES (?, ?, ?, ?, ?); "
-                    values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                    cursor.execute(insert_query, values)
-                    cursor.commit()
-                    cursor.close()
-                    print('Successful creating Head Admin')
-                except:
-                    print("Error in adding Head Admin to MSSQL Database!")
-                
-                key = input("Do you want to more create Admin ID and password? (Y/N)").capitalize()
-                if key == "N":
-                    break
-                elif key == 'Delete':
-                    try:
-                        cursor = cnxn.cursor()
-                        key = input("Enter the Head Admin ID to delete: ")
-                        check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(username)) # prevent sql injection
-                        cursor.commit()
-                        cursor.close()
-                        if check == True:
-                            print(f"{key} was removed as Head Admin.")
-                    except:
-                        print('Error in deleting Head Admin in MSSQL Database')
-
-                elif key == "Y":
-                    try:
-                        username = input("Enter New Head Admin ID: ")
-                        firstname = input("Enter New Head Admin First Name: ")
-                        lastname = input("Enter New Head Admin last Name: ")
-                        email = input("Enter New Head Admin email: ")
-                        admin_password = input("Enter New Head Admin Password: ")
-                        md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                        md5Hashed = md5Hash.hexdigest()
-                    
-                    
-                        cursor = cnxn.cursor()
-                        check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchall()# prevent sql injection
-                        for x in check:
-                            a = x.username.strip()
-                            while str(a) == str(username):
-                                print("Head Admin already exist!")
-                                username = input("Enter New Head Admin ID again: ")
-                                firstname = input("Enter New Head Admin First Name: ")
-                                lastname = input("Enter New Head Admin last Name: ")
-                                email = input("Enter New Head Admin email: ")
-                                admin_password = input("Enter New Head Admin Password: ")
-                                md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                                md5Hashed = md5Hash.hexdigest()
-                            else:
-                                break
-                        cursor.close()
-
-                        cursor = cnxn.cursor()
+                    if check == None: 
                         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
                             VALUES (?, ?, ?, ?, ?); "
                         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
@@ -301,12 +231,56 @@ with app.app_context():
                         cursor.commit()
                         cursor.close()
                         print('Successful creating Head Admin')
-                    except:
-                        print("Error in adding Head Admin to MSSQL Database!")
-               
-                else:
-                    print("Please enter Y or N or Delete only!")
-                    continue
+                        continue
+                    else:
+                        print("Head Admin already exists!")
+                    # while str(a) == str(username):
+                    #     print("Head Admin already exist!")
+                    #     username = input("Enter New Head Admin ID again: ")
+                    #     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
+                    #     if check == None:
+                    #         firstname = input("Enter New Head Admin First Name: ")
+                    #         lastname = input("Enter New Head Admin last Name: ")
+                    #         email = input("Enter New Head Admin email: ")
+                    #         admin_password = input("Enter New Head Admin Password: ")
+                    #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                    #         md5Hashed = md5Hash.hexdigest()
+                    #         cursor = cnxn.cursor()
+                    #         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                    #             VALUES (?, ?, ?, ?, ?); "
+                    #         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                    #         cursor.execute(insert_query, values)
+                    #         cursor.commit()
+                    #         cursor.close()
+                    #         print('Successful creating Head Admin')
+                    #         break
+                    #     else:
+                    #         a = check.strip()
+                    #         print(type(a))
+                    #         firstname = input("Enter New Head Admin First Name: ")
+                    #         lastname = input("Enter New Head Admin last Name: ")
+                    #         email = input("Enter New Head Admin email: ")
+                    #         admin_password = input("Enter New Head Admin Password: ")
+                    #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                    #         md5Hashed = md5Hash.hexdigest()
+                    #         print(a,'a')
+                    #         print(username,"b")
+                    #         continue
+                    # cursor = cnxn.cursor()
+                    # insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                    #     VALUES (?, ?, ?, ?, ?); "
+                    # values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                    # cursor.execute(insert_query, values)
+                    # cursor.commit()
+                    # cursor.close()
+                    # print('Successful creating Head Admin')
+                    # continue
+
+
+                # except:
+                #     print("Error in adding Head Admin to MSSQL Database!")
+                
+              
             elif key == "N":
                 break
             elif key == 'Delete':
