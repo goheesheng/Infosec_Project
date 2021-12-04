@@ -172,9 +172,9 @@ with app.app_context():
                                     Trusted_Connection=yes;'
         )
         cursor = cnxn.cursor()
-        users = cursor.execute("SELECT * FROM users")
+        users = cursor.execute("SELECT * FROM patients")
         print(users)
-        return render_template('dashboard.html', users=users)
+        return render_template('dashboard.html', patients=users)
 
 
     @app.route('/401')

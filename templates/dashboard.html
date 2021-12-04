@@ -63,90 +63,43 @@
                     <table id="datatablesSimple">
                     <thead>
                         <tr>
-                            <th>User id</th>
+                            <th>Patient id</th>
                             <th>Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
-                            <th>Verification</th>
+                            <th>Hospital</th>
+                            <th>Tending Physician</th>
                             <th>Options</th>
                         </tr>
                     </thead>
                     <tfoot>
                         <tr>
-                            <th>User id</th>
+                            <th>Patient id</th>
                             <th>Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
-                            <th>Verification</th>
+                            <th>Hospital</th>
+                            <th>Tending Physician</th>
                             <th>Options</th>
                         </tr>
                     </tfoot>
                     <tbody>
-                    {% for x in users %}
+                    {% for x in patients %}
                         <tr>
-                            <td>{{x.user_id}}</td>
+                            <td>{{x.patient_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
-                            <td>{{x.verification}}</td>
+                            <td>{{x.hospital}}</td>
+                            <td>{{x.tending_physician}}</td>
                             <td>
                                 <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('patient', variable=x.user_id)}}">Patient</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('doctor', variable=x.user_id)}}">Doctor</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('admin', variable=x.user_id)}}">Admin</button>
                             </td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
                 </div>
-            </div>
-        </div>
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-table me-1"></i>
-                Users Table
-            </div>
-            <div class="card-body">
-                <table id="datatablesSimple">
-                    <thead>
-                        <tr>
-                            <th>User id</th>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Verification</th>
-                            <th>Options</th>
-                        </tr>
-                    </thead>
-                    <tfoot>
-                        <tr>
-                            <th>User id</th>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Verification</th>
-                            <th>Options</th>
-                        </tr>
-                    </tfoot>
-                    <tbody>
-                    {% for x in users %}
-                        <tr>
-                            <td>{{x.user_id}}</td>
-                            <td>{{x.first_name}} {{x.last_name}}</td>
-                            <td>{{x.username}}</td>
-                            <td>{{x.email}}</td>
-                            <td>{{x.verification}}</td>
-                            <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('patient', variable=x.user_id)}}">Patient</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('doctor', variable=x.user_id)}}">Doctor</button>
-                                <button type="button" class="btn btn-success btn-sm" href="{{url_for('admin', variable=x.user_id)}}">Admin</button>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
