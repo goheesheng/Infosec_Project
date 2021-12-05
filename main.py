@@ -2,7 +2,7 @@ import hashlib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session, send_file
 import pyotp
 from cryptography.fernet import Fernet
 from flask_wtf import FlaskForm
@@ -308,13 +308,39 @@ with app.app_context():
         if request.method == "POST":
             z = file_submit.submission.data.filename
             file_submit.submission.data.save(z)
-            file = open(file_submit.submission.data.filename)
-            readFile = file.read()
-            md5Hash = hashlib.md5(readFile.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
-            blockchain.new_block('123')
-            return render_template('test.html', chain=blockchain.chain)
+            file = open(file_submit.submission.data.filename,'rb')
+            f=file.read()
+
+            cursor = cnxn.cursor()
+            print(file_submit.submission.data.filename)
+            insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
+            VALUES=("123",file_submit.submission.data.filename,f)
+            cursor.execute(insert_query,VALUES)
+
+            cnxn.commit()
+            cursor.close()
+
+            cursor = cnxn.cursor()
+            select_query=('SELECT * from patientfile')
+            retrived=cursor.execute(select_query)
+            data=retrived.fetchone()
+            filename=data[1]
+            filedata=data[2]
+            print(filename,filedata)
+            f=open(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}","wb")
+            f.write(filedata)
+            return send_file(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}",attachment_filename=f"{filename}")
+            f.close()
+                            
+            cnxn.commit()
+            cursor.close()
+
+            # md5Hash = hashlib.md5(readFile.encode("utf-8"))
+            # md5Hashed = md5Hash.hexdigest()
+            # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
+            # blockchain.new_block('123')
+            # return render_template('test.html', chain=blockchain.chain)
+            return render_template('test.html')
         return render_template('submission.html', form=file_submit)
 
 
