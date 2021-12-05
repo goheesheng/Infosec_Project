@@ -2,8 +2,8 @@ import hashlib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import TypeGuard
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session
+
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_file
 import pyotp
 from cryptography.fernet import Fernet
 from flask_wtf import FlaskForm
@@ -440,17 +440,17 @@ with app.app_context():
     @app.route('/submission', methods=['GET', 'POST'])
     # @login_required
     def submission():
-        file_submit = FileSubmit()
+        file_submit = FileSubmit(request.form)
         if request.method == "POST":
-            z = file_submit.submission.data.filename
-            file_submit.submission.data.save(z)
-            file = open(file_submit.submission.data.filename,'rb')
-            f=file.read()
+            file=request.files["submission"]
+            filename=file.filename
+            file.save(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}")
+            file2 = open(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}",'rb')
+            f=file2.read()
 
             cursor = cnxn.cursor()
-            print(file_submit.submission.data.filename)
             insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
-            VALUES=("123",file_submit.submission.data.filename,f)
+            VALUES=("123",filename,f)
             cursor.execute(insert_query,VALUES)
 
             cnxn.commit()
