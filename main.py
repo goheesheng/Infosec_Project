@@ -336,6 +336,40 @@ with app.app_context():
         return render_template('table.html')
 
 
+    @app.route('/export')
+    # @login_required
+    def export():
+        cnxn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + server + '; \
+                                            DATABASE=' + database + ';\
+                                            Trusted_Connection=yes;'
+        )
+        cursor = cnxn.cursor()
+        cursor.execute("select * from patients")
+        results = cursor.fetchall()
+        print(len(results),results,results[0].first_name,len(results[0].first_name))
+        return render_template('export.html',results = results)
+
+
+    @app.route('/data/<int:id>')
+    # @login_required
+    def data(id):
+        cnxn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + server + '; \
+                                                    DATABASE=' + database + ';\
+                                                    Trusted_Connection=yes;'
+        )
+        cursor = cnxn.cursor()
+        cursor.execute("select data from patients where patient_id = ?",(id))
+        data = cursor.fetchall()
+        print(data)
+        data = data[0].data.decode("utf-8")
+        print(data)
+        return render_template('data.html',data = data)
+
+
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         register = Register()
