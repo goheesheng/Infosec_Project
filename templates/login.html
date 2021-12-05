@@ -10,7 +10,26 @@
                         <div class="card shadow-lg border-0 rounded-lg mt-5">
                             <div class="card-header"><h3 class="text-center font-weight-light my-4">Login</h3></div>
                             <div class="card-body">
-                                <form method="POST" action="" enctype="multipart/form-data">
+                                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                              <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="patient" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">Patient</button>
+                              </li>
+                              <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="doctor" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="false">Doctor</button>
+                              </li>
+                              <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="researcher" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">Researcher</button>
+                              </li>
+                                    <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="admin" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">Admin</button>
+                              </li>
+                                    <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="head_admin" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">Head Admin</button>
+                              </li>
+                            </ul>
+                            <div class="tab-content" id="myTabContent">
+                              <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="patient">
+                                  <form method="POST" action="" enctype="multipart/form-data">
                                       <div class="form-group">
                                         {{ render_field(form.email, class="form-control") }}
                                       </div>
@@ -18,9 +37,64 @@
                                         {{ render_field(form.password, class="form-control") }}
                                       </div>
                                       <div class="form-group">
-                                        {{ render_field(form.submit, class="form-control") }}
+                                        {{ render_field(form.patient_submit, class="form-control") }}
                                       </div>
                                 </form>
+                              </div>
+                              <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="doctor">
+                                  <form method="POST" action="" enctype="multipart/form-data">
+                                      <div class="form-group">
+                                        {{ render_field(form.email, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.password, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.doctor_submit, class="form-control") }}
+                                      </div>
+                                </form>
+                              </div>
+                              <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="researcher">
+                                  <form method="POST" action="" enctype="multipart/form-data">
+                                      <div class="form-group">
+                                        {{ render_field(form.email, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.password, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.researcher_submit, class="form-control") }}
+                                      </div>
+                                </form>
+                              </div>
+                                <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="admin">
+                                    <form method="POST" action="" enctype="multipart/form-data">
+                                      <div class="form-group">
+                                        {{ render_field(form.email, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.password, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.admin_submit, class="form-control") }}
+                                      </div>
+                                </form>
+                                </div>
+                                <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="head_admin">
+                                    <form method="POST" action="" enctype="multipart/form-data">
+                                      <div class="form-group">
+                                        {{ render_field(form.email, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.password, class="form-control") }}
+                                      </div>
+                                      <div class="form-group">
+                                        {{ render_field(form.head_admin_submit, class="form-control") }}
+                                      </div>
+                                </form>
+                                </div>
+                            </div>
+
                             </div>
                             <div class="card-footer text-center py-3">
                                 <div class="small"><a href="/register">Need an account? Sign up!</a></div>

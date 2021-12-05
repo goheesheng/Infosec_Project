@@ -337,7 +337,7 @@ with app.app_context():
     @app.route('/', methods=['GET', 'POST'])
     def login():
         login_form = Login_form(request.form)
-        if request.method == "POST" and login_form.validate():
+        if login_form.patient_submit.data and login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
@@ -353,6 +353,106 @@ with app.app_context():
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
                 "select patient_id from patients where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            if user_id:
+                session['user_id'] = user_id
+                cursor.close()
+                cnxn.close()
+                return redirect(url_for("otpvalidation"))
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
+        elif login_form.doctor_submit.data and login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+            )
+            email = login_form.email.data
+            password = login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            # user_id = cursor.execute(
+            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
+            user_id = cursor.execute(
+                "select patient_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            if user_id:
+                session['user_id'] = user_id
+                cursor.close()
+                cnxn.close()
+                return redirect(url_for("otpvalidation"))
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
+        elif login_form.researcher_submit.data and login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+            )
+            email = login_form.email.data
+            password = login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            # user_id = cursor.execute(
+            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
+            user_id = cursor.execute(
+                "select researcher_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            if user_id:
+                session['user_id'] = user_id
+                cursor.close()
+                cnxn.close()
+                return redirect(url_for("otpvalidation"))
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
+        elif login_form.admin_submit.data and login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+            )
+            email = login_form.email.data
+            password = login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            # user_id = cursor.execute(
+            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
+            user_id = cursor.execute(
+                "select admin_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            if user_id:
+                session['user_id'] = user_id
+                cursor.close()
+                cnxn.close()
+                return redirect(url_for("otpvalidation"))
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
+        elif login_form.head_admin_submit.data and login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+            )
+            email = login_form.email.data
+            password = login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            # user_id = cursor.execute(
+            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
+            user_id = cursor.execute(
+                "select head_admin_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -428,6 +528,11 @@ with app.app_context():
     # @login_required
     def passwordreset():
         return render_template('passwordreset.html')
+
+    @app.route('/testpage', methods=['GET', 'POST'])
+    # @login_required
+    def testpage():
+        return render_template('logintest.html')
 
 
     @app.route('/logout', methods=['GET', 'POST'])

@@ -15,7 +15,11 @@ class Login_form(Form):
         validators.DataRequired(),
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')),
     ])
-    submit = SubmitField("Submit")
+    patient_submit = SubmitField("Submit")
+    doctor_submit = SubmitField("Submit")
+    researcher_submit = SubmitField("Submit")
+    admin_submit = SubmitField("Submit")
+    head_admin_submit = SubmitField("Submit")
 
 class Otp(Form):
     otp = StringField("OTP",[validators.Length(min=6, max=6), validators.DataRequired()] )
