@@ -1,4 +1,5 @@
 #ENTER YOUR OWN SERVER CONNECTION FOR MSSQLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-server = 'DESKTOP-DMO8V7F\SQLEXPRESS'
+# server = 'Desktop-75MSPGF'
+server = 'GOHDESKTOP\SQLEXPRESS'
 
 database = 'database1'
