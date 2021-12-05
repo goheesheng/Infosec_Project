@@ -207,7 +207,7 @@ with app.app_context():
         #     Trusted_Connection=yes;'
         # )
         while True:
-            key = input("Do you want to create Head Admin ID and password? (Y/N)").capitalize()
+            key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
                     username = input("Enter New Head Admin ID: ")
                     cursor = cnxn.cursor()
@@ -231,6 +231,15 @@ with app.app_context():
                         cursor.commit()
                         cursor.close()
                         print('Successful creating Head Admin')
+                        cursor = cnxn.cursor()
+                        check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
+                        print("List of Head Admins:")
+                        for x in check:
+                            username = x.username.strip()
+                            first_name = x.first_name.strip()
+                            last_name = x.last_name.strip()
+                            email = x.email.strip()
+                            print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
                         continue
                     else:
                         print("Head Admin already exists!")
@@ -283,17 +292,44 @@ with app.app_context():
               
             elif key == "N":
                 break
+            elif key == "Show":
+                cursor = cnxn.cursor()
+                check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
+                print("List of Head Admins:")
+                for x in check:
+                    username = x.username.strip()
+                    first_name = x.first_name.strip()
+                    last_name = x.last_name.strip()
+                    email = x.email.strip()
+                    print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
+
+                cursor.close()
             elif key == 'Delete':
-                try:
+                # try:
                     cursor = cnxn.cursor()
                     key = input("Enter the Head Admin ID to delete: ")
-                    check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(username)) # prevent sql injection
-                    cursor.commit()
-                    cursor.close()
-                    if check == True:
+                    check = cursor.execute("SELECT * FROM head_admin WHERE username = ?",(key)).fetchval() # prevent sql injection
+                    if check == None:
+                        print("Head admin does not exist")
+                        continue
+
+                    else:
+                        check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(key)) # prevent sql injection
+                        cursor.commit()
                         print(f"{key} was removed as Head Admin.")
-                except:
-                    print('Error in deleting Head Admin in MSSQL Database')
+                        check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
+                        print("List of Head Admins:")
+                        for x in check:
+                            username = x.username.strip()
+                            first_name = x.first_name.strip()
+                            last_name = x.last_name.strip()
+                            email = x.email.strip()
+                            print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
+                        cursor.close()
+     
+
+                # except:
+                #     print('Error in deleting Head Admin in MSSQL Database')
             else:
                 print("Please enter Y or N or Delete only!")
                 continue
