@@ -6,8 +6,8 @@ from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_file
 import pyotp
 from cryptography.fernet import Fernet
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField
+# from flask_wtf import FlaskForm
+# from flask_wtf.file import FileField
 import smtplib
 from wtforms import StringField, SubmitField, validators
 import sqlite3
@@ -336,7 +336,7 @@ with app.app_context():
 
     @app.route('/', methods=['GET', 'POST'])
     def login():
-        login_form = Login_form()
+        login_form = Login_form(request.form)
         if request.method == "POST":
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -500,7 +500,7 @@ with app.app_context():
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
-        register = Register()
+        register = Register(request.form)
         if request.method == "POST":
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -512,16 +512,15 @@ with app.app_context():
             firstname = register.firstname.data
             lastname = register.lastname.data
             email = register.email.data
-            hospital = register.hospital.data
-            tending_physician = register.tending_physician.data
+
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
             insert_query = textwrap.dedent('''
-                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,hospital,tending_physician) 
-                VALUES (?, ?, ?, ?, ?, ?,?,?); 
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email) 
+                VALUES (?, ?, ?, ?, ?, ?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code, email, hospital, tending_physician)
+            values = (username, firstname, lastname, md5Hashed, otp_code, email)
             
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
