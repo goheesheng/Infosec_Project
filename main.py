@@ -337,7 +337,7 @@ with app.app_context():
     @app.route('/', methods=['GET', 'POST'])
     def login():
         login_form = Login_form(request.form)
-        if request.method == "POST":
+        if request.method == "POST" and login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
@@ -501,7 +501,7 @@ with app.app_context():
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         register = Register(request.form)
-        if request.method == "POST":
+        if request.method == "POST" and register.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
