@@ -212,18 +212,18 @@ with app.app_context():
                     username = input("Enter New Head Admin ID: ")
                     cursor = cnxn.cursor()
                     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                    
+
                     firstname = input("Enter New Head Admin First Name: ")
                     lastname = input("Enter New Head Admin last Name: ")
                     email = input("Enter New Head Admin email: ")
                     admin_password = input("Enter New Head Admin Password: ")
                     md5Hash = hashlib.md5(admin_password.encode("utf-8"))
                     md5Hashed = md5Hash.hexdigest()
-        
-                 
+
+
                     cursor = cnxn.cursor()
                     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                    if check == None: 
+                    if check == None:
                         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
                             VALUES (?, ?, ?, ?, ?); "
                         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
@@ -288,8 +288,8 @@ with app.app_context():
 
                 # except:
                 #     print("Error in adding Head Admin to MSSQL Database!")
-                
-              
+
+
             elif key == "N":
                 break
             elif key == "Show":
@@ -326,7 +326,7 @@ with app.app_context():
                             email = x.email.strip()
                             print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
                         cursor.close()
-     
+
 
                 # except:
                 #     print('Error in deleting Head Admin in MSSQL Database')
@@ -437,21 +437,47 @@ with app.app_context():
         return render_template('login.html')
 
 
-    # @app.route('/submission', methods=['GET', 'POST'])
-    # # @login_required
-    # def submission():
-    #     file_submit = FileSubmit()
-    #     if request.method == "POST":
-    #         z = file_submit.submission.data.filename
-    #         file_submit.submission.data.save(z)
-    #         file = open(file_submit.submission.data.filename)
-    #         readFile = file.read()
-    #         md5Hash = hashlib.md5(readFile.encode("utf-8"))
-    #         md5Hashed = md5Hash.hexdigest()
-    #         transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
-    #         blockchain.new_block('123')
-    #         return render_template('test.html', chain=blockchain.chain)
-    #     return render_template('submission.html', form=file_submit)
+    @app.route('/submission', methods=['GET', 'POST'])
+    # @login_required
+    def submission():
+        file_submit = FileSubmit()
+        if request.method == "POST":
+            z = file_submit.submission.data.filename
+            file_submit.submission.data.save(z)
+            file = open(file_submit.submission.data.filename,'rb')
+            f=file.read()
+
+            cursor = cnxn.cursor()
+            print(file_submit.submission.data.filename)
+            insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
+            VALUES=("123",file_submit.submission.data.filename,f)
+            cursor.execute(insert_query,VALUES)
+
+            cnxn.commit()
+            cursor.close()
+
+            cursor = cnxn.cursor()
+            select_query=('SELECT * from patientfile')
+            retrived=cursor.execute(select_query)
+            data=retrived.fetchone()
+            filename=data[1]
+            filedata=data[2]
+            print(filename,filedata)
+            f=open(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}","wb")
+            f.write(filedata)
+            return send_file(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}",attachment_filename=f"{filename}")
+            f.close()
+
+            cnxn.commit()
+            cursor.close()
+
+            # md5Hash = hashlib.md5(readFile.encode("utf-8"))
+            # md5Hashed = md5Hash.hexdigest()
+            # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
+            # blockchain.new_block('123')
+            # return render_template('test.html', chain=blockchain.chain)
+            return render_template('test.html')
+        return render_template('submission.html', form=file_submit)
 
 
     @app.route('/verification')
