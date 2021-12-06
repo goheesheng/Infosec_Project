@@ -5,7 +5,9 @@ import pyotp
 import smtplib
 import pyqrcode
 from email.mime.image import MIMEImage
-
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
 
 def send_email(user, pwd, recipient, subject, body):
     FROM = user
@@ -34,6 +36,28 @@ def send_email(user, pwd, recipient, subject, body):
     server_ssl.close()
     print('successfully sent the mail')
 
+def SendMail(ImgFileName, email):
+    with open(ImgFileName, 'rb') as f:
+        img_data = f.read()
+
+    msg = MIMEMultipart()
+    msg['Subject'] = 'Head Admin Qr Code For Google Authenticator'
+    msg['From'] = 'e@mail.cc'
+    msg['To'] = email
+
+    text = MIMEText("test")
+    msg.attach(text)
+    image = MIMEImage(img_data, name=os.path.basename(ImgFileName))
+    msg.attach(image)
+
+    s = smtplib.SMTP('smtp.gmail.com:587')
+    s.ehlo()
+    s.starttls()
+    s.ehlo()
+    s.login("IT2566proj@gmail.com", "FishNugget123")
+    s.sendmail("IT2566proj@gmail.com", email, msg.as_string())
+    s.quit()
+
 
 def add_admin():
     cnxn = pyodbc.connect(
@@ -54,9 +78,7 @@ def add_admin():
             lastname = input("Enter New Head Admin last Name: ")
             email = input("Enter New Head Admin email: ")
             admin_password = input("Enter New Head Admin Password: ")
-            otp_code = pyotp.random_base32(
-
-            )
+            otp_code = pyotp.random_base32()
 
             md5Hash = hashlib.md5(admin_password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
@@ -74,8 +96,10 @@ def add_admin():
                 cursor.close()
                 print('Successful creating Head Admin')
                 qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
-                image = MIMEImage
-                send_email("appdevescip2003@gmail.com","appdev7181",email, "OTP CODE", "pyqrcode.create(qr)")
+                image = pyqrcode.create(qr)
+                image.png('image.png', scale=5)
+                SendMail("image.png", email)
+                os.remove('image.png')
                 print( "Successfully sent email")
                 cursor = cnxn.cursor()
                 check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection

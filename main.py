@@ -367,6 +367,11 @@ with app.app_context():
     @app.route('/', methods=['GET', 'POST'])
     def login():
         login_form = Login_form(request.form)
+        session['patient_id'] = None
+        session['researcher_id'] = None
+        session['doctor_id'] = None
+        session['admin_id'] = None
+        session['head_admin_id'] = None
         if login_form.patient_submit.data and login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -384,7 +389,7 @@ with app.app_context():
             user_id = cursor.execute(
                 "select patient_id from patients where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
-                session['user_id'] = user_id
+                session['patient_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -409,7 +414,7 @@ with app.app_context():
             user_id = cursor.execute(
                 "select staff_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
-                session['user_id'] = user_id
+                session['doctor_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -434,7 +439,7 @@ with app.app_context():
             user_id = cursor.execute(
                 "select researcher_id from researchers where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
-                session['user_id'] = user_id
+                session['researcher_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -457,9 +462,9 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select admin_id from admins where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+                "select admin_id from admin where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
-                session['user_id'] = user_id
+                session['admin_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -488,7 +493,7 @@ with app.app_context():
                 (email, md5Hashed)).fetchval()  # prevent sql injection
             print(otp_code)
             if user_id and otp_code:
-                session['user_id'] = user_id
+                session['head_admin_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -531,13 +536,34 @@ with app.app_context():
         cursor = cnxn.cursor()
         # otp_seed = cursor.execute(
         #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
+        if session['patient_id']:
+            otp_seed = cursor.execute(
+                "select otp_code from patients where patient_id= ? ", (int(session['patient_id']))).fetchval()
+            user = "patient"
+        elif session['doctor_id']:
+            otp_seed = cursor.execute(
+                "select otp_code from doctors where doctor_id= ? ", (int(session['doctor_id']))).fetchval()
+            user = "doctor"
+        elif session['researcher_id']:
+            otp_seed = cursor.execute(
+                "select otp_code from researchers where researcher_id= ? ", (int(session['researcher_id']))).fetchval()
+            user = "researcher"
+        elif session['admin_id']:
+            otp_seed = cursor.execute(
+                "select otp_code from admins where admin_id= ? ", (int(session['admin_id']))).fetchval()
+            user = "admin"
+        elif session['head_admin_id']:
+            otp_seed = cursor.execute(
+                "select otp_code from head_admin where head_admin_id= ? ", (int(session['head_admin_id']))).fetchval()
+            user = "head_admin"
+        else:
+            return render_template(url_for("homepage"))
         session_userid = str(session['user_id'])
-        otp_seed = cursor.execute(
-            "select otp_code from patients where patient_id= ? ",(session_userid)).fetchval()
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
-
+        print(otp_seed)
+        print(pyotp.TOTP(otp_seed).now())
         # verifying submitted OTP with PyOTP
         if pyotp.TOTP(otp_seed).verify(otp):
             string_otpseed = str(otp_seed)
@@ -545,7 +571,7 @@ with app.app_context():
             #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
             #         otp_seed) + "\'").fetchall()
             info = cursor.execute(
-                "select username, first_name, last_name, patient_id  from patients where otp_code = ?",(string_otpseed)).fetchall()
+                "select username, first_name, last_name, ? from ? where otp_code = ?",((user+"_id"),user,string_otpseed)).fetchall()
             (username, first_name, last_name, patient_id) = info[0]
             session['username'] = username
             session['first_name'] = first_name
