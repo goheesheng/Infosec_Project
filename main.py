@@ -377,7 +377,7 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select patient_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+                "select staff_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -402,7 +402,7 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select researcher_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+                "select researcher_id from researchers where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -427,7 +427,7 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select admin_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+                "select admin_id from admins where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -452,7 +452,7 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select head_admin_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+                "select head_admin_id from head_admins where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['user_id'] = user_id
                 cursor.close()
@@ -532,7 +532,7 @@ with app.app_context():
     @app.route('/testpage', methods=['GET', 'POST'])
     # @login_required
     def testpage():
-        return render_template('logintest.html')
+        return render_template('')
 
 
     @app.route('/logout', methods=['GET', 'POST'])
