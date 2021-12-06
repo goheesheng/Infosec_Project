@@ -1,12 +1,15 @@
 import re
 from wtforms import StringField, validators, SubmitField, FileField, PasswordField
-from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField
+from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField
 from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
 
 class FileSubmit(Form):
-    sender = StringField("Sender",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    recipient = StringField("Recipient",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    submission = FileField("Submission" )
+    patient_name = StringField("Patient Name",[validators.Length(min=1, max=400), validators.DataRequired()] )
+    submission = FileField("Updated tempalate (Using base template)" )
+    submit = SubmitField("Submit")
+
+class RequestPatientInfo_Form(Form):
+    patient_id=IntegerField("Patient ID",[validators.DataRequired()])
     submit = SubmitField("Submit")
 
 class Login_form(Form):
@@ -36,4 +39,3 @@ class Register(Form):
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
     submit = SubmitField("Submit")
-    

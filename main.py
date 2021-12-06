@@ -3,8 +3,11 @@ import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_file
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
+from werkzeug.utils import secure_filename
 import pyotp
+import os
+from shutil import copyfile
 from cryptography.fernet import Fernet
 # from flask_wtf import FlaskForm
 # from flask_wtf.file import FileField
@@ -13,9 +16,10 @@ from wtforms import StringField, SubmitField, validators
 import sqlite3
 import hashlib
 import json
+import re
 import bcrypt
 from time import time
-from forms import FileSubmit, Login_form, Otp, Register
+from forms import FileSubmit, Login_form, Otp, Register, RequestPatientInfo_Form
 from functools import wraps
 import random
 import pyodbc
@@ -82,6 +86,7 @@ cnxn = pyodbc.connect(
 app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
+app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
 
 
 def login_required(requireslogin):
@@ -155,6 +160,9 @@ def head_admin_needed(needhadmin):
 
     return decorated_func
 
+def allowed_filename(filename):
+    expression=re.compile(r"(?i)^[\w]*(.pdf)$")
+    return re.fullmatch(expression,filename)
 
 with app.app_context():
     @app.route('/homepage')
@@ -592,47 +600,66 @@ with app.app_context():
         return render_template('login.html')
 
 
-    @app.route('/submission', methods=['GET', 'POST'])
+    @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
+    def download(filename):
+        #dpvalidationhere
+        return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
+
+    @app.route('/requestPatientInformation',methods=['GET','POST'])
+    def requestPatientInformation():
+        requestPatientInformationForm=RequestPatientInfo_Form(request.form)
+        if request.method=='POST' and requestPatientInformationForm.validate():
+            physician='tom'
+            patient_id=2
+            cursor = cnxn.cursor()
+            retrived = cursor.execute("select tending_physician from patients where tending_physician=? and patient_id=?",(physician,patient_id)).fetchval()
+            cnxn.commit()
+            cursor.close()
+            if retrived is None:
+                copyfile(os.path.join(app.config['UPLOAD_FOLDER'],'basetemplate.docx'),os.path.join(app.config['UPLOAD_FOLDER'],f"{patient_id}.docx") )
+                #write code to insert the file into db
+
+            return redirect(url_for("submission",id=patient_id))
+        return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
+
+    @app.route('/submission/<id>', methods=['GET', 'POST'])
     # @login_required
-    def submission():
+    def submission(id):
         file_submit = FileSubmit(request.form)
-        if request.method == "POST":
-            file=request.files["submission"]
+
+        if request.method == "POST" and file_submit.validate():
+            if 'submission' not in request.files:
+                flash("File has failed to be uploaded")
+                return redirect(url_for('submission'))
+
+            file = request.files["submission"]
             filename=file.filename
-            file.save(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}")
-            file2 = open(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}",'rb')
-            f=file2.read()
+            if file.filename.strip()=="":
+                flash("Invalid filename")
+                return redirect(url_for('submission'))
+            if allowed_filename(file.filename):
+                filename=secure_filename(file.filename)
+                path=os.path.join(app.config['UPLOAD FOLDER'],filename)
+                file.save(path)
+                with open(path,'rb') as savedFile:
+                    savedFileBinaryData=savedFile.read()
 
-            cursor = cnxn.cursor()
-            insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
-            VALUES=("123",filename,f)
-            cursor.execute(insert_query,VALUES)
+                cursor = cnxn.cursor()
+                insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
+                VALUES=("123",filename,savedFileBinaryData)
+                cursor.execute(insert_query,VALUES)
+                cnxn.commit()
+                cursor.close()
 
-            cnxn.commit()
-            cursor.close()
-
-            cursor = cnxn.cursor()
-            select_query=('SELECT * from patientfile')
-            retrived=cursor.execute(select_query)
-            data=retrived.fetchone()
-            filename=data[1]
-            filedata=data[2]
-            print(filename,filedata)
-            f=open(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}","wb")
-            f.write(filedata)
-            return send_file(f"C:/Users/Ernestisme/Pycharmprojects/Infosecurity Project/saved/{filename}",attachment_filename=f"{filename}")
-            f.close()
-
-            cnxn.commit()
-            cursor.close()
+                return render_template('test.html')
 
             # md5Hash = hashlib.md5(readFile.encode("utf-8"))
             # md5Hashed = md5Hash.hexdigest()
             # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
             # blockchain.new_block('123')
             # return render_template('test.html', chain=blockchain.chain)
-            return render_template('test.html')
-        return render_template('submission.html', form=file_submit)
+            return redirect(url_for('submission'))
+        return render_template('submission.html', form=file_submit,id=id)
 
 
     @app.route('/verification')
