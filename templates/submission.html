@@ -4,10 +4,7 @@
 <h1>Document Submission</h1>
 <form method="POST" action="" enctype="multipart/form-data">
   <div class="form-group">
-    {{ render_field(form.sender, class="form-control") }}
-  </div>
-  <div class="form-group">
-    {{ render_field(form.recipient, class="form-control") }}
+    {{ render_field(form.patient_name, class="form-control") }}
   </div>
   <div class="form-group">
     {{ render_field(form.submission, class="form-control") }}
@@ -16,4 +13,16 @@
     {{ render_field(form.submit, class="form-control") }}
   </div>
 </form>
+<h3>File downloads</h3>
+<a href="/downloads/basetemplate.docx"  type="button" class="btn btn-primary btn-lg">
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+</svg>
+  Base Template(modify and submit this)</a>
+<a href="/downloads/{{id}}.docx"  type="button" class="btn btn-warning btn-lg">
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+</svg>Patients' Documents</a>
 {% endblock %}

@@ -1,0 +1,13 @@
+{% extends "navbar.html" %}
+{% block navbar_content %}
+{% from "includes/_formHelper.html" import render_field %}
+<h1>Request Patient Information</h1>
+<form method="POST" action="" enctype="multipart/form-data">
+  <div class="form-group">
+    {{ render_field(form.patient_id, class="form-control") }}
+  </div>
+  <div class="form-group">
+    {{ render_field(form.submit, class="form-control") }}
+  </div>
+</form>
+{% endblock %}
