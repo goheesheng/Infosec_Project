@@ -199,6 +199,36 @@ with app.app_context():
         return render_template('table.html')
 
 
+    def send_email(user, pwd, recipient, subject, body):
+        FROM = user
+        TO = recipient if isinstance(recipient, list) else [recipient]
+        SUBJECT = subject
+        TEXT = body
+
+        # Prepare actual message
+        message = """From: %s\nTo: %s\nSubject: %s\n\n%s
+        """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
+        try:
+            # Not SSL
+            # server = smtplib.SMTP("smtp.gmail.com", 587)
+            # server.ehlo()
+            # server.starttls()
+            # server.login(user, pwd)
+            # server.sendmail(FROM, TO, message)
+            # server.close()
+            # print ('successfully sent the mail')
+            # SMTP_SSL Example
+            server_ssl = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+            server_ssl.ehlo()  # optional, called by login()
+            server_ssl.login(user, pwd)
+            # ssl server doesn't support or need tls, so don't call server_ssl.starttls()
+            server_ssl.sendmail(FROM, TO, message)
+            # server_ssl.quit()
+            server_ssl.close()
+            print('successfully sent the mail')
+        except:
+            print("failed to send mail")
+
     def add_admin():
         # cnxn = pyodbc.connect(
         #     'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -452,12 +482,32 @@ with app.app_context():
             # user_id = cursor.execute(
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select head_admin_id from head_admins where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
+                "select head_admin_id from head_admin where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            otp_code = cursor.execute(
+                "select otp_code from head_admin where email = ? and pass_hash = ?",
+                (email, md5Hashed)).fetchval()  # prevent sql injection
+            print(otp_code)
+            if user_id and otp_code:
                 session['user_id'] = user_id
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
+            elif otp_code == None:
+                otp_code = pyotp.random_base32()
+                insert_query = textwrap.dedent('''
+                                UPDATE head_admin 
+                                SET otp_code=? 
+                                WHERE head_admin_id=?; 
+                            ''')
+                values = (otp_code,user_id)
+
+                cursor = cnxn.cursor()
+                cursor.execute(insert_query, values)
+                cnxn.commit()
+                cursor.close()
+                cnxn.close()
+                qr = 'otpauth://totp/AngelHealth:' + str(user_id) + '?secret=' + otp_code
+                return render_template('displayotp.html', otp=otp_code, qrotp=qr)
             else:
                 cursor.close()
                 cnxn.close()
@@ -481,7 +531,7 @@ with app.app_context():
         cursor = cnxn.cursor()
         # otp_seed = cursor.execute(
         #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
-        session_userid = str(session['user_id']) 
+        session_userid = str(session['user_id'])
         otp_seed = cursor.execute(
             "select otp_code from patients where patient_id= ? ",(session_userid)).fetchval()
 
@@ -660,13 +710,13 @@ with app.app_context():
                 VALUES (?, ?, ?, ?, ?, ?); 
             ''')
             values = (username, firstname, lastname, md5Hashed, otp_code, email)
-            
+
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
                 if x.username == username or x.email == email:
                     return render_template('exists.html')
-  
+
             cursor.execute(insert_query, values)
             cnxn.commit()
             cursor.close()
