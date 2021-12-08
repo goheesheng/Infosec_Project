@@ -9,7 +9,6 @@ from flask import Flask, request, render_template, g, redirect, url_for, flash, 
 from werkzeug.utils import secure_filename
 import pyotp
 import os
-from shutil import copyfile
 import smtplib
 import hashlib
 import re
@@ -20,10 +19,10 @@ import pyodbc
 import textwrap
 from mssql_auth import database, server
 from flask_qrcode import QRcode
+from datetime import datetime
 
 context = ssl.create_default_context()
-sender = "IT2566proj@gmail.com"
-senderpass = 'FishNugget123'
+
 salt = bcrypt.gensalt()
 cnxn = pyodbc.connect(
     'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -31,6 +30,7 @@ cnxn = pyodbc.connect(
     DATABASE=' + database + ';\
     Trusted_Connection=yes;'
 )
+
 
 # dont u touch u gay boi
 # class Blockchain(object):
@@ -77,23 +77,58 @@ cnxn = pyodbc.connect(
 
 # blockchain = Blockchain()
 
+    
 app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
 
 
-def login_required(requireslogin):
-    @wraps(requireslogin)
-    def decorated_func(*args, **kwargs):
-        if "access" not in session:  # No session info or user not in db
-            flash("Invalid User")
+# def login_required(requireslogin):
+#     @wraps(requireslogin)
+#     def decorated_func(*args, **kwargs):
+#         if "access" not in session:  # No session info or user not in db
+#             flash("Invalid User")
+#             return redirect(url_for('login'))
+#         else:
+#             return requireslogin(*args, **kwargs)
+
+#     return decorated_func
+
+def custom_login_required(f):
+    @wraps(f)
+    def wrap(*args,**kwargs):
+        if session is None:
             return redirect(url_for('login'))
-        else:
-            return requireslogin(*args, **kwargs)
+        try:
+            if app.config['expirydate'] is not None and app.config['expirydate']<= datetime.utcnow():
+                flash('session expired','warning')
+                app.config['expirydate']=None
+                return redirect(url_for('login'))
+        except:
+            return redirect(url_for('login'))
 
-    return decorated_func
+        # if session.get('csrf_token') is None:
+        #     print('session modifed')
+        #     ipaddress=request.remote_addr
+        #     try:
+        #         if app.config['lastusername'] is not None:
+        #             filter=cookieFilter(ipaddress,app.config['lastusername'])
+        #         else:
+        #             filter = cookieFilter(ipaddress)
+        #         serializationlogger.addFilter(filter)
+        #         serializationlogger.warning('Cookie has been modified')
+        #         return redirect(url_for('login'))
+        #     except:
+        #         pass
 
+        if 'login' not in session or session['login']!=True:
+            flash("Please log in to access this page","warning")
+            return redirect(url_for('login'))
+
+        return f(*args,**kwargs)
+
+    return wrap
 
 def researcher_needed(needresearcher):
     @wraps(needresearcher)
@@ -158,15 +193,19 @@ def allowed_filename(filename):
     expression=re.compile(r"(?i)^[\w]*(.pdf)$")
     return re.fullmatch(expression,filename)
 
+@app.route('/', methods=['GET', 'POST'])
+def main():
+    return redirect('login')
+    
 with app.app_context():
     @app.route('/homepage')
-    # @login_required
+    @custom_login_required
     def homepage():
-        return render_template('homepage.html', session=session)
+        return render_template('homepage.html')
 
 
     @app.route('/dashboard')
-    # @login_required
+    @custom_login_required
     def dashboard():
         cnxn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -196,19 +235,15 @@ with app.app_context():
 
 
     @app.route('/table')
-    # @login_required
+    @custom_login_required
     def table():
         return render_template('table.html')
-
-
-
-
-
 
     def SendMail(ImgFileName, email):
         with open(ImgFileName, 'rb') as f:
             img_data = f.read()
-
+        sender = "IT2566proj@gmail.com"
+        senderpass = 'FishNugget123'
         msg = MIMEMultipart()
         msg['Subject'] = 'Head Admin Qr Code For Google Authenticator'
         msg['From'] = 'e@mail.cc'
@@ -223,18 +258,12 @@ with app.app_context():
         s.ehlo()
         s.starttls()
         s.ehlo()
-        s.login("IT2566proj@gmail.com", "FishNugget123")
-        s.sendmail("IT2566proj@gmail.com", email, msg.as_string())
+        s.login(sender, senderpass)
+        s.sendmail(sender, email, msg.as_string())
         s.quit()
 
 
     def add_admin():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-         DATABASE=' + database + ';\
-         Trusted_Connection=yes;'
-        )
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
@@ -253,9 +282,12 @@ with app.app_context():
                 md5Hashed = md5Hash.hexdigest()
 
                 cursor = cnxn.cursor()
-                check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
+                check_username = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
-                if check == None:
+                check_email = cursor.execute("SELECT email FROM head_admin WHERE email = ?",
+                                       (email)).fetchval()  # prevent sql injection
+
+                if check_email == None and check_username == None :
                     insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email,otp_code) \
                             VALUES (?, ?, ?, ?, ?, ?); "
                     values = (username, firstname, lastname, md5Hashed,
@@ -264,13 +296,13 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-                    print('Successful creating Head Admin')
+                    print('Sending email OTP...')
                     qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                     image = pyqrcode.create(qr)
                     image.png('image.png', scale=5)
                     SendMail("image.png", email)
                     os.remove('image.png')
-                    print("Successfully sent email")
+                    print('Successful creating Head Admin')
                     cursor = cnxn.cursor()
                     check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                     print("List of Head Admins:")
@@ -282,7 +314,7 @@ with app.app_context():
                         print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
                     continue
                 else:
-                    print("Head Admin already exists!")
+                    print("Head Admin already exists! Check your username and email!!!!")
                 # while str(a) == str(username):
                 #     print("Head Admin already exist!")
                 #     username = input("Enter New Head Admin ID again: ")
@@ -376,21 +408,16 @@ with app.app_context():
 
 
 
-    @app.route('/', methods=['GET', 'POST'])
+    @app.route('/login', methods=['GET', 'POST'])
     def login():
         login_form = Login_form(request.form)
+        session['login'] = None
         session['patient_id'] = None
         session['researcher_id'] = None
         session['doctor_id'] = None
         session['admin_id'] = None
         session['head_admin_id'] = None
         if login_form.patient_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
             email = login_form.email.data
             password = login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
@@ -400,22 +427,16 @@ with app.app_context():
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
                 "select patient_id from patients where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
+            print(user_id,'login user id')
+            if user_id: #
                 session['patient_id'] = user_id
+                session['login'] = True
                 cursor.close()
-                cnxn.close()
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
-                cnxn.close()
                 return render_template("404.html")
         elif login_form.doctor_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
             email = login_form.email.data
             password = login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
@@ -427,20 +448,13 @@ with app.app_context():
                 "select staff_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['doctor_id'] = user_id
+                session['login'] = True
                 cursor.close()
-                cnxn.close()
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
-                cnxn.close()
                 return render_template("404.html")
         elif login_form.researcher_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
             email = login_form.email.data
             password = login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
@@ -452,20 +466,14 @@ with app.app_context():
                 "select researcher_id from researchers where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['researcher_id'] = user_id
+                session['login'] = True
                 cursor.close()
-                cnxn.close()
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
-                cnxn.close()
                 return render_template("404.html")
         elif login_form.admin_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
+
             email = login_form.email.data
             password = login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
@@ -477,20 +485,14 @@ with app.app_context():
                 "select admin_id from admin where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
             if user_id:
                 session['admin_id'] = user_id
+                session['login'] = True
                 cursor.close()
-                cnxn.close()
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
-                cnxn.close()
                 return render_template("404.html")
         elif login_form.head_admin_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
+
             email = login_form.email.data
             password = login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
@@ -500,12 +502,14 @@ with app.app_context():
             #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
                 "select head_admin_id from head_admin where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
+            
             otp_code = cursor.execute(
                 "select otp_code from head_admin where email = ? and pass_hash = ?",
                 (email, md5Hashed)).fetchval()  # prevent sql injection
             print(otp_code)
             if user_id and otp_code:
                 session['head_admin_id'] = user_id
+                session['login'] = True
                 cursor.close()
                 cnxn.close()
                 return redirect(url_for("otpvalidation"))
@@ -537,14 +541,8 @@ with app.app_context():
         return render_template("loginotp.html")
 
 
-    @app.route("/validation", methods=["POST"])
+    @app.route("/validation2", methods=["POST"])
     def otpvalidation2():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                    DATABASE=' + database + ';\
-                                    Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
         # otp_seed = cursor.execute(
         #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
@@ -569,7 +567,7 @@ with app.app_context():
                 "select otp_code from head_admin where head_admin_id= ? ", (int(session['head_admin_id']))).fetchval()
             user = "head_admin"
         else:
-            return render_template(url_for("homepage"))
+            return redirect(url_for("homepage"))
         session_userid = str(session['user_id'])
 
         # getting OTP provided by user
@@ -613,18 +611,13 @@ with app.app_context():
 
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def passwordreset():
         return render_template('passwordreset.html')
 
-    @app.route('/testpage', methods=['GET', 'POST'])
-    # @login_required
-    def testpage():
-        return render_template('logintest.html')
-
 
     @app.route('/logout', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def logout():
         session.clear()
         return render_template('login.html')
@@ -653,7 +646,7 @@ with app.app_context():
         return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
 
     @app.route('/submission/<id>', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def submission(id):
         file_submit = FileSubmit(request.form)
 
@@ -693,54 +686,44 @@ with app.app_context():
 
 
     @app.route('/verification')
-    # @login_required
+    @custom_login_required
     def verification():
         return render_template('verification.html')
 
 
     @app.route('/charts')
-    # @login_required
+    @custom_login_required
     def charts():
         return render_template('charts.html')
 
 
     @app.route('/tables')
-    # @login_required
+    @custom_login_required
     def tables():
         return render_template('table.html')
 
 
     @app.route('/export')
-    # @login_required
+    @custom_login_required
     def export():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                            DATABASE=' + database + ';\
-                                            Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
-        cursor.execute("select * from patients")
+        cursor.execute("select * from patients") #fix this LZS
         results = cursor.fetchall()
         print(len(results),results,results[0].first_name,len(results[0].first_name))
+        cursor.close()
         return render_template('export.html',results = results)
 
 
     @app.route('/data/<int:id>')
-    # @login_required
+    @custom_login_required
     def data(id):
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                                    DATABASE=' + database + ';\
-                                                    Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
         cursor.execute("select data from patients where patient_id = ?",(id))
         data = cursor.fetchall()
         print(data)
         data = data[0].data.decode("utf-8")
         print(data)
+        cursor.close()
         return render_template('data.html',data = data)
 
 
