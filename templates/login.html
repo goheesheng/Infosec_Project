@@ -15,16 +15,7 @@
                                 <button class="nav-link active" id="patient" data-bs-toggle="tab" data-bs-target="#patientbutton" type="button" role="tab" aria-controls="home" aria-selected="true">Patient</button>
                               </li>
                               <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="doctor" data-bs-toggle="tab" data-bs-target="#doctorbutton" type="button" role="tab" aria-controls="profile" aria-selected="false">Doctor</button>
-                              </li>
-                              <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="researcher" data-bs-toggle="tab" data-bs-target="#researcherbutton" type="button" role="tab" aria-controls="contact" aria-selected="false">Researcher</button>
-                              </li>
-                                    <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="admin" data-bs-toggle="tab" data-bs-target="#adminbutton" type="button" role="tab" aria-controls="contact" aria-selected="false">Admin</button>
-                              </li>
-                                    <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="head_admin" data-bs-toggle="tab" data-bs-target="#headadminbutton" type="button" role="tab" aria-controls="contact" aria-selected="false">Head Admin</button>
+                                <button class="nav-link" id="doctor" data-bs-toggle="tab" data-bs-target="#doctorbutton" type="button" role="tab" aria-controls="profile" aria-selected="false">Staff</button>
                               </li>
                             </ul>
                             <div class="tab-content" id="myTabContent">
@@ -50,51 +41,10 @@
                                         {{ render_field(form.password, class="form-control") }}
                                       </div>
                                       <div class="form-group">
-                                        {{ render_field(form.doctor_submit, class="form-control") }}
+                                        {{ render_field(form.staff_submit, class="form-control") }}
                                       </div>
                                 </form>
                               </div>
-                              <div class="tab-pane fade" id="researcherbutton" role="tabpanel" aria-labelledby="researcher">
-                                  <form method="POST" action="" enctype="multipart/form-data">
-                                      <div class="form-group">
-                                        {{ render_field(form.email, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.password, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.researcher_submit, class="form-control") }}
-                                      </div>
-                                </form>
-                              </div>
-                                <div class="tab-pane fade" id="adminbutton" role="tabpanel" aria-labelledby="admin">
-                                    <form method="POST" action="" enctype="multipart/form-data">
-                                      <div class="form-group">
-                                        {{ render_field(form.email, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.password, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.admin_submit, class="form-control") }}
-                                      </div>
-                                </form>
-                                </div>
-                                <div class="tab-pane fade" id="headadminbutton" role="tabpanel" aria-labelledby="head_admin">
-                                    <form method="POST" action="" enctype="multipart/form-data">
-                                      <div class="form-group">
-                                        {{ render_field(form.email, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.password, class="form-control") }}
-                                      </div>
-                                      <div class="form-group">
-                                        {{ render_field(form.head_admin_submit, class="form-control") }}
-                                      </div>
-                                </form>
-                                </div>
-                            </div>
-
                             </div>
                             <div class="card-footer text-center py-3">
                                 <div class="small"><a href="/register">Need an account? Sign up!</a></div>
