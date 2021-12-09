@@ -23,7 +23,7 @@
                     </thead>
                     {% for result in results %}
                     <tr>
-                        <td>{{ result['first_name'] }} {{ result['last_name'] }}</td>
+                        <td>{{ result['patient_id'] }}</td>
                         <td><a href="/data/{{ result['patient_id'] }}">data</a></td>
                     </tr>
                     {% endfor %}

@@ -716,7 +716,7 @@ with app.app_context():
     #@custom_login_required
     def export():
         cursor = cnxn.cursor()
-        cursor.execute("select * from patient_file")
+        cursor.execute("select patient_id,file_content from patient_file")
         results = cursor.fetchall()
         #print(len(results),results,results[0].first_name,len(results[0].first_name))
         cursor.close()
