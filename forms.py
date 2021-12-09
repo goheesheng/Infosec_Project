@@ -13,11 +13,10 @@ class RequestPatientInfo_Form(Form):
     submit = SubmitField("Submit")
 
 class Patient_Login_form(Form):
-    username = StringField('NRIC', [validators.DataRequired(), validators.Regexp(re.compile('^[STFGstfd]\d{7}[A-Za-z]$'))])
+    # username = StringField('NRIC', [validators.DataRequired(), validators.Regexp(re.compile('^[STFGstfd]\d{7}[A-Za-z]$'))])
+    username = StringField('NRIC', [validators.DataRequired()])
     password = PasswordField('New Password', [
-        validators.DataRequired(),
-        validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')),
-    ])
+        validators.DataRequired(),])
     patient_submit = SubmitField("Submit")
 
 class Admin_Login_form(Form):
