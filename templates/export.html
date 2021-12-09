@@ -17,20 +17,12 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Position</th>
-                            <th>Office</th>
-                            <th>Age</th>
-                            <th>Start date</th>
-                            <th>Salary</th>
+                            <th>Data</th>
                         </tr>
                     </thead>
                     {% for result in results %}
                     <tr>
                         <td>{{ result['first_name'] }} {{ result['last_name'] }}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
                         <td><a href="/data/{{ result['patient_id'] }}">data</a></td>
                     </tr>
                     {% endfor %}
