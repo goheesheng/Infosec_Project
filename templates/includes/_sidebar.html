@@ -1,6 +1,6 @@
     <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
         <!-- Navbar Brand-->
-        <a class="navbar-brand ps-3" href="/homepage">Medical Record Viewer</a>
+        <a class="navbar-brand ps-3" href="/table/1">Medical Record Viewer</a>
         <!-- Sidebar Toggle-->
         <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" href="#!"><i class="fas fa-bars"></i></button>
         <!-- Navbar Search-->
@@ -105,11 +105,23 @@
                 </div>
                 <div class="sb-sidenav-footer">
                     <div class="small">Logged in as:</div>
-                    {{session['username']}}
+                    {{session['patients']}}
                 </div>
             </nav>
         </div>
     <div id="layoutSidenav_content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                {% if category=="error" %}
+                        <div class="alert alert-danger" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                    {% if category=="success" %}
+                        <div class="alert alert-success" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         {% block main_content %}
         {% endblock %}
                 <footer class="py-4 bg-light mt-auto">
