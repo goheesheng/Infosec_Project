@@ -2,6 +2,7 @@ import re
 from wtforms import StringField, validators, SubmitField, FileField, PasswordField
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField
 from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
+from wtforms.fields.html5 import DateField
 
 class FileSubmit(Form):
     patient_name = StringField("Patient Name",[validators.Length(min=1, max=400), validators.DataRequired()] )
@@ -42,3 +43,7 @@ class Register(Form):
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
     submit = SubmitField("Submit")
+
+class Appointment(Form):
+    date = DateField("Enter date for appointment", validators=[validators.DataRequired()])
+    time = SelectField("Choose time", choices=[("10 A.M."),("11 A.M."),("12 P.M."),("1 P.M."),("2 P.M."),("3 P.M."),("4 P.M."),("5 P.M.")],validators=[validators.DataRequired()])

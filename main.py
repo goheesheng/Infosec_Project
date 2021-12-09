@@ -5,6 +5,7 @@ from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from datetime import *
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
 from werkzeug.utils import secure_filename
 import pyotp
@@ -13,7 +14,7 @@ import smtplib
 import hashlib
 import re
 import bcrypt
-from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment
 from functools import wraps
 import pyodbc
 import textwrap
@@ -715,9 +716,9 @@ with app.app_context():
     #@custom_login_required
     def export():
         cursor = cnxn.cursor()
-        cursor.execute("select * from patients") #fix this LZS
+        cursor.execute("select * from patient_file")
         results = cursor.fetchall()
-        print(len(results),results,results[0].first_name,len(results[0].first_name))
+        #print(len(results),results,results[0].first_name,len(results[0].first_name))
         cursor.close()
         return render_template('export.html',results = results)
 
@@ -726,7 +727,7 @@ with app.app_context():
     #@custom_login_required
     def data(id):
         cursor = cnxn.cursor()
-        cursor.execute("select data from patients where patient_id = ?",(id))
+        cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         print(data)
         data = data[0].data.decode("utf-8")
@@ -734,6 +735,21 @@ with app.app_context():
         cursor.close()
         return render_template('data.html',data = data)
 
+    @app.route('/appointment',methods=['GET','POST'])
+    def appointment():
+        appointment = Appointment(request.form)
+        if request.method == "POST":
+            if appointment.date.data <= date.today():
+                print("date error")
+                flash('Invalid date choice!')
+                return redirect(url_for('appointment'))
+            cursor = cnxn.cursor()
+            user_appointment = str(appointment.date.data) + ", " + appointment.time.data
+            print(user_appointment)
+            cursor.execute("update patients set appointment = ? where patient_id = 2",(user_appointment))
+            flash(f'Your appointment has been booked on: {user_appointment}')
+            return redirect(url_for('appointment'))
+        return render_template('appointment.html', form = appointment)
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -792,5 +808,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    add_admin()
-    app.run(debug = True)
+    #add_admin()
+    app.run()
