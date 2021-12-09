@@ -720,7 +720,7 @@ with app.app_context():
     #@custom_login_required
     def export():
         cursor = cnxn.cursor()
-        cursor.execute("select * from patient_file")
+        cursor.execute("select patient_id,file_content from patient_file")
         results = cursor.fetchall()
         #print(len(results),results,results[0].first_name,len(results[0].first_name))
         cursor.close()
@@ -733,8 +733,7 @@ with app.app_context():
         cursor = cnxn.cursor()
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
-        print(data)
-        data = data[0].data.decode("utf-8")
+        data = data[0][0].decode("utf-8")
         print(data)
         cursor.close()
         return render_template('data.html',data = data)
@@ -750,9 +749,10 @@ with app.app_context():
             cursor = cnxn.cursor()
             user_appointment = str(appointment.date.data) + ", " + appointment.time.data
             print(user_appointment)
-            cursor.execute("update patients set appointment = ? where patient_id = 2",(user_appointment))
+            cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['patients']))
             flash(f'Your appointment has been booked on: {user_appointment}')
             return redirect(url_for('appointment'))
+        print(session['patients'])
         return render_template('appointment.html', form = appointment)
 
     @app.route('/register', methods=['GET', 'POST'])
