@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [database1]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Database [database1]    Script Date: 9/12/2021 10:27:48 am ******/
 CREATE DATABASE [database1]
  CONTAINMENT = NONE
  ON  PRIMARY 
@@ -80,13 +80,13 @@ ALTER DATABASE [database1] SET QUERY_STORE = OFF
 GO
 USE [database1]
 GO
-/****** Object:  Table [dbo].[admin]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Table [dbo].[admin]    Script Date: 9/12/2021 10:27:49 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[admin](
-	[admin_id] [int] NOT NULL,
+	[admin_id] [int] IDENTITY(1,1) NOT NULL,
 	[username] [nchar](10) NOT NULL,
 	[first_name] [nchar](20) NOT NULL,
 	[last_name] [nchar](20) NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE [dbo].[admin](
 	[email] [varchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[doctors]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Table [dbo].[doctors]    Script Date: 9/12/2021 10:27:49 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -111,12 +111,13 @@ CREATE TABLE [dbo].[doctors](
 	[department] [varchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[head_admin]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Table [dbo].[head_admin]    Script Date: 9/12/2021 10:27:49 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[head_admin](
+	[head_admin_id] [int] IDENTITY(1,1) NOT NULL,
 	[username] [nchar](30) NOT NULL,
 	[first_name] [nchar](30) NOT NULL,
 	[last_name] [nchar](30) NOT NULL,
@@ -125,7 +126,22 @@ CREATE TABLE [dbo].[head_admin](
 	[email] [varchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[patients]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Table [dbo].[patient_file]    Script Date: 9/12/2021 10:27:49 am ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[patient_file](
+	[patient_id] [int] IDENTITY(1,1) NOT NULL,
+	[file_name] [varchar](20) NOT NULL,
+	[file_content] [varbinary](max) NOT NULL,
+	[file_last_modified_time] [varchar](20) NOT NULL,
+	[name_of_staff_that_modified_it] [varchar](20) NOT NULL,
+	[id_of_staff_modified_it] [int] NOT NULL,
+	[md5sum_] [varchar](64) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[patients]    Script Date: 9/12/2021 10:27:49 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -142,7 +158,7 @@ CREATE TABLE [dbo].[patients](
 	[tending_physician] [varchar](50) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[researchers]    Script Date: 5/12/2021 4:41:48 pm ******/
+/****** Object:  Table [dbo].[researchers]    Script Date: 9/12/2021 10:27:49 am ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -154,26 +170,10 @@ CREATE TABLE [dbo].[researchers](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
-	[company] [varchar](50) NULL
+	[company] [varchar](50) NULL,
+	[researcher_id] [int] IDENTITY(1,1) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[patient_file]    Script Date: 6/12/2021 10:09 am ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[patient_file](
-	[patient_id] [int] IDENTITY(1,1) NOT NULL,
-	[file_name] [varchar](20) NOT NULL,
-	[file_content][varbinary](max) NOT NULL,
-	[file_last_modified_time] [varchar](20) NOT NULL,
-	[name_of_staff_that_modified_it] [varchar](20) NOT NULL,
-	[id_of_staff_modified_it] [int] NOT NULL,
-	[md5sum_] [varchar](64) NOT NULL
-
-) ON [PRIMARY]
-GO
-
 USE [master]
 GO
 ALTER DATABASE [database1] SET  READ_WRITE 
