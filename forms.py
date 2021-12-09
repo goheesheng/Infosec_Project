@@ -21,7 +21,7 @@ class Patient_Login_form(Form):
     patient_submit = SubmitField("Submit")
 
 class Admin_Login_form(Form):
-    username = StringField('Staff ID', [validators.DataRequired(), validators.Regexp(re.compile('^\d{6}[A-Za-z]$'), message="Invalid email address.")])
+    username = StringField('Staff ID', [validators.DataRequired(), validators.Regexp(re.compile('^\d{6}[A-Za-z]$'))])
     password = PasswordField('New Password', [
         validators.DataRequired(),
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')),
