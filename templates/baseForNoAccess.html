@@ -11,6 +11,18 @@
 </head>
 <body class="sb-nav-fixed">
 {% include "includes/_navbar.html" %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                {% if category=="error" %}
+                        <div class="alert alert-danger" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                    {% if category=="success" %}
+                        <div class="alert alert-success" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 {% block content %}
 {% endblock %}
 
