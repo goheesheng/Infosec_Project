@@ -193,9 +193,9 @@ def allowed_filename(filename):
     expression=re.compile(r"(?i)^[\w]*(.pdf)$")
     return re.fullmatch(expression,filename)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def main():
-    return redirect('login')
+    return render_template('home.html')
 
 with app.app_context():
     @app.route('/homepage')
@@ -670,7 +670,7 @@ with app.app_context():
 
 
     @app.route('/export')
-    @custom_login_required
+    #@custom_login_required
     def export():
         cursor = cnxn.cursor()
         cursor.execute("select * from patients") #fix this LZS
@@ -681,7 +681,7 @@ with app.app_context():
 
 
     @app.route('/data/<int:id>')
-    @custom_login_required
+    #@custom_login_required
     def data(id):
         cursor = cnxn.cursor()
         cursor.execute("select data from patients where patient_id = ?",(id))
