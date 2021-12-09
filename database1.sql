@@ -155,7 +155,8 @@ CREATE TABLE [dbo].[patients](
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
 	[hospital] [varchar](50) NULL,
-	[tending_physician] [varchar](50) NULL
+	[tending_physician] [varchar](50) NULL,
+	[appointment][varchar](20) NULL,
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[researchers]    Script Date: 9/12/2021 10:27:49 am ******/
