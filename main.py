@@ -109,8 +109,8 @@ def custom_login_required(f):
             flash('session expired','warning')
             app.config['expirydate']=None
             return redirect(url_for('login'))
-    
-    
+
+
         # if session.get('csrf_token') is None:
         #     print('session modifed')
         #     ipaddress=request.remote_addr
@@ -129,7 +129,7 @@ def custom_login_required(f):
             flash("Please log in to access this page","warning")
             return redirect(url_for('login'))
 
-     
+
         print(session['login'],'wrapper222222')
 
         return f(*args,**kwargs)
@@ -283,7 +283,7 @@ with app.app_context():
                     username = input("Enter New Head Admin ID: ")
                     result = re.match(pattern,username)
                 cursor = cnxn.cursor()
-                
+
                 check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
 
@@ -582,7 +582,7 @@ with app.app_context():
             session['first_name'] = first_name
             session['last_name'] = last_name
             session['login'] = True
-            
+
             cursor.close()
             cnxn.close()
             '''
@@ -629,7 +629,7 @@ with app.app_context():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=='POST' and requestPatientInformationForm.validate():
             physician='tom'
-            patient_id=2
+            patient_id=requestPatientInformationForm.patient_id.data
             cursor = cnxn.cursor()
             retrived = cursor.execute("select tending_physician from patients where tending_physician=? and patient_id=?",(physician,patient_id)).fetchval()
             cnxn.commit()
@@ -638,34 +638,36 @@ with app.app_context():
                 copyfile(os.path.join(app.config['UPLOAD_FOLDER'],'basetemplate.docx'),os.path.join(app.config['UPLOAD_FOLDER'],f"{patient_id}.docx") )
                 #write code to insert the file into db
 
-            return redirect(url_for("submission",id=patient_id))
+            return redirect(url_for("submission",pid=patient_id))
         return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
 
-    @app.route('/submission/<id>', methods=['GET', 'POST'])
-    @custom_login_required
-    def submission(id):
+    @app.route('/submission/<pid>', methods=['GET', 'POST'])
+    # @login_required
+    def submission(pid):
         file_submit = FileSubmit(request.form)
-
+        patient_id=pid
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return redirect(url_for('submission'))
+                return  render_template('submission.html', form=file_submit,id=id)
 
             file = request.files["submission"]
-            filename=file.filename
             if file.filename.strip()=="":
                 flash("Invalid filename")
-                return redirect(url_for('submission'))
+                return  render_template('submission.html', form=file_submit,id=id)
             if allowed_filename(file.filename):
                 filename=secure_filename(file.filename)
-                path=os.path.join(app.config['UPLOAD FOLDER'],filename)
+                path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+filename)
                 file.save(path)
-                with open(path,'rb') as savedFile:
-                    savedFileBinaryData=savedFile.read()
+                filedata=open(path,'rb').read()
+                x=open('2.docx','rb').read()
+
+                open('2.docx', 'ab').write(filedata)
+                print(open('2.docx','rb').read()==x)
 
                 cursor = cnxn.cursor()
                 insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
-                VALUES=("123",filename,savedFileBinaryData)
+                VALUES=("123",filename,filedata)
                 cursor.execute(insert_query,VALUES)
                 cnxn.commit()
                 cursor.close()
@@ -677,7 +679,8 @@ with app.app_context():
             # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
             # blockchain.new_block('123')
             # return render_template('test.html', chain=blockchain.chain)
-            return redirect(url_for('submission'))
+            return  render_template('submission.html', form=file_submit,id=id)
+
         return render_template('submission.html', form=file_submit,id=id)
 
 
