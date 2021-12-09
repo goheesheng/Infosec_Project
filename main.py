@@ -202,6 +202,9 @@ def allowed_filename(filename):
     expression=re.compile(r"(?i)^[\w]*(.pdf)$")
     return re.fullmatch(expression,filename)
 
+@app.context_processor
+def inject_templates_with_session_date():
+    return dict(session)
 
 with app.app_context():
     @app.route('/homepage')
@@ -211,8 +214,9 @@ with app.app_context():
         return render_template('homepage.html')
 
     @app.route('/')
-    def main():
-        return render_template('home.html')
+    @app.route('/index')
+    def index():
+        return render_template('index.html')
 
     @app.route('/dashboard')
     @custom_login_required
