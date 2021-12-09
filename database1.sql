@@ -85,8 +85,8 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[admin](
-	[admin_id] [int] IDENTITY(1,1) NOT NULL,
+CREATE TABLE [dbo].[hr](
+	[hr_id] [int] IDENTITY(1,1) NOT NULL,
 	[username] [nchar](10) NOT NULL,
 	[first_name] [nchar](20) NOT NULL,
 	[last_name] [nchar](20) NOT NULL,

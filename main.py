@@ -95,19 +95,21 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
 
 #     return decorated_func
 
+
+
 def custom_login_required(f):
     @wraps(f)
     def wrap(*args,**kwargs):
+        print(session['login'],'wrapper')
         if session is None:
             return redirect(url_for('login'))
-        try:
-            if app.config['expirydate'] is not None and app.config['expirydate']<= datetime.utcnow():
-                flash('session expired','warning')
-                app.config['expirydate']=None
-                return redirect(url_for('login'))
-        except:
+# fix this later ES
+        if 'expirydate' not in app.config and app.config['expirydate']<= datetime.utcnow():
+            flash('session expired','warning')
+            app.config['expirydate']=None
             return redirect(url_for('login'))
-
+    
+    
         # if session.get('csrf_token') is None:
         #     print('session modifed')
         #     ipaddress=request.remote_addr
@@ -126,9 +128,13 @@ def custom_login_required(f):
             flash("Please log in to access this page","warning")
             return redirect(url_for('login'))
 
+     
+        print(session['login'],'wrapper222222')
+
         return f(*args,**kwargs)
 
     return wrap
+
 
 def researcher_needed(needresearcher):
     @wraps(needresearcher)
@@ -201,6 +207,7 @@ with app.app_context():
     @app.route('/homepage')
     @custom_login_required
     def homepage():
+        print("I AM AT")
         return render_template('homepage.html')
 
 
@@ -282,7 +289,15 @@ with app.app_context():
                 firstname = input("Enter New Head Admin First Name: ")
                 lastname = input("Enter New Head Admin last Name: ")
                 email = input("Enter New Head Admin email: ")
+
+                pattern = ('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')
                 admin_password = input("Enter New Head Admin Password: ")
+
+                result = re.match(pattern,admin_password)
+                while result == None:
+                    print( "Password must contain 10-20 characters, number, uppercase, lowercase, special character.")
+                    admin_password = input("Enter New Head Admin Password: ")
+                    result = re.match(pattern,admin_password)
                 otp_code = pyotp.random_base32()
 
                 md5Hash = hashlib.md5(admin_password.encode("utf-8"))
@@ -419,11 +434,12 @@ with app.app_context():
     def login():
         patient_login_form = Patient_Login_form(request.form)
         admin_login_form = Admin_Login_form(request.form)
-        session['patient_id'] = None
-        session['researcher_id'] = None
-        session['doctor_id'] = None
-        session['admin_id'] = None
-        session['head_admin_id'] = None
+        # session['patient_id'] = None
+        # session['researcher_id'] = None
+        # session['doctor_id'] = None
+        # session['admin_id'] = None
+        # session['head_admin_id'] = None
+        # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
         if patient_login_form.patient_submit.data and patient_login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -464,7 +480,7 @@ with app.app_context():
                                          (username, md5Hashed)).fetchone()
             researcherCheck = cursor.execute("select username from researchers where username = ? and pass_hash = ?",
                                              (username, md5Hashed)).fetchone()
-            adminCheck = cursor.execute("select admin_id from admin where username = ? and pass_hash = ?",
+            adminCheck = cursor.execute("select hr_id from hr where username = ? and pass_hash = ?",
                                         (username, md5Hashed)).fetchone()
             headadminCheck = cursor.execute("select username from head_admin where username = ? and pass_hash = ?",
                                             (username, md5Hashed)).fetchone()
@@ -485,10 +501,11 @@ with app.app_context():
                 passed = False
                 return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
-                session[user_type] = identifier
+                session['id'] = identifier.strip() #need strip to remove the spaces
                 cursor.close()
                 cnxn.close()
-                return redirect(url_for("otpvalidation"))
+                session['otp-semi-login'] = True
+                return redirect(url_for("otpvalidation")),session['id']
             else:
                 cursor.close()
                 cnxn.close()
@@ -498,21 +515,31 @@ with app.app_context():
 
 
     @app.route('/validation')
+    @custom_login_required
     def otpvalidation():
-        return render_template("loginotp.html")
+        if session['otp-semi-login'] == True:
+            print('true')
+            print(session['id'],"id")
+            session['login'] = True
+            # session['head_admin']
+            # session['patient_id'] = None
+            # session['researcher_id'] = None
+            # session['doctor_id'] = None
+            # session['admin_id'] = None
+            # session['head_admin_id'] = None
+            # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
+            return redirect(url_for('homepage')), session['login']
+        else:
+            print('false')
+
+            flash('Wrong username or password!')
+            return render_template("login.html")
 
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                        DATABASE=' + database + ';\
-                                        Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
-        # otp_seed = cursor.execute(
-        #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
+
         if "doctors" in session:
             (otp_seed, username, first_name, last_name) = cursor.execute(
                 "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
@@ -528,7 +555,7 @@ with app.app_context():
                 "select otp_code, username, first_name, last_name from patients where patient_id = ?",
                 (session["patients"])
             ).fetchall()[0]
-        elif "admin" in session:
+        elif "hr" in session:
             (otp_seed, username, first_name, last_name) = cursor.execute(
                 "select otp_code, username, first_name, last_name from admin where username = ?",
                 (session["admin"])
@@ -553,6 +580,8 @@ with app.app_context():
             session['username'] = username
             session['first_name'] = first_name
             session['last_name'] = last_name
+            session['login'] = True
+            
             cursor.close()
             cnxn.close()
             '''
@@ -751,4 +780,4 @@ with app.app_context():
 
 if __name__ == "__main__":
     add_admin()
-    app.run()
+    app.run(debug = True)
