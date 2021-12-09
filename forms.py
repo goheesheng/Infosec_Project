@@ -12,13 +12,20 @@ class RequestPatientInfo_Form(Form):
     patient_id=IntegerField("Patient ID",[validators.DataRequired()])
     submit = SubmitField("Submit")
 
-class Login_form(Form):
-    email = StringField('Email Address', [validators.DataRequired(), validators.Regexp(re.compile('^.+@[^.].*\.[a-z]{2,10}$'), message="Invalid email address.")])
+class Patient_Login_form(Form):
+    username = StringField('NRIC', [validators.DataRequired(), validators.Regexp(re.compile('^[STFGstfd]\d{7}[A-Za-z]$'))])
     password = PasswordField('New Password', [
         validators.DataRequired(),
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')),
     ])
     patient_submit = SubmitField("Submit")
+
+class Admin_Login_form(Form):
+    username = StringField('Staff ID', [validators.DataRequired(), validators.Regexp(re.compile('^\d{6}[A-Za-z]$'), message="Invalid email address.")])
+    password = PasswordField('New Password', [
+        validators.DataRequired(),
+        validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')),
+    ])
     staff_submit = SubmitField("Submit")
 
 class Otp(Form):

@@ -13,7 +13,7 @@ import smtplib
 import hashlib
 import re
 import bcrypt
-from forms import FileSubmit, Login_form, Otp, Register, RequestPatientInfo_Form
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form
 from functools import wraps
 import pyodbc
 import textwrap
@@ -267,8 +267,15 @@ with app.app_context():
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
+                pattern = ('^\d{6}[A-Za-z]$')
                 username = input("Enter New Head Admin ID: ")
+                result = re.match(pattern,username)
+                while result == None:
+                    print("Only first 6 digits and 1 alphabet at the end!")
+                    username = input("Enter New Head Admin ID: ")
+                    result = re.match(pattern,username)
                 cursor = cnxn.cursor()
+                
                 check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
 
@@ -410,29 +417,28 @@ with app.app_context():
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
-        login_form = Login_form(request.form)
+        patient_login_form = Patient_Login_form(request.form)
+        admin_login_form = Admin_Login_form(request.form)
         session['patient_id'] = None
         session['researcher_id'] = None
         session['doctor_id'] = None
         session['admin_id'] = None
         session['head_admin_id'] = None
-        if login_form.patient_submit.data and login_form.validate():
+        if patient_login_form.patient_submit.data and patient_login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
                                 DATABASE=' + database + ';\
                                 Trusted_Connection=yes;'
             )
-            email = login_form.email.data
-            password = login_form.password.data
+            username = patient_login_form.username.data
+            password = patient_login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
             user_id = cursor.execute(
-                "select patient_id from patients where email = ? and pass_hash = ?",
-                (email, md5Hashed)).fetchval()  # prevent sql injection
+                "select patient_id from patients where username = ? and pass_hash = ?",
+                (username, md5Hashed)).fetchval()  # prevent sql injection
             if user_id:
                 session['patients'] = user_id
                 cursor.close()
@@ -442,26 +448,26 @@ with app.app_context():
                 cursor.close()
                 cnxn.close()
                 return render_template("404.html")
-        elif login_form.staff_submit.data and login_form.validate():
+        elif admin_login_form.staff_submit.data and admin_login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
                                 DATABASE=' + database + ';\
                                 Trusted_Connection=yes;'
             )
-            email = login_form.email.data
-            password = login_form.password.data
+            username = admin_login_form.username.data
+            password = admin_login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
-            doctorCheck = cursor.execute("select staff_id from doctors where email = ? and pass_hash = ?",
-                                         (email, md5Hashed)).fetchone()
-            researcherCheck = cursor.execute("select username from researchers where email = ? and pass_hash = ?",
-                                             (email, md5Hashed)).fetchone()
-            adminCheck = cursor.execute("select admin_id from admin where email = ? and pass_hash = ?",
-                                        (email, md5Hashed)).fetchone()
-            headadminCheck = cursor.execute("select username from head_admin where email = ? and pass_hash = ?",
-                                            (email, md5Hashed)).fetchone()
+            doctorCheck = cursor.execute("select staff_id from doctors where username = ? and pass_hash = ?",
+                                         (username, md5Hashed)).fetchone()
+            researcherCheck = cursor.execute("select username from researchers where username = ? and pass_hash = ?",
+                                             (username, md5Hashed)).fetchone()
+            adminCheck = cursor.execute("select admin_id from admin where username = ? and pass_hash = ?",
+                                        (username, md5Hashed)).fetchone()
+            headadminCheck = cursor.execute("select username from head_admin where username = ? and pass_hash = ?",
+                                            (username, md5Hashed)).fetchone()
             passed = True
             if doctorCheck != None:
                 user_type = "doctors"
@@ -477,7 +483,7 @@ with app.app_context():
                 identifier = headadminCheck[0]
             else:
                 passed = False
-                return render_template("login.html", form=login_form)
+                return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
                 session[user_type] = identifier
                 cursor.close()
@@ -488,8 +494,7 @@ with app.app_context():
                 cnxn.close()
                 return render_template("404.html")
         else:
-            return render_template("login.html", form=login_form)
-        return render_template('login.html', form=login_form)
+            return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
     @app.route('/validation')
