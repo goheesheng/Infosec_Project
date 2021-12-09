@@ -202,9 +202,6 @@ def allowed_filename(filename):
     expression=re.compile(r"(?i)^[\w]*(.pdf)$")
     return re.fullmatch(expression,filename)
 
-@app.route('/')
-def main():
-    return render_template('home.html')
 
 with app.app_context():
     @app.route('/homepage')
@@ -213,6 +210,9 @@ with app.app_context():
         print("I AM AT")
         return render_template('homepage.html')
 
+    @app.route('/')
+    def main():
+        return render_template('home.html')
 
     @app.route('/dashboard')
     @custom_login_required
