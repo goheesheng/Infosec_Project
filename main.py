@@ -1,35 +1,28 @@
 import hashlib
 import ssl
+import pyqrcode
+from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
+import os
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
 from werkzeug.utils import secure_filename
 import pyotp
 import os
-from shutil import copyfile
-from cryptography.fernet import Fernet
-# from flask_wtf import FlaskForm
-# from flask_wtf.file import FileField
 import smtplib
-from wtforms import StringField, SubmitField, validators
-import sqlite3
 import hashlib
-import json
 import re
 import bcrypt
-from time import time
-from forms import FileSubmit, Login_form, Otp, Register, RequestPatientInfo_Form
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form
 from functools import wraps
-import random
 import pyodbc
 import textwrap
 from mssql_auth import database, server
 from flask_qrcode import QRcode
+from datetime import datetime
 
 context = ssl.create_default_context()
-sender = "IT2566proj@gmail.com"
-senderpass = 'FishNugget123'
+
 salt = bcrypt.gensalt()
 cnxn = pyodbc.connect(
     'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -37,6 +30,7 @@ cnxn = pyodbc.connect(
     DATABASE=' + database + ';\
     Trusted_Connection=yes;'
 )
+
 
 # dont u touch u gay boi
 # class Blockchain(object):
@@ -83,22 +77,63 @@ cnxn = pyodbc.connect(
 
 # blockchain = Blockchain()
 
+
 app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
 
 
-def login_required(requireslogin):
-    @wraps(requireslogin)
-    def decorated_func(*args, **kwargs):
-        if "access" not in session:  # No session info or user not in db
-            flash("Invalid User")
-            return redirect(url_for('login'))
-        else:
-            return requireslogin(*args, **kwargs)
+# def login_required(requireslogin):
+#     @wraps(requireslogin)
+#     def decorated_func(*args, **kwargs):
+#         if "access" not in session:  # No session info or user not in db
+#             flash("Invalid User")
+#             return redirect(url_for('login'))
+#         else:
+#             return requireslogin(*args, **kwargs)
 
-    return decorated_func
+#     return decorated_func
+
+
+
+def custom_login_required(f):
+    @wraps(f)
+    def wrap(*args,**kwargs):
+        print(session['login'],'wrapper')
+        if session is None:
+            return redirect(url_for('login'))
+# fix this later ES
+        if 'expirydate' not in app.config and app.config['expirydate']<= datetime.utcnow():
+            flash('session expired','warning')
+            app.config['expirydate']=None
+            return redirect(url_for('login'))
+
+
+        # if session.get('csrf_token') is None:
+        #     print('session modifed')
+        #     ipaddress=request.remote_addr
+        #     try:
+        #         if app.config['lastusername'] is not None:
+        #             filter=cookieFilter(ipaddress,app.config['lastusername'])
+        #         else:
+        #             filter = cookieFilter(ipaddress)
+        #         serializationlogger.addFilter(filter)
+        #         serializationlogger.warning('Cookie has been modified')
+        #         return redirect(url_for('login'))
+        #     except:
+        #         pass
+
+        if 'login' not in session or session['login']!=True:
+            flash("Please log in to access this page","warning")
+            return redirect(url_for('login'))
+
+
+        print(session['login'],'wrapper222222')
+
+        return f(*args,**kwargs)
+
+    return wrap
 
 
 def researcher_needed(needresearcher):
@@ -164,15 +199,20 @@ def allowed_filename(filename):
     expression=re.compile(r"(?i)^[\w]*(.pdf)$")
     return re.fullmatch(expression,filename)
 
+@app.route('/')
+def main():
+    return render_template('home.html')
+
 with app.app_context():
     @app.route('/homepage')
-    # @login_required
+    @custom_login_required
     def homepage():
-        return render_template('homepage.html', session=session)
+        print("I AM AT")
+        return render_template('homepage.html')
 
 
     @app.route('/dashboard')
-    # @login_required
+    @custom_login_required
     def dashboard():
         cnxn = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -202,137 +242,152 @@ with app.app_context():
 
 
     @app.route('/table')
-    # @login_required
+    @custom_login_required
     def table():
         return render_template('table.html')
 
+    def SendMail(ImgFileName, email):
+        with open(ImgFileName, 'rb') as f:
+            img_data = f.read()
+        sender = "IT2566proj@gmail.com"
+        senderpass = 'FishNugget123'
+        msg = MIMEMultipart()
+        msg['Subject'] = 'Head Admin Qr Code For Google Authenticator'
+        msg['From'] = 'e@mail.cc'
+        msg['To'] = email
 
-    def send_email(user, pwd, recipient, subject, body):
-        FROM = user
-        TO = recipient if isinstance(recipient, list) else [recipient]
-        SUBJECT = subject
-        TEXT = body
+        text = MIMEText("test")
+        msg.attach(text)
+        image = MIMEImage(img_data, name=os.path.basename(ImgFileName))
+        msg.attach(image)
 
-        # Prepare actual message
-        message = """From: %s\nTo: %s\nSubject: %s\n\n%s
-        """ % (FROM, ", ".join(TO), SUBJECT, TEXT)
-        try:
-            # Not SSL
-            # server = smtplib.SMTP("smtp.gmail.com", 587)
-            # server.ehlo()
-            # server.starttls()
-            # server.login(user, pwd)
-            # server.sendmail(FROM, TO, message)
-            # server.close()
-            # print ('successfully sent the mail')
-            # SMTP_SSL Example
-            server_ssl = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-            server_ssl.ehlo()  # optional, called by login()
-            server_ssl.login(user, pwd)
-            # ssl server doesn't support or need tls, so don't call server_ssl.starttls()
-            server_ssl.sendmail(FROM, TO, message)
-            # server_ssl.quit()
-            server_ssl.close()
-            print('successfully sent the mail')
-        except:
-            print("failed to send mail")
+        s = smtplib.SMTP('smtp.gmail.com:587')
+        s.ehlo()
+        s.starttls()
+        s.ehlo()
+        s.login(sender, senderpass)
+        s.sendmail(sender, email, msg.as_string())
+        s.quit()
+
 
     def add_admin():
-        # cnxn = pyodbc.connect(
-        #     'DRIVER={ODBC Driver 17 for SQL Server}; \
-        #     SERVER=' + server + '; \
-        #     DATABASE=' + database + ';\
-        #     Trusted_Connection=yes;'
-        # )
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
+                pattern = ('^\d{6}[A-Za-z]$')
+                username = input("Enter New Head Admin ID: ")
+                result = re.match(pattern,username)
+                while result == None:
+                    print("Only first 6 digits and 1 alphabet at the end!")
                     username = input("Enter New Head Admin ID: ")
-                    cursor = cnxn.cursor()
-                    check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
+                    result = re.match(pattern,username)
+                cursor = cnxn.cursor()
 
-                    firstname = input("Enter New Head Admin First Name: ")
-                    lastname = input("Enter New Head Admin last Name: ")
-                    email = input("Enter New Head Admin email: ")
+                check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
+                                       (username)).fetchval()  # prevent sql injection
+
+                firstname = input("Enter New Head Admin First Name: ")
+                lastname = input("Enter New Head Admin last Name: ")
+                email = input("Enter New Head Admin email: ")
+
+                pattern = ('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')
+                admin_password = input("Enter New Head Admin Password: ")
+
+                result = re.match(pattern,admin_password)
+                while result == None:
+                    print( "Password must contain 10-20 characters, number, uppercase, lowercase, special character.")
                     admin_password = input("Enter New Head Admin Password: ")
-                    md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                    md5Hashed = md5Hash.hexdigest()
+                    result = re.match(pattern,admin_password)
+                otp_code = pyotp.random_base32()
 
+                md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
 
+                cursor = cnxn.cursor()
+                check_username = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
+                                       (username)).fetchval()  # prevent sql injection
+                check_email = cursor.execute("SELECT email FROM head_admin WHERE email = ?",
+                                       (email)).fetchval()  # prevent sql injection
+
+                if check_email == None and check_username == None :
+                    insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email,otp_code) \
+                            VALUES (?, ?, ?, ?, ?, ?); "
+                    values = (username, firstname, lastname, md5Hashed,
+                              email,
+                              otp_code)  # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                    cursor.execute(insert_query, values)
+                    cursor.commit()
+                    cursor.close()
+                    print('Sending email OTP...')
+                    qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                    image = pyqrcode.create(qr)
+                    image.png('image.png', scale=5)
+                    SendMail("image.png", email)
+                    os.remove('image.png')
+                    print('Successful creating Head Admin')
                     cursor = cnxn.cursor()
-                    check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                    if check == None:
-                        insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                            VALUES (?, ?, ?, ?, ?); "
-                        values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                        cursor.execute(insert_query, values)
-                        cursor.commit()
-                        cursor.close()
-                        print('Successful creating Head Admin')
-                        cursor = cnxn.cursor()
-                        check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
-                        print("List of Head Admins:")
-                        for x in check:
-                            username = x.username.strip()
-                            first_name = x.first_name.strip()
-                            last_name = x.last_name.strip()
-                            email = x.email.strip()
-                            print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
-                        continue
-                    else:
-                        print("Head Admin already exists!")
-                    # while str(a) == str(username):
-                    #     print("Head Admin already exist!")
-                    #     username = input("Enter New Head Admin ID again: ")
-                    #     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                    #     if check == None:
-                    #         firstname = input("Enter New Head Admin First Name: ")
-                    #         lastname = input("Enter New Head Admin last Name: ")
-                    #         email = input("Enter New Head Admin email: ")
-                    #         admin_password = input("Enter New Head Admin Password: ")
-                    #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                    #         md5Hashed = md5Hash.hexdigest()
-                    #         cursor = cnxn.cursor()
-                    #         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                    #             VALUES (?, ?, ?, ?, ?); "
-                    #         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                    #         cursor.execute(insert_query, values)
-                    #         cursor.commit()
-                    #         cursor.close()
-                    #         print('Successful creating Head Admin')
-                    #         break
-                    #     else:
-                    #         a = check.strip()
-                    #         print(type(a))
-                    #         firstname = input("Enter New Head Admin First Name: ")
-                    #         lastname = input("Enter New Head Admin last Name: ")
-                    #         email = input("Enter New Head Admin email: ")
-                    #         admin_password = input("Enter New Head Admin Password: ")
-                    #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                    #         md5Hashed = md5Hash.hexdigest()
-                    #         print(a,'a')
-                    #         print(username,"b")
-                    #         continue
-                    # cursor = cnxn.cursor()
-                    # insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                    #     VALUES (?, ?, ?, ?, ?); "
-                    # values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                    # cursor.execute(insert_query, values)
-                    # cursor.commit()
-                    # cursor.close()
-                    # print('Successful creating Head Admin')
-                    # continue
+                    check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
+                    print("List of Head Admins:")
+                    for x in check:
+                        username = x.username.strip()
+                        first_name = x.first_name.strip()
+                        last_name = x.last_name.strip()
+                        email = x.email.strip()
+                        print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
+                    continue
+                else:
+                    print("Head Admin already exists! Check your username and email!!!!")
+                # while str(a) == str(username):
+                #     print("Head Admin already exist!")
+                #     username = input("Enter New Head Admin ID again: ")
+                #     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
+                #     if check == None:
+                #         firstname = input("Enter New Head Admin First Name: ")
+                #         lastname = input("Enter New Head Admin last Name: ")
+                #         email = input("Enter New Head Admin email: ")
+                #         admin_password = input("Enter New Head Admin Password: ")
+                #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                #         md5Hashed = md5Hash.hexdigest()
+                #         cursor = cnxn.cursor()
+                #         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                #             VALUES (?, ?, ?, ?, ?); "
+                #         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                #         cursor.execute(insert_query, values)
+                #         cursor.commit()
+                #         cursor.close()
+                #         print('Successful creating Head Admin')
+                #         break
+                #     else:
+                #         a = check.strip()
+                #         print(type(a))
+                #         firstname = input("Enter New Head Admin First Name: ")
+                #         lastname = input("Enter New Head Admin last Name: ")
+                #         email = input("Enter New Head Admin email: ")
+                #         admin_password = input("Enter New Head Admin Password: ")
+                #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
+                #         md5Hashed = md5Hash.hexdigest()
+                #         print(a,'a')
+                #         print(username,"b")
+                #         continue
+                # cursor = cnxn.cursor()
+                # insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
+                #     VALUES (?, ?, ?, ?, ?); "
+                # values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                # cursor.execute(insert_query, values)
+                # cursor.commit()
+                # cursor.close()
+                # print('Successful creating Head Admin')
+                # continue
 
 
-                # except:
-                #     print("Error in adding Head Admin to MSSQL Database!")
-
+            # except:
+            #     print("Error in adding Head Admin to MSSQL Database!")
 
             elif key == "N":
                 break
             elif key == "Show":
                 cursor = cnxn.cursor()
-                check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
+                check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                 print("List of Head Admins:")
                 for x in check:
                     username = x.username.strip()
@@ -344,221 +399,189 @@ with app.app_context():
                 cursor.close()
             elif key == 'Delete':
                 # try:
-                    cursor = cnxn.cursor()
-                    key = input("Enter the Head Admin ID to delete: ")
-                    check = cursor.execute("SELECT * FROM head_admin WHERE username = ?",(key)).fetchval() # prevent sql injection
-                    if check == None:
-                        print("Head admin does not exist")
-                        continue
+                cursor = cnxn.cursor()
+                key = input("Enter the Head Admin ID to delete: ")
+                check = cursor.execute("SELECT * FROM head_admin WHERE username = ?",
+                                       (key)).fetchval()  # prevent sql injection
+                if check == None:
+                    print("Head admin does not exist")
+                    continue
 
-                    else:
-                        check = cursor.execute("DELETE FROM head_admin WHERE username = ?",(key)) # prevent sql injection
-                        cursor.commit()
-                        print(f"{key} was removed as Head Admin.")
-                        check = cursor.execute("SELECT * FROM head_admin").fetchall()# prevent sql injection
-                        print("List of Head Admins:")
-                        for x in check:
-                            username = x.username.strip()
-                            first_name = x.first_name.strip()
-                            last_name = x.last_name.strip()
-                            email = x.email.strip()
-                            print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
-                        cursor.close()
+                else:
+                    check = cursor.execute("DELETE FROM head_admin WHERE username = ?", (key))  # prevent sql injection
+                    cursor.commit()
+                    print(f"{key} was removed as Head Admin.")
+                    check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
+                    print("List of Head Admins:")
+                    for x in check:
+                        username = x.username.strip()
+                        first_name = x.first_name.strip()
+                        last_name = x.last_name.strip()
+                        email = x.email.strip()
+                        print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
+                    cursor.close()
 
 
-                # except:
-                #     print('Error in deleting Head Admin in MSSQL Database')
+            # except:
+            #     print('Error in deleting Head Admin in MSSQL Database')
             else:
                 print("Please enter Y or N or Delete only!")
                 continue
 
-    @app.route('/', methods=['GET', 'POST'])
-    def login():
-        login_form = Login_form(request.form)
-        if login_form.patient_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
-            email = login_form.email.data
-            password = login_form.password.data
-            md5Hash = hashlib.md5(password.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
-            user_id = cursor.execute(
-                "select patient_id from patients where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
-                session['user_id'] = user_id
-                cursor.close()
-                cnxn.close()
-                return redirect(url_for("otpvalidation"))
-            else:
-                cursor.close()
-                cnxn.close()
-                return render_template("404.html")
-        elif login_form.doctor_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
-            email = login_form.email.data
-            password = login_form.password.data
-            md5Hash = hashlib.md5(password.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
-            user_id = cursor.execute(
-                "select staff_id from doctors where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
-                session['user_id'] = user_id
-                cursor.close()
-                cnxn.close()
-                return redirect(url_for("otpvalidation"))
-            else:
-                cursor.close()
-                cnxn.close()
-                return render_template("404.html")
-        elif login_form.researcher_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
-            email = login_form.email.data
-            password = login_form.password.data
-            md5Hash = hashlib.md5(password.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
-            user_id = cursor.execute(
-                "select researcher_id from researchers where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
-                session['user_id'] = user_id
-                cursor.close()
-                cnxn.close()
-                return redirect(url_for("otpvalidation"))
-            else:
-                cursor.close()
-                cnxn.close()
-                return render_template("404.html")
-        elif login_form.admin_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
-            email = login_form.email.data
-            password = login_form.password.data
-            md5Hash = hashlib.md5(password.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
-            user_id = cursor.execute(
-                "select admin_id from admins where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            if user_id:
-                session['user_id'] = user_id
-                cursor.close()
-                cnxn.close()
-                return redirect(url_for("otpvalidation"))
-            else:
-                cursor.close()
-                cnxn.close()
-                return render_template("404.html")
-        elif login_form.head_admin_submit.data and login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-            )
-            email = login_form.email.data
-            password = login_form.password.data
-            md5Hash = hashlib.md5(password.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
-            # user_id = cursor.execute(
-            #     "select user_id from users where email=\'" + email + "\' and pass_hash=\'" + md5Hashed + "\'").fetchval() #this is vulnerable
-            user_id = cursor.execute(
-                "select head_admin_id from head_admin where email = ? and pass_hash = ?",(email,md5Hashed)).fetchval() # prevent sql injection
-            otp_code = cursor.execute(
-                "select otp_code from head_admin where email = ? and pass_hash = ?",
-                (email, md5Hashed)).fetchval()  # prevent sql injection
-            print(otp_code)
-            if user_id and otp_code:
-                session['user_id'] = user_id
-                cursor.close()
-                cnxn.close()
-                return redirect(url_for("otpvalidation"))
-            elif otp_code == None:
-                otp_code = pyotp.random_base32()
-                insert_query = textwrap.dedent('''
-                                UPDATE head_admin 
-                                SET otp_code=? 
-                                WHERE head_admin_id=?; 
-                            ''')
-                values = (otp_code,user_id)
 
-                cursor = cnxn.cursor()
-                cursor.execute(insert_query, values)
-                cnxn.commit()
+
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        patient_login_form = Patient_Login_form(request.form)
+        admin_login_form = Admin_Login_form(request.form)
+        # session['patient_id'] = None
+        # session['researcher_id'] = None
+        # session['doctor_id'] = None
+        # session['admin_id'] = None
+        # session['head_admin_id'] = None
+        # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
+        if patient_login_form.patient_submit.data and patient_login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                                DATABASE=' + database + ';\
+                                Trusted_Connection=yes;'
+            )
+            username = patient_login_form.username.data
+            password = patient_login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            user_id = cursor.execute(
+                "select patient_id from patients where username = ? and pass_hash = ?",
+                (username, md5Hashed)).fetchval()  # prevent sql injection
+            if user_id:
+                session['patients'] = user_id
                 cursor.close()
                 cnxn.close()
-                qr = 'otpauth://totp/AngelHealth:' + str(user_id) + '?secret=' + otp_code
-                return render_template('displayotp.html', otp=otp_code, qrotp=qr)
+                return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
                 cnxn.close()
                 return render_template("404.html")
-        return render_template('login.html', form=login_form)
+        elif admin_login_form.staff_submit.data and admin_login_form.validate():
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                                DATABASE=' + database + ';\
+                                Trusted_Connection=yes;'
+            )
+            username = admin_login_form.username.data
+            password = admin_login_form.password.data
+            md5Hash = hashlib.md5(password.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            cursor = cnxn.cursor()
+            doctorCheck = cursor.execute("select staff_id from doctors where username = ? and pass_hash = ?",
+                                         (username, md5Hashed)).fetchone()
+            researcherCheck = cursor.execute("select username from researchers where username = ? and pass_hash = ?",
+                                             (username, md5Hashed)).fetchone()
+            adminCheck = cursor.execute("select hr_id from hr where username = ? and pass_hash = ?",
+                                        (username, md5Hashed)).fetchone()
+            headadminCheck = cursor.execute("select username from head_admin where username = ? and pass_hash = ?",
+                                            (username, md5Hashed)).fetchone()
+            passed = True
+            if doctorCheck != None:
+                user_type = "doctors"
+                identifier = doctorCheck[0]
+            elif adminCheck != None:
+                user_type = "admin"
+                identifier = adminCheck[0]
+            elif researcherCheck != None:
+                user_type = "researchers"
+                identifier = researcherCheck[0]
+            elif headadminCheck != None:
+                user_type = "head_admin"
+                identifier = headadminCheck[0]
+            else:
+                passed = False
+                return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
+            if passed:
+                session['id'] = identifier.strip() #need strip to remove the spaces
+                cursor.close()
+                cnxn.close()
+                session['otp-semi-login'] = True
+                return redirect(url_for("otpvalidation")),session['id']
+            else:
+                cursor.close()
+                cnxn.close()
+                return render_template("404.html")
+        else:
+            return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
     @app.route('/validation')
+    @custom_login_required
     def otpvalidation():
-        return render_template("loginotp.html")
+        if session['otp-semi-login'] == True:
+            print('true')
+            print(session['id'],"id")
+            session['login'] = True
+            # session['head_admin']
+            # session['patient_id'] = None
+            # session['researcher_id'] = None
+            # session['doctor_id'] = None
+            # session['admin_id'] = None
+            # session['head_admin_id'] = None
+            # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
+            return redirect(url_for('homepage')), session['login']
+        else:
+            print('false')
+
+            flash('Wrong username or password!')
+            return render_template("login.html")
 
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                    DATABASE=' + database + ';\
-                                    Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
-        # otp_seed = cursor.execute(
-        #     "select otp_code from users where user_id=\'" + str(session['user_id']) + "\'").fetchval()
-        session_userid = str(session['user_id'])
-        otp_seed = cursor.execute(
-            "select otp_code from patients where patient_id= ? ",(session_userid)).fetchval()
+
+        if "doctors" in session:
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
+                (session["doctors"])
+            ).fetchall()[0]
+        elif "researchers" in session:
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
+                (session["researchers"])
+            ).fetchall()[0]
+        elif "patients" in session:
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from patients where patient_id = ?",
+                (session["patients"])
+            ).fetchall()[0]
+        elif "hr" in session:
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from admin where username = ?",
+                (session["admin"])
+            ).fetchall()[0]
+        elif "head_admin" in session:
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from head_admin where username = ?",
+                (session["head_admin"])
+            ).fetchall()[0]
 
         # getting OTP provided by user
         otp = int(request.form.get("otp"))
-
+        print(otp_seed)
+        print(pyotp.TOTP(otp_seed).now())
         # verifying submitted OTP with PyOTP
-        if pyotp.TOTP(otp_seed).verify(otp):
+        if pyotp.TOTP(otp_seed).verify(int(otp)):
+            print("correct")
             string_otpseed = str(otp_seed)
             # info = cursor.execute(
             #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
             #         otp_seed) + "\'").fetchall()
-            info = cursor.execute(
-                "select username, first_name, last_name, patient_id  from patients where otp_code = ?",(string_otpseed)).fetchall()
-            (username, first_name, last_name, patient_id) = info[0]
             session['username'] = username
             session['first_name'] = first_name
             session['last_name'] = last_name
-            session['patient_id'] = patient_id
+            session['login'] = True
+
             cursor.close()
             cnxn.close()
             '''
@@ -583,18 +606,13 @@ with app.app_context():
 
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def passwordreset():
         return render_template('passwordreset.html')
 
-    @app.route('/testpage', methods=['GET', 'POST'])
-    # @login_required
-    def testpage():
-        return render_template('logintest.html')
-
 
     @app.route('/logout', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def logout():
         session.clear()
         return render_template('login.html')
@@ -666,54 +684,44 @@ with app.app_context():
 
 
     @app.route('/verification')
-    # @login_required
+    @custom_login_required
     def verification():
         return render_template('verification.html')
 
 
     @app.route('/charts')
-    # @login_required
+    @custom_login_required
     def charts():
         return render_template('charts.html')
 
 
     @app.route('/tables')
-    # @login_required
+    @custom_login_required
     def tables():
         return render_template('table.html')
 
 
     @app.route('/export')
-    # @login_required
+    #@custom_login_required
     def export():
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                            DATABASE=' + database + ';\
-                                            Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
-        cursor.execute("select * from patients")
+        cursor.execute("select * from patients") #fix this LZS
         results = cursor.fetchall()
         print(len(results),results,results[0].first_name,len(results[0].first_name))
+        cursor.close()
         return render_template('export.html',results = results)
 
 
     @app.route('/data/<int:id>')
-    # @login_required
+    #@custom_login_required
     def data(id):
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                                    DATABASE=' + database + ';\
-                                                    Trusted_Connection=yes;'
-        )
         cursor = cnxn.cursor()
         cursor.execute("select data from patients where patient_id = ?",(id))
         data = cursor.fetchall()
         print(data)
         data = data[0].data.decode("utf-8")
         print(data)
+        cursor.close()
         return render_template('data.html',data = data)
 
 
@@ -775,4 +783,4 @@ with app.app_context():
 
 if __name__ == "__main__":
     add_admin()
-    app.run()
+    app.run(debug = True)
