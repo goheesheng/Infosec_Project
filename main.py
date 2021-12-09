@@ -101,14 +101,16 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
 def custom_login_required(f):
     @wraps(f)
     def wrap(*args,**kwargs):
-        print(session['login'],'wrapper')
+        # print(session['login'],'wrapper')
         if session is None:
             return redirect(url_for('login'))
 # fix this later ES
-        if 'expirydate' not in app.config and app.config['expirydate']<= datetime.utcnow():
-            flash('session expired','warning')
-            app.config['expirydate']=None
-            return redirect(url_for('login'))
+
+        if 'expirydate' in app.config:
+            if app.config['expirydate']<= datetime.utcnow():
+                flash('session expired','warning')
+                app.config['expirydate']=None
+                return redirect(url_for('login'))
 
 
         # if session.get('csrf_token') is None:
@@ -450,8 +452,10 @@ with app.app_context():
             )
             username = patient_login_form.username.data
             password = patient_login_form.password.data
+            print(username,password)
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
+            print(md5Hashed)
             cursor = cnxn.cursor()
             user_id = cursor.execute(
                 "select patient_id from patients where username = ? and pass_hash = ?",
@@ -460,11 +464,17 @@ with app.app_context():
                 session['patients'] = user_id
                 cursor.close()
                 cnxn.close()
+                session['otp-semi-login'] = True
+                print('hi')
+                flash("Please continue with otp validation before login is successful","success")
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
                 cnxn.close()
-                return render_template("404.html")
+                print("ERROR")
+                flash("Invalid username or password","error")
+                return redirect(url_for('login'))
+
         elif admin_login_form.staff_submit.data and admin_login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -516,11 +526,11 @@ with app.app_context():
 
 
     @app.route('/validation')
-    @custom_login_required
+    # @custom_login_required
     def otpvalidation():
         if session['otp-semi-login'] == True:
             print('true')
-            print(session['id'],"id")
+            # print(session['id'],"id")
             session['login'] = True
             # session['head_admin']
             # session['patient_id'] = None
@@ -529,12 +539,12 @@ with app.app_context():
             # session['admin_id'] = None
             # session['head_admin_id'] = None
             # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
+            flash("Login successful","success")
             return redirect(url_for('homepage')), session['login']
         else:
             print('false')
-
             flash('Wrong username or password!')
-            return render_template("login.html")
+            return redirect(url_for("login"))
 
 
     @app.route("/validation", methods=["POST"])
@@ -616,7 +626,7 @@ with app.app_context():
     @custom_login_required
     def logout():
         session.clear()
-        return render_template('login.html')
+        return redirect(url_for("login"))
 
 
     @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])

@@ -1,4 +1,17 @@
-{% extends "navbar.html" %}
-{% block navbar_content %}
-    <h1>Welcome</h1>
+{% extends "includes/_sidebar.html" %}
+{% include "base.html" %}
+{% block content %}
+                 {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                    {% if category=="error" %}
+                        <div class="alert alert-danger" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                    {% if category=="success" %}
+                        <div class="alert alert-success" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    {% endif %}
+                    {% endfor %}
+                      {% endif %}
+                    {% endwith %}
+Welcome
 {% endblock %}
