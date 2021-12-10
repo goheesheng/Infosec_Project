@@ -1,14 +1,11 @@
 {% extends "baseForAccess.html" %}
-{% block main_content %}
+{% include "base.html" %}
+{% block content %}
 {% from "includes/_formHelper.html" import render_field %}
 <div id="layoutAuthentication">
     <div id="layoutAuthentication_content">
         <main>
             <div class="container">
-
-                                            {% for message in get_flashed_messages() %}
-                                <div class = "alert alert-warning">{{ message }}</div>
-                {% endfor %}
                 <div class="row justify-content-center">
                     <div class="col-lg-5">
                         <div class="card shadow-lg border-0 rounded-lg mt-5">

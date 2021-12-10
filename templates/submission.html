@@ -4,7 +4,10 @@
 <h1>Document Submission</h1>
 <form method="POST" action="" enctype="multipart/form-data">
   <div class="form-group">
-    {{ render_field(form.patient_name, class="form-control") }}
+    {{ render_field(form.patient_nric, class="form-control",readonly="readonly") }}
+  </div>
+    <div class="form-group">
+    {{ render_field(form.patient_name, class="form-control",readonly="readonly") }}
   </div>
   <div class="form-group">
     {{ render_field(form.submission, class="form-control") }}

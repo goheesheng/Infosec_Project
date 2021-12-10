@@ -1,13 +1,14 @@
 import hashlib
 import ssl
 import pyqrcode
+from docx import Document
+from docxcompose.composer import Composer
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from datetime import *
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
-from werkzeug.utils import secure_filename
 import pyotp
 import os
 import smtplib
@@ -199,8 +200,22 @@ def head_admin_needed(needhadmin):
     return decorated_func
 
 def allowed_filename(filename):
-    expression=re.compile(r"(?i)^[\w]*(.pdf)$")
+    expression=re.compile(r"(?i)^[\w]*(.docx)$")
     return re.fullmatch(expression,filename)
+
+def check_file_hash(file_name,stored_hash):
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"rb") as original_file:
+        md5Hash = hashlib.md5(original_file.read())
+        fileHashed = md5Hash.hexdigest()
+        return fileHashed==stored_hash
+
+def get_file_data_from_database(patient_id):
+    cursor = cnxn.cursor()
+    data = cursor.execute("select * from patient_file where patient_id=?",(patient_id)).fetchone()
+    cursor.close()
+    return data
+
+
 
 @app.context_processor
 def inject_templates_with_session_date():
@@ -210,6 +225,7 @@ with app.app_context():
     @app.route('/homepage')
     @custom_login_required
     def homepage():
+        flash("welcome")
         return render_template('homepage.html')
 
     @app.route('/')
@@ -649,61 +665,104 @@ with app.app_context():
     @app.route('/requestPatientInformation',methods=['GET','POST'])
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
-        if request.method=='POST' and requestPatientInformationForm.validate():
-            physician='tom'
-            patient_id=requestPatientInformationForm.patient_id.data
-            cursor = cnxn.cursor()
-            retrived = cursor.execute("select tending_physician from patients where tending_physician=? and patient_id=?",(physician,patient_id)).fetchval()
-            cnxn.commit()
-            cursor.close()
-            if retrived is None:
-                copyfile(os.path.join(app.config['UPLOAD_FOLDER'],'basetemplate.docx'),os.path.join(app.config['UPLOAD_FOLDER'],f"{patient_id}.docx") )
-                #write code to insert the file into db
+        if request.method=='POST' :
+            if requestPatientInformationForm.validate():
+                patient_nric=requestPatientInformationForm.patient_nric.data
+                cursor = cnxn.cursor()
+                #Checking if patient exists in database with NRIC/USERNAME
+                patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
+                if patient is not None:
+                    retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
+                    if retrieved is None:
+                        # Creating Base Document File for patient,insert file name,content,md5... into db
+                        cursor = cnxn.cursor()
+                        patient_name=f"{patient[2].strip()} {patient[3].strip()}"
+                        insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
+                        newDocument=Document()
+                        newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
+                        newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                        filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
+                        md5Hash = hashlib.md5(filecontent)
+                        fileHashed = md5Hash.hexdigest()
+                        VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
+                        cursor.execute(insert_query, VALUES)
+                        cursor.commit()
+                        cursor.close()
+                    else:
+                        file_name=retrieved[1]
+                        file_content=retrieved[2]
+                        stored_hash=retrieved[6]
+                        if not(check_file_hash(file_name,stored_hash)):
+                            with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
+                                file_override.write(file_content)
+                    return redirect(url_for("submission", pid=patient[0]))
 
-            return redirect(url_for("submission",pid=patient_id))
+                cursor.close()
+            flash("NRIC either does not exist or is invalid", "error")
+            return redirect(url_for('requestPatientInformation'))
         return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
     # @login_required
     def submission(pid):
+        cursor = cnxn.cursor()
+        patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
+        cursor.close()
         file_submit = FileSubmit(request.form)
-        patient_id=pid
+        file_submit.patient_nric.data=patient[1].strip()
+        file_submit.patient_name.data=f"{patient[2].strip()} {patient[3].strip()}"
+
+
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return  render_template('submission.html', form=file_submit,id=id)
+                return  redirect(url_for('submission'),pid)
 
             file = request.files["submission"]
             if file.filename.strip()=="":
-                flash("Invalid filename")
+                flash("Invalid filename","error")
                 return  render_template('submission.html', form=file_submit,id=id)
-            if allowed_filename(file.filename):
-                filename=secure_filename(file.filename)
-                path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+filename)
-                file.save(path)
-                filedata=open(path,'rb').read()
-                x=open('2.docx','rb').read()
 
-                open('2.docx', 'ab').write(filedata)
-                print(open('2.docx','rb').read()==x)
+            storedfiledata=get_file_data_from_database(pid)
+            if  storedfiledata != None:
+                if check_file_hash(storedfiledata[1],storedfiledata[2]):
+                    print("Hash match")
+                else:
+                    print("Hash mismatch")
+                    with open(os.path.join(app.config['UPLOAD_FOLDER'], storedfiledata[1]), "wb") as file_override:
+                        file_override.write(storedfiledata[2])
+
+            if allowed_filename(file.filename):
+                path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{patient[1].strip()}.docx")
+                file.save(path)
+                mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                composer=Composer(mainDocument)
+                toAddDocument=Document(path)
+                composer.append(toAddDocument)
+                composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                os.remove(path)
 
                 cursor = cnxn.cursor()
-                insert_query = textwrap.dedent('''INSERT INTO PATIENTFILE (patient_id,file_name,file_content) VALUES (?, ?, ?); ''')
-                VALUES=("123",filename,filedata)
-                cursor.execute(insert_query,VALUES)
-                cnxn.commit()
+                alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
+                filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
+                md5Hash = hashlib.md5(filecontent)
+                fileHashed = md5Hash.hexdigest()
+                VALUES = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                cursor.execute(alter_query,VALUES)
+                cursor.commit()
                 cursor.close()
 
-                return render_template('test.html')
+                flash("Patient record successfully updated")
+                return redirect(url_for('homepage'))
 
             # md5Hash = hashlib.md5(readFile.encode("utf-8"))
             # md5Hashed = md5Hash.hexdigest()
             # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
             # blockchain.new_block('123')
             # return render_template('test.html', chain=blockchain.chain)
-            return  render_template('submission.html', form=file_submit,id=id)
+            return redirect(url_for("submission", pid=patient[0]))
 
-        return render_template('submission.html', form=file_submit,id=id)
+        return render_template('submission.html', form=file_submit,id=pid)
 
 
     @app.route('/verification')
@@ -752,7 +811,7 @@ with app.app_context():
         if request.method == "POST":
             if appointment.date.data <= date.today():
                 print("date error")
-                flash('Invalid date choice!')
+                flash('Invalid date choice!','error')
                 return redirect(url_for('appointment'))
             cursor = cnxn.cursor()
             user_appointment = str(appointment.date.data) + ", " + appointment.time.data
@@ -760,7 +819,7 @@ with app.app_context():
             cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['patients']))
             flash(f'Your appointment has been booked on: {user_appointment}')
             return redirect(url_for('appointment'))
-        print(session)
+        print(session['patients'])
         return render_template('appointment.html', form = appointment)
 
     @app.route('/register', methods=['GET', 'POST'])
@@ -777,25 +836,20 @@ with app.app_context():
             firstname = register.firstname.data
             lastname = register.lastname.data
             email = register.email.data
-            address = register.address.data
-            postal_code = register.postal_code.data
-
 
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
             insert_query = textwrap.dedent('''
-                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,address,postal_code,email) 
-                VALUES (?, ?, ?, ?, ?, ?,?,?); 
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email) 
+                VALUES (?, ?, ?, ?, ?, ?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code,address,postal_code, email)
+            values = (username, firstname, lastname, md5Hashed, otp_code, email)
 
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
-                name = x.username.strip()
-                mail = x.email.strip()
-                if name == username or mail == email:
+                if x.username == username or x.email == email:
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
