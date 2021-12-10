@@ -92,6 +92,8 @@ CREATE TABLE [dbo].[hr](
 	[last_name] [nchar](20) NOT NULL,
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
+	[address] [varchar](50) NOT NULL,
+	[postal_code] [varchar](6) NOT NULL,
 	[email] [varchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
@@ -108,6 +110,8 @@ CREATE TABLE [dbo].[doctors](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[address] [varchar](50) NOT NULL,
+	[postal_code] [varchar](6) NOT NULL,
 	[department] [varchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
@@ -154,6 +158,8 @@ CREATE TABLE [dbo].[patients](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[address] [varchar](50) NOT NULL,
+	[postal_code] [varchar](6) NOT NULL,
 	[hospital] [varchar](50) NULL,
 	[tending_physician] [varchar](50) NULL,
 	[appointment][varchar](20) NULL,
@@ -171,6 +177,8 @@ CREATE TABLE [dbo].[researchers](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[address] [varchar](50) NOT NULL,
+	[postal_code] [varchar](6) NOT NULL,
 	[company] [varchar](50) NULL,
 	[researcher_id] [int] IDENTITY(1,1) NOT NULL
 ) ON [PRIMARY]

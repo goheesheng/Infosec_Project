@@ -836,20 +836,25 @@ with app.app_context():
             firstname = register.firstname.data
             lastname = register.lastname.data
             email = register.email.data
+            address = register.address.data
+            postal_code = register.postal_code.data
+
 
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
             insert_query = textwrap.dedent('''
-                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email) 
-                VALUES (?, ?, ?, ?, ?, ?); 
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,address,postal_code,email) 
+                VALUES (?, ?, ?, ?, ?, ?,?,?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code, email)
+            values = (username, firstname, lastname, md5Hashed, otp_code,address,postal_code, email)
 
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
-                if x.username == username or x.email == email:
+                name = x.username.strip()
+                mail = x.email.strip()
+                if name == username or mail == email:
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
