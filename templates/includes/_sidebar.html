@@ -114,16 +114,20 @@
         {% if messages %}
             {% for category, message in messages %}
                 {% if category=="error" %}
-                        <div class="alert alert-danger" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    <div class="alert alert-danger alert-dismissible" style="margin:2em">
+                        {{message}}
+                        <a href="#" class="close" data-dismiss="alert" aria-label="close" style="float:right">&times;</a>
+                     </div>
                     {% endif %}
                     {% if category=="success" %}
-                        <div class="alert alert-success" role="alert" style="margin:2em"> {{category}} : {{message}} </div>
+                    <div class="alert alert-success alert-dismissible" style="margin:2em">
+                        {{message}}
+                        <a href="#" class="close" data-dismiss="alert" aria-label="close" style="float:right">&times;</a>
+                     </div>
                     {% endif %}
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        {% block main_content %}
-        {% endblock %}
                 <footer class="py-4 bg-light mt-auto">
                     <div class="container-fluid px-4">
                         <div class="d-flex align-items-center justify-content-between small">
@@ -140,6 +144,8 @@
     </div>
 
     {% block javascript %}
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
