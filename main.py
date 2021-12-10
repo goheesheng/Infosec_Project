@@ -6,6 +6,7 @@ from docxcompose.composer import Composer
 from email.mime.image import MIMEImage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from flask_mobility import Mobility
 import os
 from datetime import *
 from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
@@ -230,6 +231,7 @@ with app.app_context():
 
     @app.route('/')
     def index():
+        session.clear()
         return render_template('index.html')
 
     @app.route('/dashboard')
@@ -499,35 +501,36 @@ with app.app_context():
             cursor = cnxn.cursor()
             user_id = cursor.execute(
                 "select * from patients where username = ? and pass_hash = ?",
-                (username, md5Hashed))  # prevent sql injection
+                (username, md5Hashed)).fetchval()
+            session['patients'] = user_id
             # USE for loop on cursor to retrieve data, dont use fetchval(one value) or fetchone(one row)!
-            for x in cursor:
-                print(x)
-                name = x.username.strip()
-                patient_id = x.patient_id #is integer so apparently dont need strip? 
-                first_name = x.first_name.strip()
-                last_name = x.last_name.strip()
-                email = x.email.strip()
-                address = x.address.strip()
-                postal_code = x.postal_code.strip()
-                try:# if it is not None then strip
-                    tending_physician = x.tending_physician.strip() 
-                except:
-                    tending_physician = x.tending_physician
-                try:# if it is not None then strip
-                    appointment = x.appointment.strip()
-                except:
-                   appointment = x.appointment
+            # for x in cursor:
+            #     print(x)
+            #     name = x.username.strip()
+            #     patient_id = x.patient_id #is integer so apparently dont need strip?
+            #     first_name = x.first_name.strip()
+            #     last_name = x.last_name.strip()
+            #     email = x.email.strip()
+            #     address = x.address.strip()
+            #     postal_code = x.postal_code.strip()
+            #     session['name'] = name
+            #     session['id'] = patient_id
+            #     session['first_name'] = first_name
+            #     session['last_name'] = last_name
+            #     session['email'] = email
+            #     session['address'] = address
+            #     session['postal_code'] = postal_code
+            # try:# if it is not None then strip
+            #     tending_physician = x.tending_physician.strip()
+            # except:
+            #     tending_physician = x.tending_physician
+            # try:# if it is not None then strip
+            #     appointment = x.appointment.strip()
+            # except:
+            #    appointment = x.appointment
 
-                print(x,'checkcccc')
-            
-                session['username'] = name
-                session['id'] = patient_id
-                session['first_name'] = first_name
-                session['last_name'] = last_name
-                session['email'] = email
-                session['address'] = address
-                session['postal_code'] = postal_code
+            # print(x,'checkcccc')
+
                 # session['tending_physician'] = tending_physician #hmm dont think need, leave it for now
                 # session['appointment'] = appointment
 
@@ -539,7 +542,6 @@ with app.app_context():
             #     session['username'] = x.patient_id
             #     print(session['username'],'login user session')
             if user_id:
-                print(session['username'],'login user session')
                 cursor.close()
                 cnxn.close()
                 session['otp-semi-login'] = True
@@ -566,7 +568,7 @@ with app.app_context():
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
             doctorCheck = cursor.execute("select * from doctors where username = ? and pass_hash = ?",
-                                         (username, md5Hashed))
+                                         (username, md5Hashed)).fetchone()
             for x in cursor:
                 print(x)
                 name = x.username.strip()
@@ -585,39 +587,32 @@ with app.app_context():
                 except:
                    appointment = x.appointment
 
-            cursor = cnxn.close()
+            cursor = cnxn.cursor()
             researcherCheck = cursor.execute("select * from researchers where username = ? and pass_hash = ?",
-                                             (username, md5Hashed))
+                                             (username, md5Hashed)).fetchone()
             adminCheck = cursor.execute("select * from hr where username = ? and pass_hash = ?",
-                                        (username, md5Hashed))
+                                        (username, md5Hashed)).fetchone()
             headadminCheck = cursor.execute("select * from head_admin where username = ? and pass_hash = ?",
-                                            (username, md5Hashed))
+                                            (username, md5Hashed)).fetchone()
+            passed = True
             if doctorCheck != None:
                 user_type = "doctors"
                 identifier = doctorCheck[0]
-                username = doctorCheck[1]
-
             elif adminCheck != None:
                 user_type = "admin"
                 identifier = adminCheck[0]
-                username = doctorCheck[1]
-
             elif researcherCheck != None:
                 user_type = "researchers"
                 identifier = researcherCheck[0]
-                username = doctorCheck[1]
-
             elif headadminCheck != None:
                 user_type = "head_admin"
                 identifier = headadminCheck[0]
-                username = doctorCheck[1]
-
             else:
                 passed = False
                 return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
                 session['id'] = identifier.strip() #need strip to remove the spaces
-                session['username'] = username.strip()
+                session[user_type] = username.strip()
                 print(session['id'],'idididid')
                 print(session['username'],'ididididnananananannana')
                 cursor.close()
@@ -633,95 +628,85 @@ with app.app_context():
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
-    @app.route('/validation2')
+    @app.route('/validation')
     # @custom_login_required
     def otpvalidation():
-        if session['otp-semi-login'] == True:
-            print('true')
-            print(dict(session),'otp session check')
-            # print(session['id'],"id")
-            session['login'] = True
-            # session['head_admin']
-            # session['patient_id'] = None
-            # session['researcher_id'] = None
-            # session['doctor_id'] = None
-            # session['admin_id'] = None
-            # session['head_admin_id'] = None
-            # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
-            flash("Login successful","success")
-            return redirect(url_for('homepage')), session['login']
-        else:
-            print('false')
-            flash('Wrong username or password!')
-            return redirect(url_for("login"))
+        print("hello")
+        return render_template("loginotp.html")
 
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
-        cursor = cnxn.cursor()
+        if session['otp-semi-login'] == True:
+            cursor = cnxn.cursor()
+            print(session['patients'])
+            if "doctors" in session:
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
+                    (session["doctors"])
+                ).fetchall()[0]
+            elif "researchers" in session:
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
+                    (session["researchers"])
+                ).fetchall()[0]
+            elif 'patients' in session:
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from patients where patient_id = ?",
+                    (session["patients"])
+                ).fetchall()[0]
+            elif "hr" in session:
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from admin where username = ?",
+                    (session["admin"])
+                ).fetchall()[0]
+            elif "head_admin" in session:
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from head_admin where username = ?",
+                    (session["head_admin"])
+                ).fetchall()[0]
 
-        if "doctors" in session:
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
-                (session["doctors"])
-            ).fetchall()[0]
-        elif "researchers" in session:
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
-                (session["researchers"])
-            ).fetchall()[0]
-        elif "patients" in session:
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from patients where patient_id = ?",
-                (session["patients"])
-            ).fetchall()[0]
-        elif "hr" in session:
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from admin where username = ?",
-                (session["admin"])
-            ).fetchall()[0]
-        elif "head_admin" in session:
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from head_admin where username = ?",
-                (session["head_admin"])
-            ).fetchall()[0]
+            # getting OTP provided by user
+            otp = int(request.form.get("otp"))
+            print(otp_seed)
+            print(pyotp.TOTP(otp_seed).now())
+            # verifying submitted OTP with PyOTP
+            if pyotp.TOTP(otp_seed).verify(int(otp)):
+                print("correct")
+                string_otpseed = str(otp_seed)
+                # info = cursor.execute(
+                #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
+                #         otp_seed) + "\'").fetchall()
+                session['username'] = username
+                session['first_name'] = first_name
+                session['last_name'] = last_name
+                session['login'] = True
 
-        # getting OTP provided by user
-        otp = int(request.form.get("otp"))
-        print(otp_seed)
-        print(pyotp.TOTP(otp_seed).now())
-        # verifying submitted OTP with PyOTP
-        if pyotp.TOTP(otp_seed).verify(int(otp)):
-            print("correct")
-            string_otpseed = str(otp_seed)
-            # info = cursor.execute(
-            #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
-            #         otp_seed) + "\'").fetchall()
-            session['username'] = username
-            session['first_name'] = first_name
-            session['last_name'] = last_name
-            session['login'] = True
-
-            cursor.close()
-            cnxn.close()
-            '''
-            if verification == 'unverified':
-                return redirect(url_for("unverified"))
-            elif verification == 'patient':
-                return redirect(url_for('patient'))
-            elif verification == 'doctor':
-                return redirect(url_for('doctor'))
-            elif verification == 'admin':
-                return redirect(url_for('admin'))
-            elif verification == 'head_admin':
-                return redirect(url_for('head_admin'))
-            elif verification == 'researcher':
-                return redirect(url_for('researcher'))'''
-            return redirect(url_for('homepage'))
+                cursor.close()
+                cnxn.close()
+                session['login'] = True
+                '''
+                if verification == 'unverified':
+                    return redirect(url_for("unverified"))
+                elif verification == 'patient':
+                    return redirect(url_for('patient'))
+                elif verification == 'doctor':
+                    return redirect(url_for('doctor'))
+                elif verification == 'admin':
+                    return redirect(url_for('admin'))
+                elif verification == 'head_admin':
+                    return redirect(url_for('head_admin'))
+                elif verification == 'researcher':
+                    return redirect(url_for('researcher'))'''
+                return redirect(url_for('homepage'))
+            else:
+                print("wrong")
+                cursor.close()
+                cnxn.close()
+                return redirect(url_for("login"))
         else:
-            print("wrong")
-            cursor.close()
-            cnxn.close()
+            print('false')
+            flash('Wrong username or password!')
             return redirect(url_for("login"))
 
 
@@ -906,7 +891,10 @@ with app.app_context():
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         register = Register(request.form)
+        print("helo")
+        print(request.method)
         if request.method == "POST" and register.validate():
+            print("hello")
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
@@ -917,6 +905,7 @@ with app.app_context():
             firstname = register.firstname.data
             lastname = register.lastname.data
             email = register.email.data
+            print(username)
 
             md5Hash = hashlib.md5(register.password.data.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
