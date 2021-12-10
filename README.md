@@ -1,1 +1,6 @@
-asdfas;lpkdfn 9saidnfoas dfibuasdfon saiudfb asnfiason fd
+check readme  lmao testing
+
+testing 
+
+
+something that aI want
