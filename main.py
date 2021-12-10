@@ -132,7 +132,7 @@ def custom_login_required(f):
             return redirect(url_for('login'))
 
 
-        print(session['login'],'wrapper222222')
+        print(session['login'],'wrapper session logged in')
 
         return f(*args,**kwargs)
 
@@ -210,11 +210,9 @@ with app.app_context():
     @app.route('/homepage')
     @custom_login_required
     def homepage():
-        print("I AM AT")
         return render_template('homepage.html')
 
     @app.route('/')
-    @app.route('/index')
     def index():
         return render_template('index.html')
 
@@ -260,7 +258,7 @@ with app.app_context():
         senderpass = 'FishNugget123'
         msg = MIMEMultipart()
         msg['Subject'] = 'Head Admin Qr Code For Google Authenticator'
-        msg['From'] = 'e@mail.cc'
+        msg['From'] = 'AngelHealth@mail.gov.sg'
         msg['To'] = email
 
         text = MIMEText("test")
@@ -436,7 +434,6 @@ with app.app_context():
                 continue
 
 
-
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         patient_login_form = Patient_Login_form(request.form)
@@ -462,14 +459,15 @@ with app.app_context():
             print(md5Hashed)
             cursor = cnxn.cursor()
             user_id = cursor.execute(
-                "select patient_id from patients where username = ? and pass_hash = ?",
+                "select username, patient_id from patients where username = ? and pass_hash = ?",
                 (username, md5Hashed)).fetchval()  # prevent sql injection
             if user_id:
-                session['patients'] = user_id
+                session['patients'] = user_id.strip()
+                session['username'] = username.strip()
                 cursor.close()
                 cnxn.close()
                 session['otp-semi-login'] = True
-                print('hi')
+                print('user logged in')
                 flash("Please continue with otp validation before login is successful","success")
                 return redirect(url_for("otpvalidation"))
             else:
@@ -493,34 +491,43 @@ with app.app_context():
             cursor = cnxn.cursor()
             doctorCheck = cursor.execute("select staff_id from doctors where username = ? and pass_hash = ?",
                                          (username, md5Hashed)).fetchone()
-            researcherCheck = cursor.execute("select username from researchers where username = ? and pass_hash = ?",
+            researcherCheck = cursor.execute("select researcher_id from researchers where username = ? and pass_hash = ?",
                                              (username, md5Hashed)).fetchone()
             adminCheck = cursor.execute("select hr_id from hr where username = ? and pass_hash = ?",
                                         (username, md5Hashed)).fetchone()
-            headadminCheck = cursor.execute("select username from head_admin where username = ? and pass_hash = ?",
+            headadminCheck = cursor.execute("select head_admin_id from head_admin where username = ? and pass_hash = ?",
                                             (username, md5Hashed)).fetchone()
             passed = True
             if doctorCheck != None:
                 user_type = "doctors"
                 identifier = doctorCheck[0]
+                username = doctorCheck[1]
+
             elif adminCheck != None:
                 user_type = "admin"
                 identifier = adminCheck[0]
+                username = doctorCheck[1]
+
             elif researcherCheck != None:
                 user_type = "researchers"
                 identifier = researcherCheck[0]
+                username = doctorCheck[1]
+
             elif headadminCheck != None:
                 user_type = "head_admin"
                 identifier = headadminCheck[0]
+                username = doctorCheck[1]
+
             else:
                 passed = False
                 return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
                 session['id'] = identifier.strip() #need strip to remove the spaces
+                session['username'] = username.strip()
                 cursor.close()
                 cnxn.close()
                 session['otp-semi-login'] = True
-                return redirect(url_for("otpvalidation")),session['id']
+                return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
                 cnxn.close()
@@ -529,11 +536,12 @@ with app.app_context():
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
-    @app.route('/validation')
+    @app.route('/validation2')
     # @custom_login_required
     def otpvalidation():
         if session['otp-semi-login'] == True:
             print('true')
+            print(dict(session),'otp session check')
             # print(session['id'],"id")
             session['login'] = True
             # session['head_admin']
