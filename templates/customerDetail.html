@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Library Loan System - Retrieve Users{% endblock %}
+
+{% block content %}
+<style>
+
+        body {
+          margin-top: 100px;
+        }
+
+
+
+</style>
+{% for msg in get_flashed_messages() %}
+<div class="alert alert-warning alert-dismissible pb-100 " role='alert'>{{ msg }}
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+</div>
+{% endfor %}
+
+{% if 'user_updated' in session %}
+<div class="alert alert-warning alert-dismissible">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    {{ session.pop('user_updated', None) }} was updated.
+</div>
+
+{% elif 'user_deleted' in session %}
+<div class="alert alert-danger alert-dismissible">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    {{ session.pop('user_deleted', None) }} was deleted.
+</div>
+
+{% endif %}
+
+<h1 class="display-4">Account Details</h1>
+<form id='upload-form' action="{{ url_for('upload', nric = user.get_nric()) }}" method="POST"
+      enctype="multipart/form-data">
+    <input type="file" name="file" accept="images/*" multiple>
+    <input type="submit" value="upload">
+</form>
+
+{% if session['profile_pic'] %}
+
+<a><img src="{{ url_for('send_image',filename = profile_pic) }}" width="220"
+        height="200" alt="Profile Picture"></a>
+
+{% elif session['profile_pic'] == False %}
+<img src="{{ url_for('static',filename = 'assets/img/default.png') }}" width="220"
+        height="200" alt="Profile Picture">
+
+{% endif %}
+
+
+<div>
+    <table class="table table-striped">
+        <thead>
+
+        <tr>
+            <th>First Name: {{ user.get_first_name() }}</th>
+        </tr>
+        <tr>
+            <th>Last Name: {{ user.get_last_name() }}</th>
+        </tr>
+        <tr>
+            <th>NRIC: {{ user.get_nric() }}</th>
+        </tr>
+        <tr>
+            <th>Race:
+                {% if user.get_race() == "C" %}
+                Chinese
+                {% elif user.get_race() == "M" %}
+                Malay
+                {% elif user.get_race() == "I" %}
+                Indian
+                {% elif user.get_race() == "O" %}
+                Others
+                {% endif %}
+            </th>
+
+        </tr>
+        <tr>
+            <th>Phone Number: {{ user.get_phone_no() }}</th>
+        </tr>
+        <tr>
+            <th>Email: {{ user.get_email() }}</th>
+        </tr>
+        <tr>
+            <th>Gender:
+                {% if user.get_gender() == "F" %}
+                Female
+                {% elif user.get_gender() == "M" %}
+                Male
+                {% endif %}
+            </th>
+        </tr>
+
+        <tr>
+            <th>Address 1: {{ user.get_address_1() }}</th>
+        </tr>
+        <tr>
+            <th>Address 2: {{ user.get_address_2() }}</th>
+        </tr>
+        <tr>
+            <th>Postal Code: {{ user.get_postal_code() }}</th>
+        </tr>
+
+        </thead>
+        <tbody>
+        <tr>
+            <td><a href="/updateUser/{{user.get_nric()}}" class="btn btn-warning">Edit Infomation</a>
+
+                <form action="{{url_for('delete_user', nric=user.get_nric())}}" method="POST">
+                    <!--                input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete {#user.get_first_name()#} {#user.get_last_name()#}?');">-->
+                    <!-- Button to Open the Modal -->
+                    <button type="button" class="btn btn-danger" data-toggle="modal"
+                            data-target="#myModal_{{user.get_nric()}}">Delete
+                    </button>
+
+                    <!-- The Modal -->
+                    <div class="modal" id="myModal_{{user.get_nric()}}">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+
+                                <!-- Modal Header -->
+                                <div class="modal-header">
+                                    <h4 class="modal-title">Delete Confirmation</h4>
+                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                </div>
+
+                                <!-- Modal body -->
+                                <div class="modal-body">
+                                    Are you sure you want to delete {{user.get_first_name()}} {{user.get_last_name()}}?
+                                </div>
+
+
+                                <!-- Modal footer -->
+                                <div class="modal-footer">
+                                    <input type="submit" value="Delete" class="btn btn-danger">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+</div>
+
+
+{% endblock %}
