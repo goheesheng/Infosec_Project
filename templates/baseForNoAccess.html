@@ -29,6 +29,10 @@
                         <a href="#" class="close" data-dismiss="alert" aria-label="close" style="float:right">&times;</a>
                      </div>
                     {% endif %}
+                    <div class="alert alert-success alert-dismissible" style="margin:2em">
+                        {{message}}
+                        <a href="#" class="close" data-dismiss="alert" aria-label="close" style="float:right">&times;</a>
+                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}

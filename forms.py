@@ -2,15 +2,18 @@ import re
 from wtforms import StringField, validators, SubmitField, FileField, PasswordField
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField, DateField
 from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
-from wtforms.fields.html5 import DateField
+
+
+
 
 class FileSubmit(Form):
-    patient_name = StringField("Patient Name",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    submission = FileField("Updated tempalate (Using base template)" )
+    patient_nric = StringField("Patient NRIC", [validators.DataRequired()])
+    patient_name=StringField("Patient Name",[validators.DataRequired()])
+    submission = FileField("Updated template (Using base template)" )
     submit = SubmitField("Submit")
 
 class RequestPatientInfo_Form(Form):
-    patient_id=IntegerField("Patient ID",[validators.DataRequired()])
+    patient_nric=StringField("Patient NRIC",[validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'))])
     submit = SubmitField("Submit")
 
 class Patient_Login_form(Form):
