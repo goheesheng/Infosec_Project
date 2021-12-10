@@ -816,8 +816,8 @@ with app.app_context():
             cursor = cnxn.cursor()
             user_appointment = str(appointment.date.data) + ", " + appointment.time.data
             print(user_appointment)
-            cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['patients']))
-            flash(f'Your appointment has been booked on: {user_appointment}')
+            cursor.execute("update patients set appointment = ? where username = ?",(user_appointment,session['patients']))
+            flash(f'Your appointment has been booked on: {user_appointment}','success')
             return redirect(url_for('appointment'))
         print(session['patients'])
         return render_template('appointment.html', form = appointment)
