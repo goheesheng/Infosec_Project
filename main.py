@@ -433,6 +433,29 @@ with app.app_context():
                 print("Please enter Y or N or Delete only!")
                 continue
 
+    # must add get method to to retrieve url
+    @app.route("/viewUser", methods=["GET", "POST"])
+    def viewUser():
+        if request.method == 'GET':
+            user_id = session['id']
+            cursor = cnxn.cursor()
+            user_details = cursor.execute(
+                        "select username,first_name,last_name,email,address,postal_code,tending_physician,appointment from patients where patient_id = ?",
+                        (user_id)).fetchval()  # prevent sql injection
+            cursor.close()
+            username = user_details[0]
+            first_name = user_details[1].strip()
+            last_name = user_details[2].strip()
+            email = user_details[3].strip()
+            address = user_details[4].strip()
+            postal_code = user_details[5].strip()
+            tending_physician = user_details[6].strip()
+            appointment = user_details[7].strip()
+            print(username)
+        
+            return render_template("customerDetail.html", username=username, first_name=first_name,
+                                last_name=last_name,email=email,address=address,postal_code=postal_code,
+                                tending_physician=tending_physician,appointment=appointment)  
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -459,11 +482,48 @@ with app.app_context():
             print(md5Hashed)
             cursor = cnxn.cursor()
             user_id = cursor.execute(
-                "select username, patient_id from patients where username = ? and pass_hash = ?",
-                (username, md5Hashed)).fetchval()  # prevent sql injection
+                "select * from patients where username = ? and pass_hash = ?",
+                (username, md5Hashed))  # prevent sql injection
+            # USE for loop on cursor to retrieve data, dont use fetchval(one value) or fetchone(one row)!
+            for x in cursor:
+                print(x)
+                name = x.username.strip()
+                patient_id = x.patient_id #is integer so apparently dont need strip? 
+                first_name = x.first_name.strip()
+                last_name = x.last_name.strip()
+                email = x.email.strip()
+                address = x.address.strip()
+                postal_code = x.postal_code.strip()
+                try:# if it is not None then strip
+                    tending_physician = x.tending_physician.strip() 
+                except:
+                    tending_physician = x.tending_physician
+                try:# if it is not None then strip
+                    appointment = x.appointment.strip()
+                except:
+                   appointment = x.appointment
+
+                print(x,'checkcccc')
+            
+                session['username'] = name
+                session['id'] = patient_id
+                session['first_name'] = first_name
+                session['last_name'] = last_name
+                session['email'] = email
+                session['address'] = address
+                session['postal_code'] = postal_code
+                # session['tending_physician'] = tending_physician #hmm dont think need, leave it for now
+                # session['appointment'] = appointment
+
+
+            #doesnt work
+            # for x in user_id:
+            #     print('check ehrehrherhreherherherhre')
+            #     session['id'] = x.username
+            #     session['username'] = x.patient_id
+            #     print(session['username'],'login user session')
             if user_id:
-                session['patients'] = user_id.strip()
-                session['username'] = username.strip()
+                print(session['username'],'login user session')
                 cursor.close()
                 cnxn.close()
                 session['otp-semi-login'] = True
@@ -489,15 +549,33 @@ with app.app_context():
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
-            doctorCheck = cursor.execute("select staff_id from doctors where username = ? and pass_hash = ?",
-                                         (username, md5Hashed)).fetchone()
-            researcherCheck = cursor.execute("select researcher_id from researchers where username = ? and pass_hash = ?",
-                                             (username, md5Hashed)).fetchone()
-            adminCheck = cursor.execute("select hr_id from hr where username = ? and pass_hash = ?",
-                                        (username, md5Hashed)).fetchone()
-            headadminCheck = cursor.execute("select head_admin_id from head_admin where username = ? and pass_hash = ?",
-                                            (username, md5Hashed)).fetchone()
-            passed = True
+            doctorCheck = cursor.execute("select * from doctors where username = ? and pass_hash = ?",
+                                         (username, md5Hashed))
+            for x in cursor:
+                print(x)
+                name = x.username.strip()
+                patient_id = x.patient_id #is integer so apparently dont need strip? 
+                first_name = x.first_name.strip()
+                last_name = x.last_name.strip()
+                email = x.email.strip()
+                address = x.address.strip()
+                postal_code = x.postal_code.strip()
+                try:# if it is not None then strip
+                    tending_physician = x.tending_physician.strip() 
+                except:
+                    tending_physician = x.tending_physician
+                try:# if it is not None then strip
+                    appointment = x.appointment.strip()
+                except:
+                   appointment = x.appointment
+
+            cursor = cnxn.close()
+            researcherCheck = cursor.execute("select * from researchers where username = ? and pass_hash = ?",
+                                             (username, md5Hashed))
+            adminCheck = cursor.execute("select * from hr where username = ? and pass_hash = ?",
+                                        (username, md5Hashed))
+            headadminCheck = cursor.execute("select * from head_admin where username = ? and pass_hash = ?",
+                                            (username, md5Hashed))
             if doctorCheck != None:
                 user_type = "doctors"
                 identifier = doctorCheck[0]
@@ -524,11 +602,14 @@ with app.app_context():
             if passed:
                 session['id'] = identifier.strip() #need strip to remove the spaces
                 session['username'] = username.strip()
+                print(session['id'],'idididid')
+                print(session['username'],'ididididnananananannana')
                 cursor.close()
                 cnxn.close()
                 session['otp-semi-login'] = True
                 return redirect(url_for("otpvalidation"))
             else:
+                print('fail login')
                 cursor.close()
                 cnxn.close()
                 return render_template("404.html")
@@ -757,7 +838,7 @@ with app.app_context():
             cursor = cnxn.cursor()
             user_appointment = str(appointment.date.data) + ", " + appointment.time.data
             print(user_appointment)
-            cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['patients']))
+            cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['id']))
             flash(f'Your appointment has been booked on: {user_appointment}')
             return redirect(url_for('appointment'))
         print(session)
@@ -825,5 +906,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    #add_admin()
-    app.run()
+    # add_admin()
+    app.run(debug=True)

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "baseForAccess.html" %}
 {% block title %}Library Loan System - Retrieve Users{% endblock %}
 
 {% block content %}
@@ -55,57 +55,39 @@
         <thead>
 
         <tr>
-            <th>First Name: {{ user.get_first_name() }}</th>
+            <th>First Name: {{ first_name }}</th>
         </tr>
         <tr>
-            <th>Last Name: {{ user.get_last_name() }}</th>
+            <th>Last Name: {{ last_name }}</th>
         </tr>
         <tr>
-            <th>NRIC: {{ user.get_nric() }}</th>
+            <th>NRIC: {{username }}</th>
         </tr>
-        <tr>
-            <th>Race:
-                {% if user.get_race() == "C" %}
-                Chinese
-                {% elif user.get_race() == "M" %}
-                Malay
-                {% elif user.get_race() == "I" %}
-                Indian
-                {% elif user.get_race() == "O" %}
-                Others
-                {% endif %}
-            </th>
 
-        </tr>
         <tr>
             <th>Phone Number: {{ user.get_phone_no() }}</th>
         </tr>
         <tr>
-            <th>Email: {{ user.get_email() }}</th>
+            <th>Email: {{ email }}</th>
         </tr>
+    
+
         <tr>
-            <th>Gender:
-                {% if user.get_gender() == "F" %}
-                Female
-                {% elif user.get_gender() == "M" %}
-                Male
-                {% endif %}
-            </th>
+            <th>Address: {{ address }}</th>
         </tr>
 
         <tr>
-            <th>Address 1: {{ user.get_address_1() }}</th>
+            <th>Postal Code: {{ postal_code }}</th>
         </tr>
         <tr>
-            <th>Address 2: {{ user.get_address_2() }}</th>
+            <th>Tending Physician: {{ tending_physician }}</th>
         </tr>
         <tr>
-            <th>Postal Code: {{ user.get_postal_code() }}</th>
+            <th>Appointment: {{ appointment }}</th>
         </tr>
-
         </thead>
-        <tbody>
-        <tr>
+        <!-- <tbody>
+        <!-- <tr>
             <td><a href="/updateUser/{{user.get_nric()}}" class="btn btn-warning">Edit Infomation</a>
 
                 <form action="{{url_for('delete_user', nric=user.get_nric())}}" method="POST">
@@ -144,9 +126,9 @@
                     </div>
                 </form>
             </td>
-        </tr>
+        </tr> -->
 
-        </tbody>
+        </tbody> -->
     </table>
 </div>
 
