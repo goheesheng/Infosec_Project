@@ -5,12 +5,13 @@ from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
 #from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
 
 class FileSubmit(Form):
-    patient_name = StringField("Patient Name",[validators.Length(min=1, max=400), validators.DataRequired()] )
-    submission = FileField("Updated tempalate (Using base template)" )
+    patient_nric = StringField("Patient NRIC", [validators.DataRequired()])
+    patient_name=StringField("Patient Name",[validators.DataRequired()])
+    submission = FileField("Updated template (Using base template)" )
     submit = SubmitField("Submit")
 
 class RequestPatientInfo_Form(Form):
-    patient_id=IntegerField("Patient ID",[validators.DataRequired()])
+    patient_nric=StringField("Patient NRIC",[validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'))])
     submit = SubmitField("Submit")
 
 class Patient_Login_form(Form):
@@ -33,7 +34,7 @@ class Otp(Form):
     submit = SubmitField("Submit")
 
 class Register(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[a-zA-Z]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
+    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
