@@ -36,7 +36,7 @@ class Otp(Form):
     submit = SubmitField("Submit")
 
 class Register(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[a-zA-Z]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
+    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
