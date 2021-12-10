@@ -760,7 +760,7 @@ with app.app_context():
             cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['patients']))
             flash(f'Your appointment has been booked on: {user_appointment}')
             return redirect(url_for('appointment'))
-        print(session['patients'])
+        print(session)
         return render_template('appointment.html', form = appointment)
 
     @app.route('/register', methods=['GET', 'POST'])
