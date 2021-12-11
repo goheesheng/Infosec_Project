@@ -115,6 +115,16 @@ CREATE TABLE [dbo].[head_admin](
 	[access_level][varchar](30) NOT NULL
 ) ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[access_list]    Script Date: 12/11/2021 8:46:32 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[access_list](
+	[username][nchar](30) NOT NULL,
+	[access_level][varchar](30) NOT NULL
+) ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[hr]    Script Date: 12/11/2021 8:46:32 AM ******/
 SET ANSI_NULLS ON
 GO
