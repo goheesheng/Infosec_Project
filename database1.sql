@@ -96,7 +96,8 @@ CREATE TABLE [dbo].[doctors](
 	[address] [varchar](50) NOT NULL,
 	[postal_code] [varchar](6) NOT NULL,
 	[department] [varchar](50) NOT NULL,
-	[access_level][varchar](30) NOT NULL
+	[access_level][varchar](30) NOT NULL,
+	[phone_no] [varchar](20) NOT NULL
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[head_admin]    Script Date: 12/11/2021 8:46:32 AM ******/
@@ -113,7 +114,11 @@ CREATE TABLE [dbo].[head_admin](
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
 	[phone_no] [varchar](20) NOT NULL,
-	[access_level][varchar](30) NOT NULL
+	[access_level][varchar](30) NOT NULL,
+	[postal_code][varchar](6) NOT NULL,
+	[address][varchar](50) NOT NULL
+
+
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[access_list]    Script Date: 12/11/2021 8:46:32 AM ******/
@@ -145,6 +150,7 @@ CREATE TABLE [dbo].[hr](
 	[email] [varchar](50) NOT NULL,
 	[phone_no] [varchar](20) NOT NULL,
 	[access_level][varchar](30) NOT NULL
+
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[patient_file]    Script Date: 12/11/2021 8:46:32 AM ******/
