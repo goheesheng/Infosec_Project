@@ -785,98 +785,83 @@ with app.app_context():
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
-    @app.route('/validation')
-    # @custom_login_required
+    # @app.route('/validation')
+    # # @custom_login_required
+    # def otpvalidation():
+    #     print("hello")
+    #     return render_template("loginotp.html")
+
+
+    @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
-        print("hello")
-        return render_template("loginotp.html")
-
-
-    @app.route("/validation", methods=["POST"])
-    def otpvalidation2():
         cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
                                 DATABASE=' + database + ';\
                                 Trusted_Connection=yes;'
         )
-        cursor = cnxn.cursor()
-        print(session,'otpval check sess')
-        if session['otp-semi-login'] and session['access_level'] == 'patient':
-            # cursor.execute("select access_level from ")
-            value =  session['access_level']
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                                "select otp_code, username, first_name, last_name from patients where patient_id = ?",
-                                (value)
-                            ).fetchone()
+        if request.method=="POST":
+            cursor = cnxn.cursor()
+            print(session,'otpval check sess')
+            if session['otp-semi-login'] and session['access_level'] == 'patient':
+                # cursor.execute("select access_level from ")
+                value =  session['username']
+
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                                    "select otp_code, username, first_name, last_name from patients where username = ?",
+                                    (value)
+                                ).fetchone()
+            elif session['otp-semi-login'] and session['access_level'] == 'doctor':
+                value =  session['username']
+
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                        "select otp_code, username, first_name, last_name from doctors where username = ?",
+                        (value)
+                    ).fetchone()[0]
+            elif session['otp-semi-login'] and session['access_level'] == 'researcher':
+                value =  session['username']
+
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from researchers where username = ?",
+                    (value)
+                ).fetchone()[0]
+            elif session['otp-semi-login'] and session['access_level'] == 'hr':
+                value =  session['username']
+                (otp_seed, username, first_name, last_name) = cursor.execute(
+                        "select otp_code, username, first_name, last_name from hr where username = ?",
+                        (value)
+                    ).fetchone()[0]
+            elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
+                value =  session['username']
+                print(value,'this is value')
+                (otp_seed) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from head_admin where username = ?",
+                    (value)).fetchone()[0]
+
+            otp = int(request.form.get("otp"))
             print(otp_seed)
-        elif session['otp-semi-login'] and session['access_level'] == 'doctor':
-            value =  session['access_level']
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
-                    (value)
-                ).fetchone()[0]
-        elif session['otp-semi-login'] and session['access_level'] == 'researcher':
-            value =  session['access_level']
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
-                (value)
-            ).fetchone()[0]
-        elif session['otp-semi-login'] and session['access_level'] == 'hr':
-            value =  session['access_level']
-            (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from hr where username = ?",
-                    (value)
-                ).fetchone()[0]
-        elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
-            value =  session['access_level']
-            print(value,'this is value')
-            (otp_seed) = cursor.execute(
-                "select otp_code, username, first_name, last_name from head_admin where username = ?",
-                (value)).fetchone()
-                
+            print(pyotp.TOTP(otp_seed).now())
+            # verifying submitted OTP with PyOTP
+            if pyotp.TOTP(otp_seed).verify(int(otp)):
+                print("correct")
+                session['login'] = True
+                cursor.close()
+                # session['login'] = True
+                print(session['login'],'sslogin')
+                print(session,'check sesison')
 
-        otp = int(request.form.get("otp"))
-        print(otp_seed)
-        print(pyotp.TOTP(otp_seed).now())
-        # verifying submitted OTP with PyOTP
-        if pyotp.TOTP(otp_seed).verify(int(otp)):
-            print("correct")
-            string_otpseed = str(otp_seed)
-            # info = cursor.execute(
-            #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
-            #         otp_seed) + "\'").fetchall()
-            # session['username'] = username
-            # session['first_name'] = first_name
-            # session['last_name'] = last_name
-            # session['login'] = True
-
-            cursor.close()
-            # session['login'] = True
-            '''
-            if verification == 'unverified':
-                return redirect(url_for("unverified"))
-            elif verification == 'patient':
-                return redirect(url_for('patient'))
-            elif verification == 'doctor':
-                return redirect(url_for('doctor'))
-            elif verification == 'admin':
-                return redirect(url_for('admin'))
-            elif verification == 'head_admin':
-                return redirect(url_for('head_admin'))
-            elif verification == 'researcher':
-                return redirect(url_for('researcher'))'''
-            return redirect(url_for('homepage'))
-        else:
-            print("wrong")
-            cursor.close()
-            flash("Wrong OTP", "error")
-            return redirect(url_for("otpvalidation"))
-        # else:
-        #     print('false')
-        #     flash('Wrong username or password!')
-        #     return redirect(url_for("login"))
-
+                return redirect(url_for('homepage'))
+            else:
+                print("wrong")
+                cursor.close()
+                flash("Wrong OTP", "error")
+                return redirect(url_for("otpvalidation"))
+            # else:
+            #     print('false')
+            #     flash('Wrong username or password!')
+            #     return redirect(url_for("login"))
+        if request.method == "GET":
+            return render_template("loginotp.html")
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
     @custom_login_required
@@ -885,7 +870,6 @@ with app.app_context():
 
 
     @app.route('/logout', methods=['GET', 'POST'])
-    @custom_login_required
     def logout():
         session.clear()
         return redirect(url_for("login"))

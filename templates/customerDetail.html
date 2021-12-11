@@ -33,17 +33,7 @@
 
 <h1 class="display-4">Account Details</h1>
 
-{% if session['profile_pic'] %}
-
-<a><img src="{{ url_for('send_image',filename = profile_pic) }}" width="220"
-        height="200" alt="Profile Picture"></a>
-
-{% elif session['profile_pic'] == False %}
-<img src="{{ url_for('static',filename = 'assets/img/default.png') }}" width="220"
-        height="200" alt="Profile Picture">
-
-{% endif %}
-
+{% if session['access_level'] == 'patients' %}
 
 <div>
     <table class="table table-striped">
@@ -74,6 +64,9 @@
             <th>Postal Code: {{ session['postal_code'] }}</th>
         </tr>
         <tr>
+            <th>Role: {{ session['access_level'] }}</th>
+        </tr>
+        <tr>
             <th>Tending Physician: {{ session['tending_physician'] }}</th>
         </tr>
         <tr>
@@ -84,5 +77,160 @@
     </table>
 </div>
 
+{% elif session['access_level'] == 'researchers' %}
 
+<div>
+    <table class="table table-striped">
+        <thead>
+
+        <tr>
+            <th>First Name: {{ session['first_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Last Name: {{ session['last_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Staff ID: {{session['username'] }}</th>
+        </tr>
+        <tr>
+            <th>Phone Number: {{ session['phone_no'] }}</th>
+        </tr>
+        <tr>
+            <th>Email: {{ session['email'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Address: {{ session['address'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Postal Code: {{ session['postal_code'] }}</th>
+        </tr>
+        <tr>
+            <th>Role: {{ session['access_level'] }}</th>
+        </tr>
+        <tr>
+            <th>Company: {{ session['company'] }}</th>
+        </tr>
+        </thead>
+     
+    </table>
+</div>
+
+
+
+{% elif session['access_level'] == 'head_admin' %}
+<div>
+    <table class="table table-striped">
+        <thead>
+
+        <tr>
+            <th>First Name: {{ session['first_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Last Name: {{ session['last_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Staff ID: {{session['username'] }}</th>
+        </tr>
+        <tr>
+            <th>Phone Number: {{ session['phone_no'] }}</th>
+        </tr>
+        <tr>
+            <th>Email: {{ session['email'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Address: {{ session['address'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Postal Code: {{ session['postal_code'] }}</th>
+        </tr>
+        <tr>
+            <th>Role: {{ session['access_level'] }}</th>
+        </tr>
+
+        </thead>
+     
+    </table>
+</div>
+
+
+
+{% elif session['access_level'] == 'hr' %}
+
+<div>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>First Name: {{ session['first_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Last Name: {{ session['last_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Staff ID: {{session['username'] }}</th>
+        </tr>
+        <tr>
+            <th>Phone Number: {{ session['phone_no'] }}</th>
+        </tr>
+        <tr>
+            <th>Email: {{ session['email'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Address: {{ session['address'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Postal Code: {{ session['postal_code'] }}</th>
+        </tr>
+        <tr>
+            <th>Role: {{ session['access_level'] }}</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+
+{% elif session['access_level'] == 'doctors' %}
+
+<div>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>First Name: {{ session['first_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Last Name: {{ session['last_name'] }}</th>
+        </tr>
+        <tr>
+            <th>Staff ID: {{session['username'] }}</th>
+        </tr>
+        <tr>
+            <th>Phone Number: {{ session['phone_no'] }}</th>
+        </tr>
+        <tr>
+            <th>Email: {{ session['email'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Address: {{ session['address'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Postal Code: {{ session['postal_code'] }}</th>
+        </tr>
+        <tr>
+            <th>Role: {{ session['access_level'] }}</th>
+        </tr>
+        <tr>
+            <th>Department: {{ session['department'] }}</th>
+        </tr>
+        </thead>
+    </table>
+</div>
+
+{% endif %}
 {% endblock %}
