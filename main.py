@@ -321,10 +321,14 @@ with app.app_context():
                     print( "Password must contain 10-20 characters, number, uppercase, lowercase, special character.")
                     admin_password = input("Enter New Head Admin Password: ")
                     result = re.match(pattern,admin_password)
+                phone_no = input("Enter New Head Admin Phone Number: ")
+                
                 otp_code = pyotp.random_base32()
 
                 md5Hash = hashlib.md5(admin_password.encode("utf-8"))
                 md5Hashed = md5Hash.hexdigest()
+                address = input("Enter New Head Admin address: ")
+                postal_code = input("Enter New Head Admin postal code: ")
 
                 cursor = cnxn.cursor()
                 check_username = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
@@ -333,11 +337,17 @@ with app.app_context():
                                        (email)).fetchval()  # prevent sql injection
 
                 if check_email == None and check_username == None :
-                    insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email,otp_code) \
-                            VALUES (?, ?, ?, ?, ?, ?); "
+                    insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address) \
+                            VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); "
                     values = (username, firstname, lastname, md5Hashed,
-                              email,
-                              otp_code)  # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
+                              email,otp_code,phone_no,'head_admin',address,postal_code)
+                    cursor.execute(insert_query, values)
+                    cursor.commit()
+                    cursor.close()
+                    cursor = cnxn.cursor()
+                    insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                            VALUES (?, ?,?); "
+                    values = (username,'head_admin',md5Hashed)
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
@@ -356,56 +366,12 @@ with app.app_context():
                         first_name = x.first_name.strip()
                         last_name = x.last_name.strip()
                         email = x.email.strip()
-                        print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}")
+                        phone_no = x.phone_no.strip()
+                        print(f"Username: {username}, First Name: {first_name}, Last Name: {last_name}, Email: {email}, Phone No: {phone_no}")
                     continue
                 else:
                     print("Head Admin already exists! Check your username and email!!!!")
-                # while str(a) == str(username):
-                #     print("Head Admin already exist!")
-                #     username = input("Enter New Head Admin ID again: ")
-                #     check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",(username)).fetchval()# prevent sql injection
-                #     if check == None:
-                #         firstname = input("Enter New Head Admin First Name: ")
-                #         lastname = input("Enter New Head Admin last Name: ")
-                #         email = input("Enter New Head Admin email: ")
-                #         admin_password = input("Enter New Head Admin Password: ")
-                #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                #         md5Hashed = md5Hash.hexdigest()
-                #         cursor = cnxn.cursor()
-                #         insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                #             VALUES (?, ?, ?, ?, ?); "
-                #         values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                #         cursor.execute(insert_query, values)
-                #         cursor.commit()
-                #         cursor.close()
-                #         print('Successful creating Head Admin')
-                #         break
-                #     else:
-                #         a = check.strip()
-                #         print(type(a))
-                #         firstname = input("Enter New Head Admin First Name: ")
-                #         lastname = input("Enter New Head Admin last Name: ")
-                #         email = input("Enter New Head Admin email: ")
-                #         admin_password = input("Enter New Head Admin Password: ")
-                #         md5Hash = hashlib.md5(admin_password.encode("utf-8"))
-                #         md5Hashed = md5Hash.hexdigest()
-                #         print(a,'a')
-                #         print(username,"b")
-                #         continue
-                # cursor = cnxn.cursor()
-                # insert_query = "INSERT INTO head_admin (username, first_name, last_name, pass_hash,email) \
-                #     VALUES (?, ?, ?, ?, ?); "
-                # values = (username, firstname, lastname, md5Hashed, email) # i removed otp_code because this is server side config, how are we gonna add otp via terminal??, otp_code is last second column
-                # cursor.execute(insert_query, values)
-                # cursor.commit()
-                # cursor.close()
-                # print('Successful creating Head Admin')
-                # continue
-
-
-            # except:
-            #     print("Error in adding Head Admin to MSSQL Database!")
-
+      
             elif key == "N":
                 break
             elif key == "Show":
@@ -432,6 +398,8 @@ with app.app_context():
 
                 else:
                     check = cursor.execute("DELETE FROM head_admin WHERE username = ?", (key))  # prevent sql injection
+                    cursor.commit()
+                    check = cursor.execute("DELETE FROM access_list WHERE username = ?", (key))  # prevent sql injection
                     cursor.commit()
                     print(f"{key} was removed as Head Admin.")
                     check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
@@ -475,6 +443,7 @@ with app.app_context():
                                 DATABASE=' + database + ';\
                                 Trusted_Connection=yes;'
             )
+            passed = False
             username = patient_login_form.username.data
             password = patient_login_form.password.data
             print(username,password)
@@ -505,20 +474,23 @@ with app.app_context():
             #     ,[access_level]13
             # FROM [database1].[dbo].[patients]
             if user_info != None:
-                session['user'] = True
+                passed = True
+
                 print(user_info[0],'id')
                 print(user_info[1].strip(),'id')
                 print(user_info[3].strip(),'id')
                 print(user_info[4].strip(),'id')
                 print(user_info[7].strip(),'id')
                 session['id'] = user_info[0]
-                session['username'] = user_info[1]
-                session['first_name'] = user_info[2]
-                session['last_name'] = user_info[3]
-                session['phone_no'] =  user_info[7]
-                session['email'] =  user_info[6]
-                session['address'] =  user_info[8]
-                session['postal_code'] =  user_info[9]
+                session['username'] = user_info[1].strip()
+                session['first_name'] = user_info[2].strip()
+                session['last_name'] = user_info[3].strip()
+                session['phone_no'] =  user_info[7].strip()
+                session['email'] =  user_info[6].strip()
+                session['address'] =  user_info[8].strip()
+                session['postal_code'] =  user_info[9].strip()
+                session['access_level'] = user_info[13].strip()
+
                 # should we add this too? as session?
                 try:# if it is not None then  user_info[3]
                     session['tending_physician'] = user_info[11].strip()
@@ -547,67 +519,267 @@ with app.app_context():
                                 DATABASE=' + database + ';\
                                 Trusted_Connection=yes;'
             )
+            passed = False
             username = admin_login_form.username.data
             password = admin_login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             cursor = cnxn.cursor()
-            doctorCheck = cursor.execute("select * from doctors where username = ? and pass_hash = ?",
-                                         (username, md5Hashed)).fetchone()
-            for x in cursor:
-                print(x)
-                name = x.username.strip()
-                patient_id = x.patient_id #is integer so apparently dont need strip? 
-                first_name = x.first_name.strip()
-                last_name = x.last_name.strip()
-                email = x.email.strip()
-                address = x.address.strip()
-                postal_code = x.postal_code.strip()
-                try:# if it is not None then strip
-                    tending_physician = x.tending_physician.strip() 
-                except:
-                    tending_physician = x.tending_physician
-                try:# if it is not None then strip
-                    appointment = x.appointment.strip()
-                except:
-                   appointment = x.appointment
+            access_info = cursor.execute(
+                "select * from access_list where username = ? and pass_hash = ?",
+                (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+            cursor = cnxn.close()
 
-            cursor = cnxn.cursor()
-            researcherCheck = cursor.execute("select * from researchers where username = ? and pass_hash = ?",
-                                             (username, md5Hashed)).fetchone()
-            adminCheck = cursor.execute("select * from hr where username = ? and pass_hash = ?",
-                                        (username, md5Hashed)).fetchone()
-            headadminCheck = cursor.execute("select * from head_admin where username = ? and pass_hash = ?",
-                                            (username, md5Hashed)).fetchone()
-            passed = True
-            if doctorCheck != None:
-                user_type = "doctors"
-                identifier = doctorCheck[0]
-            elif adminCheck != None:
-                user_type = "admin"
-                identifier = adminCheck[0]
-            elif researcherCheck != None:
-                user_type = "researchers"
-                identifier = researcherCheck[0]
-            elif headadminCheck != None:
-                user_type = "head_admin"
-                identifier = headadminCheck[0]
-            else:
-                passed = False
-                return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
+
+            # doctorCheck = cursor.execute("select * from doctors where username = ? and pass_hash = ?",
+            #                              (username, md5Hashed)).fetchone()
+            # for x in cursor:
+            #     print(x)
+            #     name = x.username.strip()
+            #     patient_id = x.patient_id #is integer so apparently dont need strip? 
+            #     first_name = x.first_name.strip()
+            #     last_name = x.last_name.strip()
+            #     email = x.email.strip()
+            #     address = x.address.strip()
+            #     postal_code = x.postal_code.strip()
+            #     try:# if it is not None then strip
+            #         tending_physician = x.tending_physician.strip() 
+            #     except:
+            #         tending_physician = x.tending_physician
+            #     try:# if it is not None then strip
+            #         appointment = x.appointment.strip()
+            #     except:
+            #        appointment = x.appointment
+
+            # researcherCheck = cursor.execute("select * from researchers where username = ? and pass_hash = ?",
+            #                                  (username, md5Hashed)).fetchone()
+            # adminCheck = cursor.execute("select * from hr where username = ? and pass_hash = ?",
+            #                             (username, md5Hashed)).fetchone()
+            # headadminCheck = cursor.execute("select * from head_admin where username = ? and pass_hash = ?",
+                                            # (username, md5Hashed)).fetchone()
+
+            #added md5Hashed password in access_list table so to user username and hashed password for checking if it is in both access_list table and unqiue role tables
+
+            #check whether in access list table
+            if access_info != None:
+                cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                                DATABASE=' + database + ';\
+                                Trusted_Connection=yes;'
+            )
+                # session['username'] = access_info[0].strip()
+                # session['access_list'] = access_info[1].strip()
+                access_level_username = access_info[0].strip()
+                access_level_access_list = access_info[1].strip()
+                print(access_level_username,'username')
+                print(access_level_access_list)
+                #check whether was it created in the individual tables (e.g. is it in doctors or researchers or HR or head_admin tables?)
+                cursor = cnxn.cursor()
+                #Retrieve the unique roles using access_level_access_list
+                if access_level_access_list == "researchers":
+                    user_info = cursor.execute(
+                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+                    cursor = cnxn.close()
+                    # CREATE TABLE [dbo].[researchers](
+                    #     [username] [nchar](30) NOT NULL,0
+                    #     [first_name] [nchar](30) NOT NULL,1
+                    #     [last_name] [nchar](30) NOT NULL,2
+                    #     [pass_hash] [varchar](50) NOT NULL,3
+                    #     [otp_code] [varchar](50) NOT NULL,4
+                    #     [email] [varchar](50) NOT NULL,5
+                    #     [phone_no] [varchar](20) NOT NULL,6
+                    #     [address] [varchar](50) NOT NULL,7
+                    #     [postal_code] [varchar](6) NOT NULL,8
+                    #     [company] [varchar](50) NULL,9
+                    #     [researcher_id] [int] IDENTITY(1,1) NOT NULL,10
+                    #     [access_level][varchar](30) NOT NULL 11
+                    # ) ON [PRIMARY]
+                    if user_info != None:
+                        passed = True
+                        print(user_info[10],'researcher_id')
+                        print(user_info[0].strip(),'username')
+                        print(user_info[2].strip(),'last_name')
+                        print(user_info[6].strip(),'phone_no')
+                        print(user_info[7].strip(),'address')
+                        print(user_info[8].strip(),'postal_code')
+                        print(user_info[11].strip(),'access_level')
+
+                        session['id'] = user_info[10]
+                        session['username'] = user_info[0].strip()
+                        session['first_name'] = user_info[1].strip()
+                        session['last_name'] = user_info[2].strip()
+                        session['phone_no'] =  user_info[6].strip()
+                        session['email'] =  user_info[5].strip()
+                        session['address'] =  user_info[7].strip()
+                        session['postal_code'] =  user_info[8].strip()
+                        session['access_level'] =  user_info[11].strip()
+
+                        # should we add this too? as session?
+                        try:
+                            session['company'] = user_info[9].strip() # If HR dk the company
+                        except:
+                            session['company'] = None
+                elif access_level_access_list == "head_admin":
+                    user_info = cursor.execute(
+                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+                    cursor = cnxn.close()
+                        # CREATE TABLE [dbo].[head_admin](
+                        # 	[head_admin_id] [int] IDENTITY(1,1) NOT NULL, 0
+                        # 	[username] [nchar](30) NOT NULL,1
+                        # 	[first_name] [nchar](30) NOT NULL,2
+                        # 	[last_name] [nchar](30) NOT NULL,3
+                        # 	[pass_hash] [varchar](50) NOT NULL,4
+                        # 	[otp_code] [varchar](50) NOT NULL,5
+                        # 	[email] [varchar](50) NOT NULL,6
+                        # 	[phone_no] [varchar](20) NOT NULL,7
+                        # 	[access_level][varchar](30) NOT NULL8
+                        #   [postal_code][varchar](6) NOT NULL,9
+	                    #   [address][varchar](50) NOT NULL10
+                        # ) ON [PRIMARY]
+                    if user_info != None:
+                        passed = True
+                        print(user_info[0],'id')
+                        print(user_info[1].strip(),'username')
+                        print(user_info[2].strip(),'first_name')
+                        print(user_info[3].strip(),'last_name')
+                        print(user_info[7].strip(),'phone_no')
+                        print(user_info[6].strip(),'email')
+                        print(user_info[10].strip(),'address')
+                        print(user_info[9].strip(),'postal_code')
+                        print(user_info[8].strip(),'access_level')
+
+                        session['id'] = user_info[0]
+                        session['username'] = user_info[1].strip()
+                        session['first_name'] = user_info[2].strip()
+                        session['last_name'] = user_info[3].strip()
+                        session['phone_no'] =  user_info[7].strip()
+                        session['email'] =  user_info[6].strip()
+                        session['address'] =  user_info[10].strip()
+                        session['postal_code'] =  user_info[9].strip()
+                        session['access_level'] =  user_info[8].strip()
+                        
+
+                elif access_level_access_list == "hr":
+                    user_info = cursor.execute(
+                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+                    cursor = cnxn.close()
+                    # CREATE TABLE [dbo].[hr](
+                    #     [hr_id] [int] IDENTITY(1,1) NOT NULL,0
+                    #     [username] [nchar](10) NOT NULL,1
+                    #     [first_name] [nchar](20) NOT NULL,2
+                    #     [last_name] [nchar](20) NOT NULL,3
+                    #     [pass_hash] [varchar](50) NOT NULL,4
+                    #     [otp_code] [varchar](50) NOT NULL,5
+                    #     [address] [varchar](50) NOT NULL,6
+                    #     [postal_code] [varchar](6) NOT NULL,7
+                    #     [email] [varchar](50) NOT NULL,8
+                    #     [phone_no] [varchar](20) NOT NULL,9
+                    #     [access_level][varchar](30) NOT NULL 10
+                    # ) ON [PRIMARY]
+                    if user_info != None:
+                        passed = True
+                        print(user_info[0],'id')
+                        print(user_info[1].strip(),'username')
+                        print(user_info[2].strip(),'first_name')
+                        print(user_info[3].strip(),'last_name')
+                        print(user_info[9].strip(),'phone_no')
+                        print(user_info[8].strip(),'email')
+                        print(user_info[6].strip(),'address')
+                        print(user_info[7].strip(),'postal_code')
+                        print(user_info[10].strip(),'access_level')
+
+                        session['id'] = user_info[0]
+                        session['username'] = user_info[1].strip()
+                        session['first_name'] = user_info[2].strip()
+                        session['last_name'] = user_info[3].strip()
+                        session['phone_no'] =  user_info[9].strip()
+                        session['email'] =  user_info[8].strip()
+                        session['address'] =  user_info[6].strip()
+                        session['postal_code'] =  user_info[7].strip()
+                        session['access_level'] =  user_info[10].strip()
+
+                elif access_level_access_list == "doctors":
+                    user_info = cursor.execute(
+                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+                    cursor = cnxn.close()
+                    # CREATE TABLE [dbo].[doctors](
+                    #     [staff_id] [int] IDENTITY(1,1) NOT NULL,0
+                    #     [username] [nchar](30) NOT NULL,1
+                    #     [first_name] [nchar](30) NOT NULL,2
+                    #     [last_name] [nchar](30) NOT NULL,3
+                    #     [pass_hash] [varchar](50) NOT NULL,4
+                    #     [otp_code] [varchar](50) NOT NULL,5
+                    #     [email] [varchar](50) NOT NULL,6
+                    #     [address] [varchar](50) NOT NULL,7
+                    #     [postal_code] [varchar](6) NOT NULL,8
+                    #     [department] [varchar](50) NOT NULL,9
+                    #     [access_level][varchar](30) NOT NULL10
+                    #     [phone_no] [varchar](20) NOT NULL11
+                    # ) ON [PRIMARY]
+                    if user_info != None:
+                        passed = True
+                        print(user_info[0],'id')
+                        print(user_info[1].strip(),'username')
+                        print(user_info[2].strip(),'first_name')
+                        print(user_info[3].strip(),'last_name')
+                        print(user_info[9].strip(),'phone_no')
+                        print(user_info[8].strip(),'email')
+                        print(user_info[6].strip(),'address')
+                        print(user_info[7].strip(),'postal_code')
+                        print(user_info[10].strip(),'access_level')
+
+                        session['id'] = user_info[0]
+                        session['username'] = user_info[1].strip()
+                        session['first_name'] = user_info[2].strip()
+                        session['last_name'] = user_info[3].strip()
+                        session['phone_no'] =  user_info[11].strip()
+                        session['email'] =  user_info[6].strip()
+                        session['address'] =  user_info[7].strip()
+                        session['postal_code'] =  user_info[8].strip()
+                        session['access_level'] =  user_info[10].strip()
+
+                        # should we add this too? as session?
+                        try:
+                            session['department'] = user_info[9].strip() # If HR dk the company
+                        except:
+                            session['department'] = None
+
+           
+            # if doctorCheck != None:
+            #     user_type = "doctors"
+            #     identifier = doctorCheck[0]
+            # elif adminCheck != None:
+            #     user_type = "admin"
+            #     identifier = adminCheck[0]
+            # elif researcherCheck != None:
+            #     user_type = "researchers"
+            #     identifier = researcherCheck[0]
+            # elif headadminCheck != None:
+            #     user_type = "head_admin"
+            #     identifier = headadminCheck[0]
+                else:
+                    passed = False
+                    return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
-                session['id'] = identifier.strip() #need strip to remove the spaces
-                session[user_type] = username.strip()
-                print(session['id'],'idididid')
-                print(session['username'],'ididididnananananannana')
-                cursor.close()
+                # session['id'] = identifier.strip() #need strip to remove the spaces
+                # session[user_type] = username.strip()
+                # print(session['id'],'idididid')
+                # print(session['username'],'ididididnananananannana')
+                # cursor.close()
 
                 session['otp-semi-login'] = True
                 return redirect(url_for("otpvalidation"))
             else:
                 print('fail login')
-                cursor.close()
-                return render_template("404.html")
+                flash("Wrong username or password", "error")
+                return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
+            # return render_template("404.html")
+
         else:
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
@@ -621,78 +793,88 @@ with app.app_context():
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
-        if session['otp-semi-login'] and session['user']:
-            cursor = cnxn.cursor()
+        cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                                DATABASE=' + database + ';\
+                                Trusted_Connection=yes;'
+        )
+        cursor = cnxn.cursor()
+        print(session,'otpval check sess')
+        if session['otp-semi-login'] and session['access_level'] == 'patient':
             # cursor.execute("select access_level from ")
-            print(session,'otpval check sess')
-
-            if "doctors" in session:
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
-                    (session["doctors"])
-                ).fetchall()[0]
-            elif "researchers" in session:
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
-                    (session["researchers"])
-                ).fetchall()[0]
-            elif "user" in session:
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from patients where patient_id = ?",
-                    (session["user"])
-                ).fetchall()[0]
-            elif "hr" in session:
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from admin where username = ?",
-                    (session["admin"])
-                ).fetchall()[0]
-            elif "head_admin" in session:
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from head_admin where username = ?",
-                    (session["head_admin"])
-                ).fetchall()[0]
-
-
-            otp = int(request.form.get("otp"))
+            value =  session['access_level']
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                                "select otp_code, username, first_name, last_name from patients where patient_id = ?",
+                                (value)
+                            ).fetchone()
             print(otp_seed)
-            print(pyotp.TOTP(otp_seed).now())
-            # verifying submitted OTP with PyOTP
-            if pyotp.TOTP(otp_seed).verify(int(otp)):
-                print("correct")
-                string_otpseed = str(otp_seed)
-                # info = cursor.execute(
-                #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
-                #         otp_seed) + "\'").fetchall()
-                session['username'] = username
-                session['first_name'] = first_name
-                session['last_name'] = last_name
-                session['login'] = True
+        elif session['otp-semi-login'] and session['access_level'] == 'doctor':
+            value =  session['access_level']
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
+                    (value)
+                ).fetchone()[0]
+        elif session['otp-semi-login'] and session['access_level'] == 'researcher':
+            value =  session['access_level']
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
+                (value)
+            ).fetchone()[0]
+        elif session['otp-semi-login'] and session['access_level'] == 'hr':
+            value =  session['access_level']
+            (otp_seed, username, first_name, last_name) = cursor.execute(
+                    "select otp_code, username, first_name, last_name from hr where username = ?",
+                    (value)
+                ).fetchone()[0]
+        elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
+            value =  session['access_level']
+            print(value,'this is value')
+            (otp_seed) = cursor.execute(
+                "select otp_code, username, first_name, last_name from head_admin where username = ?",
+                (value)).fetchone()
+                
 
-                cursor.close()
-                session['login'] = True
-                '''
-                if verification == 'unverified':
-                    return redirect(url_for("unverified"))
-                elif verification == 'patient':
-                    return redirect(url_for('patient'))
-                elif verification == 'doctor':
-                    return redirect(url_for('doctor'))
-                elif verification == 'admin':
-                    return redirect(url_for('admin'))
-                elif verification == 'head_admin':
-                    return redirect(url_for('head_admin'))
-                elif verification == 'researcher':
-                    return redirect(url_for('researcher'))'''
-                return redirect(url_for('homepage'))
-            else:
-                print("wrong")
-                cursor.close()
-                flash("Wrong OTP", "error")
-                return redirect(url_for("otpvalidation"))
+        otp = int(request.form.get("otp"))
+        print(otp_seed)
+        print(pyotp.TOTP(otp_seed).now())
+        # verifying submitted OTP with PyOTP
+        if pyotp.TOTP(otp_seed).verify(int(otp)):
+            print("correct")
+            string_otpseed = str(otp_seed)
+            # info = cursor.execute(
+            #     "select username, first_name, last_name, verification  from users where otp_code=\'" + str(
+            #         otp_seed) + "\'").fetchall()
+            # session['username'] = username
+            # session['first_name'] = first_name
+            # session['last_name'] = last_name
+            # session['login'] = True
+
+            cursor.close()
+            # session['login'] = True
+            '''
+            if verification == 'unverified':
+                return redirect(url_for("unverified"))
+            elif verification == 'patient':
+                return redirect(url_for('patient'))
+            elif verification == 'doctor':
+                return redirect(url_for('doctor'))
+            elif verification == 'admin':
+                return redirect(url_for('admin'))
+            elif verification == 'head_admin':
+                return redirect(url_for('head_admin'))
+            elif verification == 'researcher':
+                return redirect(url_for('researcher'))'''
+            return redirect(url_for('homepage'))
         else:
-            print('false')
-            flash('Wrong username or password!')
-            return redirect(url_for("login"))
+            print("wrong")
+            cursor.close()
+            flash("Wrong OTP", "error")
+            return redirect(url_for("otpvalidation"))
+        # else:
+        #     print('false')
+        #     flash('Wrong username or password!')
+        #     return redirect(url_for("login"))
 
 
     @app.route('/passwordreset', methods=['GET', 'POST'])
@@ -901,7 +1083,7 @@ with app.app_context():
                 INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,phone_no,address,postal_code,access_level) 
                 VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code, email,phone_no,address,postal_code,'user')
+            values = (username, firstname, lastname, md5Hashed, otp_code, email,phone_no,address,postal_code,'patient')
 
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
@@ -936,5 +1118,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    # add_admin()
+    add_admin()
     app.run(debug=True)
