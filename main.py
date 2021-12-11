@@ -475,8 +475,19 @@ with app.app_context():
             #     ,[access_level]13
             # FROM [database1].[dbo].[patients]
             if user_info != None:
+            #     #alternative way
+            #     access_list = {'patient': 'patients', 'doctor': 'doctors', 'researcher': 'researchers', 'hr': 'hr','head_admin': 'head_admin'}
+            #     if user_info[0] in access_list:
+            #         col_name_query=f"select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = {access_list[user_info]};"
+            #         print(col_name_query)
+            #         col_names = cursor.execute(col_name_query)
+            #         for count,col_name in enumerate(col_names):
+            #             if type(user_info)==str:
+            #                 session[col_name]=user_info[count].strip()
+            #             else:
+            #                 session[col_name]=user_info[count]
+            #
                 passed = True
-
                 print(user_info[0],'id')
                 print(user_info[1].strip(),'id')
                 print(user_info[3].strip(),'id')
@@ -838,6 +849,12 @@ with app.app_context():
                     "select otp_code, username, first_name, last_name from head_admin where username = ?",
                     (value)).fetchone()[0]
 
+            #PleaseNerfDictionary,
+            # access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+            # if session['access_level'] in access_list:
+            #     query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
+            #     otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+
             otp = int(request.form.get("otp"))
             print(otp_seed)
             print(pyotp.TOTP(otp_seed).now())
@@ -913,17 +930,32 @@ with app.app_context():
                         if not(check_file_hash(file_name,stored_hash)):
                             with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
                                 file_override.write(file_content)
+                    print(session,'here')
                     return redirect(url_for("submission", pid=patient[0]))
 
                 cursor.close()
             flash("NRIC either does not exist or is invalid", "error")
             return redirect(url_for('requestPatientInformation'))
-        return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
+
+        if request.method=="GET" and session["access_level"] =="patient":
+            return send_from_directory(directory=app.config['UPLOAD_FOLDER'],path=f"{session['username']}.docx")
+        else:
+            return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
     # @login_required
     def submission(pid):
         cursor = cnxn.cursor()
+        if 'access_level' not in session:
+            return redirect(url_for('homepage'))
+        elif session['acess_level'] != 'doctor':
+            return redirect(url_for('homepage'))
+        else:
+            tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
+            if session['username'] != tending_physician:
+                flash("You are a doctor but unauthorized to view this patients information")
+                return redirect(url_for('homepage'))
+
         patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
         cursor.close()
         file_submit = FileSubmit(request.form)
@@ -1107,7 +1139,6 @@ with app.app_context():
                 VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
             ''')
             values = (username, firstname, lastname, md5Hashed, otp_code, email,phone_no,address,postal_code,'patient')
-
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
@@ -1115,6 +1146,13 @@ with app.app_context():
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
+            #addPatient to access_list table ?
+            insert_query = textwrap.dedent('''
+                            INSERT INTO access_list (username, pass_hash,access_level) 
+                            VALUES (?, ?, ?); 
+                        ''')
+            values = (username, md5Hashed,'patient')
+            cursor.execute(insert_query,values)
             cnxn.commit()
             cursor.close()
             qr = 'otpauth://totp/AngelHealth:' + username + '?secret=' + otp_code
