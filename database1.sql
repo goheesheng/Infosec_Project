@@ -123,7 +123,9 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[access_list](
 	[username][nchar](30) NOT NULL,
-	[access_level][varchar](30) NOT NULL
+	[access_level][varchar](30) NOT NULL,
+	[pass_hash] [varchar](50) NOT NULL,
+
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[hr]    Script Date: 12/11/2021 8:46:32 AM ******/
