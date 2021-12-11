@@ -15,6 +15,7 @@ import os
 import smtplib
 import hashlib
 import re
+import random
 import bcrypt
 from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment
 from functools import wraps
@@ -1022,7 +1023,7 @@ with app.app_context():
         cursor = cnxn.cursor()
         cursor.execute("select patient_id,file_content from patient_file")
         results = cursor.fetchall()
-        #print(len(results),results,results[0].first_name,len(results[0].first_name))
+        print(results)
         cursor.close()
         return render_template('export.html',results = results)
 
@@ -1034,9 +1035,47 @@ with app.app_context():
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
-        print(data)
+        #print(data)
+        mask = ''
+        year = datetime.today().year
+        # Age
+        r = re.findall(r"(?i)(DOB.+)", data)
+        date = re.findall(r"\d{4}", r[0])[0]
+        age = year - int(date)
+        age += random.randint(int(-age/10), int(age/10))
+        mask += f'Age: {age}\n'
+        # BMI
+        r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
+        if "." not in r:
+            r = float(r) / 100
+        height = float(r)
+        r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
+        weight = float(r)
+        bmi = weight / (height ** 2)
+        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
+        mask += f'BMI: {bmi}\n'
+        # Gender
+        r = re.findall(r"(?i)(gender.+)", data)
+        mask += f'{r[0]}\n'
+        # Amount of times they visited
+        r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\n")
+        z = 0
+        for i in range(len(r)):
+            if str(year) in r[i]:
+                z += 1
+        z = z + random.randint(int(-z / 2), int(z / 2))
+        mask += f'Visited Angel Health {z} times this year\n'
+        r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+        mask += f'Outstanding health problems:\n'
+        if len(r) != 0:
+            for i in r[0]:
+                if i != '':
+                    mask += f'{i.capitalize()}\n'
+        else:
+            mask += f'None'
         cursor.close()
-        return render_template('data.html',data = data)
+        print(mask)
+        return render_template('data.html',data = mask)
 
     @app.route('/appointment',methods=['GET','POST'])
     def appointment():
