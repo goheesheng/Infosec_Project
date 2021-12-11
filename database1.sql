@@ -171,6 +171,7 @@ CREATE TABLE [dbo].[patients](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[phone_no] [varchar](20) NOT NULL,
 	[address] [varchar](50) NOT NULL,
 	[postal_code] [varchar](6) NOT NULL,
 	[hospital] [varchar](50) NULL,
