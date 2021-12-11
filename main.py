@@ -895,6 +895,15 @@ with app.app_context():
     @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
     def download(filename):
         #dpvalidationhere
+        cursor= cnxn.cursor()
+        if 'access_level' not in session:
+            return redirect(request.referrer)
+        else:
+            tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
+            if session['username'] != tending_physician :
+                flash("You unauthorized  to view this patients information")
+                return redirect(request.referrer)
+
         return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
 
     @app.route('/requestPatientInformation',methods=['GET','POST'])
@@ -948,7 +957,7 @@ with app.app_context():
         cursor = cnxn.cursor()
         if 'access_level' not in session:
             return redirect(url_for('homepage'))
-        elif session['acess_level'] != 'doctor':
+        elif session['access_level'] != 'doctor':
             return redirect(url_for('homepage'))
         else:
             tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
