@@ -455,25 +455,8 @@ with app.app_context():
     @app.route("/viewUser", methods=["GET", "POST"])
     def viewUser():
         if request.method == 'GET':
-            user_id = session['id']
-            cursor = cnxn.cursor()
-            user_details = cursor.execute(
-                        "select username,first_name,last_name,email,address,postal_code,tending_physician,appointment from patients where patient_id = ?",
-                        (user_id)).fetchval()  # prevent sql injection
-            cursor.close()
-            username = user_details[0]
-            first_name = user_details[1].strip()
-            last_name = user_details[2].strip()
-            email = user_details[3].strip()
-            address = user_details[4].strip()
-            postal_code = user_details[5].strip()
-            tending_physician = user_details[6].strip()
-            appointment = user_details[7].strip()
-            print(username)
-        
-            return render_template("customerDetail.html", username=username, first_name=first_name,
-                                last_name=last_name,email=email,address=address,postal_code=postal_code,
-                                tending_physician=tending_physician,appointment=appointment)  
+            print(session)
+            return render_template("customerDetail.html")
 
     @app.route('/login', methods=['GET', 'POST'])
     def login():
@@ -499,58 +482,60 @@ with app.app_context():
             md5Hashed = md5Hash.hexdigest()
             print(md5Hashed)
             cursor = cnxn.cursor()
-            user_id = cursor.execute(
+            user_info = cursor.execute(
                 "select * from patients where username = ? and pass_hash = ?",
-                (username, md5Hashed)).fetchval()
-            session['patients'] = user_id
-            # USE for loop on cursor to retrieve data, dont use fetchval(one value) or fetchone(one row)!
-            # for x in cursor:
-            #     print(x)
-            #     name = x.username.strip()
-            #     patient_id = x.patient_id #is integer so apparently dont need strip?
-            #     first_name = x.first_name.strip()
-            #     last_name = x.last_name.strip()
-            #     email = x.email.strip()
-            #     address = x.address.strip()
-            #     postal_code = x.postal_code.strip()
-            #     session['name'] = name
-            #     session['id'] = patient_id
-            #     session['first_name'] = first_name
-            #     session['last_name'] = last_name
-            #     session['email'] = email
-            #     session['address'] = address
-            #     session['postal_code'] = postal_code
-            # try:# if it is not None then strip
-            #     tending_physician = x.tending_physician.strip()
-            # except:
-            #     tending_physician = x.tending_physician
-            # try:# if it is not None then strip
-            #     appointment = x.appointment.strip()
-            # except:
-            #    appointment = x.appointment
-
-            # print(x,'checkcccc')
-
-                # session['tending_physician'] = tending_physician #hmm dont think need, leave it for now
-                # session['appointment'] = appointment
-
-
-            #doesnt work
-            # for x in user_id:
-            #     print('check ehrehrherhreherherherhre')
-            #     session['id'] = x.username
-            #     session['username'] = x.patient_id
-            #     print(session['username'],'login user session')
-            if user_id:
+                (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+            print(user_info,'user_id')
+            print(cursor,'cursor')
+            # for reference list index!
+            # /****** Script for SelectTopNRows command from SSMS  ******/
+            # SELECT TOP (1000) [patient_id] 0
+            #     ,[username] 1
+            #     ,[first_name]2
+            #     ,[last_name]3
+            #     ,[pass_hash]4
+            #     ,[otp_code]5
+            #     ,[email]6
+            #     ,[phone_no]7
+            #     ,[address]8
+            #     ,[postal_code]9
+            #     ,[hospital]10
+            #     ,[tending_physician]11
+            #     ,[appointment]12
+            #     ,[access_level]13
+            # FROM [database1].[dbo].[patients]
+            if user_info != None:
+                session['user'] = True
+                print(user_info[0],'id')
+                print(user_info[1].strip(),'id')
+                print(user_info[3].strip(),'id')
+                print(user_info[4].strip(),'id')
+                print(user_info[7].strip(),'id')
+                session['id'] = user_info[0]
+                session['username'] = user_info[1]
+                session['first_name'] = user_info[2]
+                session['last_name'] = user_info[3]
+                session['phone_no'] =  user_info[7]
+                session['email'] =  user_info[6]
+                session['address'] =  user_info[8]
+                session['postal_code'] =  user_info[9]
+                # should we add this too? as session?
+                try:# if it is not None then  user_info[3]
+                    session['tending_physician'] = user_info[11].strip()
+                except:
+                    session['tending_physician'] = None
+                try:# if it is tending_physician None then strip
+                    session['appointment'] = user_info[12].strip()
+                except:
+                    session['appointment'] =  None
+                
                 cursor.close()
-                cnxn.close()
                 session['otp-semi-login'] = True
                 print('user logged in')
                 flash("Please continue with otp validation before login is successful","success")
                 return redirect(url_for("otpvalidation"))
             else:
                 cursor.close()
-                cnxn.close()
                 print("ERROR")
                 flash("Invalid username or password","error")
                 return redirect(url_for('login'))
@@ -616,13 +601,12 @@ with app.app_context():
                 print(session['id'],'idididid')
                 print(session['username'],'ididididnananananannana')
                 cursor.close()
-                cnxn.close()
+
                 session['otp-semi-login'] = True
                 return redirect(url_for("otpvalidation"))
             else:
                 print('fail login')
                 cursor.close()
-                cnxn.close()
                 return render_template("404.html")
         else:
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
@@ -637,9 +621,11 @@ with app.app_context():
 
     @app.route("/validation", methods=["POST"])
     def otpvalidation2():
-        if session['otp-semi-login'] == True:
+        if session['otp-semi-login'] and session['user']:
             cursor = cnxn.cursor()
-            print(session['patients'])
+            # cursor.execute("select access_level from ")
+            print(session,'otpval check sess')
+
             if "doctors" in session:
                 (otp_seed, username, first_name, last_name) = cursor.execute(
                     "select otp_code, username, first_name, last_name from doctors where staff_id = ?",
@@ -650,10 +636,10 @@ with app.app_context():
                     "select otp_code, username, first_name, last_name from researchers where researcher_id = ?",
                     (session["researchers"])
                 ).fetchall()[0]
-            elif 'patients' in session:
+            elif "user" in session:
                 (otp_seed, username, first_name, last_name) = cursor.execute(
                     "select otp_code, username, first_name, last_name from patients where patient_id = ?",
-                    (session["patients"])
+                    (session["user"])
                 ).fetchall()[0]
             elif "hr" in session:
                 (otp_seed, username, first_name, last_name) = cursor.execute(
@@ -666,7 +652,7 @@ with app.app_context():
                     (session["head_admin"])
                 ).fetchall()[0]
 
-            # getting OTP provided by user
+
             otp = int(request.form.get("otp"))
             print(otp_seed)
             print(pyotp.TOTP(otp_seed).now())
@@ -683,7 +669,6 @@ with app.app_context():
                 session['login'] = True
 
                 cursor.close()
-                cnxn.close()
                 session['login'] = True
                 '''
                 if verification == 'unverified':
@@ -702,8 +687,8 @@ with app.app_context():
             else:
                 print("wrong")
                 cursor.close()
-                cnxn.close()
-                return redirect(url_for("login"))
+                flash("Wrong OTP", "error")
+                return redirect(url_for("otpvalidation"))
         else:
             print('false')
             flash('Wrong username or password!')
@@ -891,8 +876,7 @@ with app.app_context():
     @app.route('/register', methods=['GET', 'POST'])
     def register():
         register = Register(request.form)
-        print("helo")
-        print(request.method)
+
         if request.method == "POST" and register.validate():
             print("hello")
             cnxn = pyodbc.connect(
@@ -904,6 +888,9 @@ with app.app_context():
             username = register.username.data
             firstname = register.firstname.data
             lastname = register.lastname.data
+            address = register.address.data
+            phone_no = register.phone_no.data
+            postal_code = register.postal_code.data
             email = register.email.data
             print(username)
 
@@ -911,10 +898,10 @@ with app.app_context():
             md5Hashed = md5Hash.hexdigest()
             otp_code = pyotp.random_base32()
             insert_query = textwrap.dedent('''
-                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email) 
-                VALUES (?, ?, ?, ?, ?, ?); 
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,phone_no,address,postal_code,access_level) 
+                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
             ''')
-            values = (username, firstname, lastname, md5Hashed, otp_code, email)
+            values = (username, firstname, lastname, md5Hashed, otp_code, email,phone_no,address,postal_code,'user')
 
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
@@ -925,8 +912,8 @@ with app.app_context():
             cursor.execute(insert_query, values)
             cnxn.commit()
             cursor.close()
-            cnxn.close()
             qr = 'otpauth://totp/AngelHealth:' + username + '?secret=' + otp_code
+
             return render_template('displayotp.html', otp=otp_code, qrotp=qr)
 
         return render_template('register.html', form=register)

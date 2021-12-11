@@ -1,11 +1,11 @@
 {% extends "baseForAccess.html" %}
-{% block title %}Library Loan System - Retrieve Users{% endblock %}
+{% block title %}User Info{% endblock %}
 
-{% block content %}
+{% block main_content %}
 <style>
 
         body {
-          margin-top: 100px;
+          margin-top: 10px;
         }
 
 
@@ -32,11 +32,6 @@
 {% endif %}
 
 <h1 class="display-4">Account Details</h1>
-<form id='upload-form' action="{{ url_for('upload', nric = user.get_nric()) }}" method="POST"
-      enctype="multipart/form-data">
-    <input type="file" name="file" accept="images/*" multiple>
-    <input type="submit" value="upload">
-</form>
 
 {% if session['profile_pic'] %}
 
@@ -55,80 +50,37 @@
         <thead>
 
         <tr>
-            <th>First Name: {{ first_name }}</th>
+            <th>First Name: {{ session['first_name'] }}</th>
         </tr>
         <tr>
-            <th>Last Name: {{ last_name }}</th>
+            <th>Last Name: {{ session['last_name'] }}</th>
         </tr>
         <tr>
-            <th>NRIC: {{username }}</th>
-        </tr>
-
-        <tr>
-            <th>Phone Number: {{ user.get_phone_no() }}</th>
-        </tr>
-        <tr>
-            <th>Email: {{ email }}</th>
-        </tr>
-    
-
-        <tr>
-            <th>Address: {{ address }}</th>
+            <th>NRIC: {{session['username'] }}</th>
         </tr>
 
         <tr>
-            <th>Postal Code: {{ postal_code }}</th>
+            <th>Phone Number: {{ session['phone_no'] }}</th>
         </tr>
         <tr>
-            <th>Tending Physician: {{ tending_physician }}</th>
+            <th>Email: {{ session['email'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Address: {{ session['address'] }}</th>
+        </tr>
+
+        <tr>
+            <th>Postal Code: {{ session['postal_code'] }}</th>
         </tr>
         <tr>
-            <th>Appointment: {{ appointment }}</th>
+            <th>Tending Physician: {{ session['tending_physician'] }}</th>
+        </tr>
+        <tr>
+            <th>Appointment: {{ session['appointment'] }}</th>
         </tr>
         </thead>
-        <!-- <tbody>
-        <!-- <tr>
-            <td><a href="/updateUser/{{user.get_nric()}}" class="btn btn-warning">Edit Infomation</a>
-
-                <form action="{{url_for('delete_user', nric=user.get_nric())}}" method="POST">
-                    <!--                input type="submit" value="Delete" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete {#user.get_first_name()#} {#user.get_last_name()#}?');">-->
-                    <!-- Button to Open the Modal -->
-                    <button type="button" class="btn btn-danger" data-toggle="modal"
-                            data-target="#myModal_{{user.get_nric()}}">Delete
-                    </button>
-
-                    <!-- The Modal -->
-                    <div class="modal" id="myModal_{{user.get_nric()}}">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-
-                                <!-- Modal Header -->
-                                <div class="modal-header">
-                                    <h4 class="modal-title">Delete Confirmation</h4>
-                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                </div>
-
-                                <!-- Modal body -->
-                                <div class="modal-body">
-                                    Are you sure you want to delete {{user.get_first_name()}} {{user.get_last_name()}}?
-                                </div>
-
-
-                                <!-- Modal footer -->
-                                <div class="modal-footer">
-                                    <input type="submit" value="Delete" class="btn btn-danger">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                </div>
-
-
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </td>
-        </tr> -->
-
-        </tbody> -->
+     
     </table>
 </div>
 

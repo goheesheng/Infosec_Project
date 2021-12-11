@@ -112,6 +112,7 @@ CREATE TABLE [dbo].[head_admin](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[phone_no] [varchar](20) NOT NULL,
 	[access_level][varchar](30) NOT NULL
 ) ON [PRIMARY]
 GO
@@ -140,6 +141,7 @@ CREATE TABLE [dbo].[hr](
 	[address] [varchar](50) NOT NULL,
 	[postal_code] [varchar](6) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[phone_no] [varchar](20) NOT NULL,
 	[access_level][varchar](30) NOT NULL
 ) ON [PRIMARY]
 GO
@@ -192,6 +194,7 @@ CREATE TABLE [dbo].[researchers](
 	[pass_hash] [varchar](50) NOT NULL,
 	[otp_code] [varchar](50) NOT NULL,
 	[email] [varchar](50) NOT NULL,
+	[phone_no] [varchar](20) NOT NULL,
 	[address] [varchar](50) NOT NULL,
 	[postal_code] [varchar](6) NOT NULL,
 	[company] [varchar](50) NULL,

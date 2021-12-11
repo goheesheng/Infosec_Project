@@ -37,6 +37,7 @@ class Register(Form):
     username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
