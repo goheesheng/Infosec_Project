@@ -1,10 +1,8 @@
-{% extends 'includes/_navbar.html' %}
-{% block navbar_content %}
+{% extends "baseForAccess.html" %}
+{% block main_content %}
 <main>
     <div class="container-fluid px-4">
-        <pre>
-        {{ data }}
-        </pre>
+        <pre>{{ data }}</pre>
     </div>
 </main>
 {% endblock %}
