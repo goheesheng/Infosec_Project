@@ -1110,6 +1110,7 @@ with app.app_context():
 
             #check whether in access list table
             if access_info != None:
+
                 cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
@@ -1395,7 +1396,7 @@ with app.app_context():
                 (otp_seed, username, first_name, last_name) = cursor.execute(
                         "select otp_code, username, first_name, last_name from doctors where username = ?",
                         (value)
-                    ).fetchone()[0]
+                    ).fetchone()
             elif session['otp-semi-login'] and session['access_level'] == 'researcher':
                 value =  session['username']
 
@@ -1534,8 +1535,10 @@ with app.app_context():
             return redirect(url_for('homepage'))
         else:
             tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
-            if session['username'] != tending_physician:
-                flash("You are a doctor but unauthorized to view this patients information")
+            print(session['username'])
+            print(tending_physician)
+            if session['username'] != tending_physician.strip():
+                flash("You are unauthorized to view this patients information")
                 return redirect(url_for('homepage'))
 
         patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
@@ -1543,7 +1546,8 @@ with app.app_context():
         file_submit = FileSubmit(request.form)
         file_submit.patient_nric.data=patient[1].strip()
         file_submit.patient_name.data=f"{patient[2].strip()} {patient[3].strip()}"
-
+        filesname=f"{patient[1].strip()}.docx"
+        print(filesname)
 
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
@@ -1553,7 +1557,7 @@ with app.app_context():
             file = request.files["submission"]
             if file.filename.strip()=="":
                 flash("Invalid filename","error")
-                return  render_template('submission.html', form=file_submit,id=id)
+                return redirect(url_for('submission'), pid)
 
             storedfiledata=get_file_data_from_database(pid)
             if  storedfiledata != None:
@@ -1592,9 +1596,9 @@ with app.app_context():
             # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
             # blockchain.new_block('123')
             # return render_template('test.html', chain=blockchain.chain)
-            return redirect(url_for("submission", pid=patient[0]))
+            return redirect(url_for("submission",file=filesname ))
 
-        return render_template('submission.html', form=file_submit,id=pid)
+        return render_template('submission.html', form=file_submit,file=filesname)
 
 
     @app.route('/verification')
