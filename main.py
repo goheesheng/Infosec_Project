@@ -229,9 +229,11 @@ with app.app_context():
     @custom_login_required
     def homepage():
         flash("welcome")
-        if session['access_level'] == 'patient':
+        if session['access_level'] == 'patient' or session['access_level'] == 'doctor' or session['access_level'] == 'researcher':
             return render_template('homepage.html')
         elif session['access_level'] == 'head_admin':
+            return redirect(url_for('dashboard'))
+        elif session['access_level'] == 'hr':
             return redirect(url_for('dashboard'))
 
     @app.route('/')
@@ -799,7 +801,7 @@ with app.app_context():
             elif session['access_level'] == 'doctor':
                 cursor = cnxn.cursor()
                 user_info = cursor.execute(
-                    "select * from doctos where username = ?",
+                    "select * from doctors where username = ?",
                     (session['username'])).fetchone() #fetchone() dont delete this except others
                 get_firstname = user_info[2].strip()
                 get_lastname = user_info[3].strip()
@@ -1129,9 +1131,9 @@ with app.app_context():
                 #check whether was it created in the individual tables (e.g. is it in doctors or researchers or HR or head_admin tables?)
                 cursor = cnxn.cursor()
                 #Retrieve the unique roles using access_level_access_list
-                if access_level_access_list == "researchers":
+                if access_level_access_list == "researcher":
                     user_info = cursor.execute(
-                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    f"select * from researchers where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
                     cursor = cnxn.close()
                     # CREATE TABLE [dbo].[researchers](
@@ -1216,7 +1218,7 @@ with app.app_context():
 
                 elif access_level_access_list == "hr":
                     user_info = cursor.execute(
-                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    f"select * from hr where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
                     cursor = cnxn.close()
                     # CREATE TABLE [dbo].[hr](
@@ -1254,9 +1256,9 @@ with app.app_context():
                         session['postal_code'] =  user_info[7].strip()
                         session['access_level'] =  user_info[10].strip()
 
-                elif access_level_access_list == "doctors":
+                elif access_level_access_list == "doctor":
                     user_info = cursor.execute(
-                    f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
+                    f"select * from doctors where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
                     cursor = cnxn.close()
                     # CREATE TABLE [dbo].[doctors](
@@ -1301,20 +1303,8 @@ with app.app_context():
                         except:
                             session['department'] = None
 
-           
-            # if doctorCheck != None:
-            #     user_type = "doctors"
-            #     identifier = doctorCheck[0]
-            # elif adminCheck != None:
-            #     user_type = "admin"
-            #     identifier = adminCheck[0]
-            # elif researcherCheck != None:
-            #     user_type = "researchers"
-            #     identifier = researcherCheck[0]
-            # elif headadminCheck != None:
-            #     user_type = "head_admin"
-            #     identifier = headadminCheck[0]
                 else:
+                    print('passfail')
                     passed = False
                     return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
@@ -1323,7 +1313,6 @@ with app.app_context():
                 # print(session['id'],'idididid')
                 # print(session['username'],'ididididnananananannana')
                 # cursor.close()
-
                 session['otp-semi-login'] = True
                 return redirect(url_for("otpvalidation"))
             else:
@@ -1336,11 +1325,6 @@ with app.app_context():
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
-    # @app.route('/validation')
-    # # @custom_login_required
-    # def otpvalidation():
-    #     print("hello")
-    #     return render_template("loginotp.html")
 
     ## for reference dont touch - ES
     @app.route('/deleteUser', methods=['POST'])
@@ -1374,6 +1358,7 @@ with app.app_context():
                 return redirect(url_for('log_out'))
             elif session['admin'] == True:
                 return redirect(url_for('retrieve_users'))
+
     @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
         cnxn = pyodbc.connect(
@@ -1384,39 +1369,6 @@ with app.app_context():
         )
         if request.method=="POST":
             cursor = cnxn.cursor()
-            # print(session,'otpval check sess')
-            # if session['otp-semi-login'] and session['access_level'] == 'patient':
-            #     # cursor.execute("select access_level from ")
-            #     value =  session['username']
-            #     (otp_seed) = cursor.execute(
-            #                         "select otp_code from patients where username = ?",
-            #                         (value)
-            #                     ).fetchone()
-            # elif session['otp-semi-login'] and session['access_level'] == 'doctor':
-            #     value =  session['username']
-            #     (otp_seed) = cursor.execute(
-            #             "select otp_code from doctors where username = ?",
-            #             (value)
-            #         ).fetchone()
-            # elif session['otp-semi-login'] and session['access_level'] == 'researcher':
-            #     value =  session['username']
-            #     (otp_seed) = cursor.execute(
-            #         "select otp_code from researchers where username = ?",
-            #         (value)
-            #     ).fetchone()
-            # elif session['otp-semi-login'] and session['access_level'] == 'hr':
-            #     value =  session['username']
-            #     (otp_seed) = cursor.execute(
-            #             "select otp_code from hr where username = ?",
-            #             (value)
-            #         ).fetchone()
-            # elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
-            #     value =  session['username']
-            #     print(value,'this is value')
-            #     (otp_seed) = cursor.execute(
-            #         "select otp_code from head_admin where username = ?",
-            #         (value)).fetchone()
-
             access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
             if session['access_level'] in access_list and session['otp-semi-login']:
                 query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
@@ -1526,19 +1478,23 @@ with app.app_context():
 
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
-    # @login_required
+    @custom_login_required
     def submission(pid):
         cursor = cnxn.cursor()
         if 'access_level' not in session:
             return redirect(url_for('homepage'))
-        elif session['access_level'] != 'doctor':
+        elif session['access_level'] != 'doctor':   
             return redirect(url_for('homepage'))
         else:
             tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
             print(session['username'])
             print(tending_physician)
-            if session['username'] != tending_physician.strip():
-                flash("You are unauthorized to view this patients information")
+            try: # means that it does not exist
+                tending_physician = tending_physician.strip()
+            except:
+                tending_physician = None
+            if session['username'] != tending_physician:
+                flash("You are unauthorized to view this patients information","error")
                 return redirect(url_for('homepage'))
 
         patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
@@ -1787,7 +1743,7 @@ with app.app_context():
 
 
     @app.route('/doctor-registration', methods=['GET', 'POST'])
-    # @custom_login_required
+    @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
         if request.method == "POST" and doc_form.validate():
@@ -1838,60 +1794,11 @@ with app.app_context():
                 SendMail("image.png", email, "Doctor")
                 os.remove('image.png')
             else:
-                flash("Doctor Account already exists!")
-            return render_template('dashboard.html')
-        return render_template('register_doctor.html', form=doc_form)
-
-### nani???????????????????????? -ES already have reg mah
-    @app.route('/patient-registration', methods=['GET', 'POST'])
-    # @custom_login_required
-    def register_patient():
-        pat_form = Register(request.form)
-        if request.method == "POST" and pat_form.validate():
-            print("hello")
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
-            username = pat_form.username.data
-            firstname = pat_form.firstname.data
-            lastname = pat_form.lastname.data
-            address = pat_form.address.data
-            phone_no = pat_form.phone_no.data
-            postal_code = pat_form.postal_code.data
-            email = pat_form.email.data
-            print(username)
-
-            md5Hash = hashlib.md5(pat_form.password.data.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            otp_code = pyotp.random_base32()
-            insert_query = textwrap.dedent('''
-                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,phone_no,address,postal_code,access_level) 
-                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
-            ''')
-            values = (
-            username, firstname, lastname, md5Hashed, otp_code, email, phone_no, address, postal_code, 'patient')
-
-            cursor = cnxn.cursor()
-            cursor.execute('SELECT username, email FROM patients')
-            for x in cursor:
-                if x.username == username or x.email == email:
-                    return redirect(url_for('dashboard'))
-            cursor.execute(insert_query, values)
-            cnxn.commit()
-            cursor.close()
-            print('Sending email OTP...')
-            qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
-            image = pyqrcode.create(qr)
-            image.png('image.png', scale=5)
-            SendMail("image.png", email, "Patient")
-            os.remove('image.png')
+                flash("Account already exists!") #need ensure no repeated email too!
+                return render_template('register_doctor.html', form=doc_form)
             return redirect(url_for('dashboard'))
-        else:
-            flash("Patient Account already exists!")
-        return render_template('register_patient.html', form=pat_form)
+        print(session)
+        return render_template('register_doctor.html', form=doc_form)
 
 
     @app.route('/researchers-registration', methods=['GET', 'POST'])
@@ -1946,7 +1853,8 @@ with app.app_context():
                 SendMail("image.png", email, "Researcher")
                 os.remove('image.png')
             else:
-                flash("Researcher Account already exists!")
+                flash("Account already exists!")
+                return render_template('register_researcher.html', form=researcher_form)
             return redirect(url_for('dashboard'))
         return render_template('register_researcher.html', form=researcher_form)
 
@@ -1996,6 +1904,7 @@ with app.app_context():
                 cursor.execute(insert_query, values)
                 cursor.commit()
                 cursor.close()
+                print(username,otp_code,'hehhehehehehehe')
                 print('Sending email OTP...')
                 qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                 image = pyqrcode.create(qr)
@@ -2003,7 +1912,7 @@ with app.app_context():
                 SendMail("image.png", email, "HR")
                 os.remove('image.png')
             else:
-                flash("Human Resource Account already exists!")
+                flash("Account already exists!")
                 return render_template('register_hr.html', form=hr_form)
 
             return redirect(url_for('dashboard'))

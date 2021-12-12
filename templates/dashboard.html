@@ -12,9 +12,9 @@
         <div class="row">
             <div class="col-xl-3 col-md-6">
                 <div class="card bg-warning text-white mb-4">
-                    <div class="card-body">Create Hr Staff</div>
+                    <div class="card-body">Create Hr's Staff</div>
                     <div class="card-footer d-flex align-items-center justify-content-between">
-                        <a class="small text-white stretched-link" href="#hr">View Details</a>
+                        <a class="small text-white stretched-link" href="/hr-registration">Create HR Account</a>
                         <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                     </div>
                 </div>
@@ -31,6 +31,7 @@
                     <thead>
                         <tr>
                             <th>Access Level</th>
+                            <th>User ID</th>
                             <th>Full Name</th>
                             <th>Username/NRIC</th>
                             <th>Email</th>
@@ -39,33 +40,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for x in doctors %}
-                        <tr>
-                            <td>{{x.access_level}}</td>
-                            <td>{{x.first_name}} {{x.last_name}}</td>
-                            <td>{{x.username}}</td>
-                            <td>{{x.email}}</td>
-                            <td>{{x.phone_no}}</td>
-                            <td>
-                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=doctors)}}">Remove</button></a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                    {% for x in patients %}
-                        <tr>
-                            <td>{{x.access_level}}</td>
-                            <td>{{x.first_name}} {{x.last_name}}</td>
-                            <td>{{x.username}}</td>
-                            <td>{{x.email}}</td>
-                            <td>{{x.phone_no}}</td>
-                            <td>
-                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
-                            </td>
-                        </tr>
-                    {% endfor %}
+
                     {% for x in hr %}
                         <tr>
                             <td>{{x.access_level}}</td>
+                            <td>{{x.hr_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
@@ -75,18 +54,7 @@
                             </td>
                         </tr>
                     {% endfor %}
-                    {% for x in researchers %}
-                        <tr>
-                            <td>{{x.access_level}}</td>
-                            <td>{{x.first_name}} {{x.last_name}}</td>
-                            <td>{{x.username}}</td>
-                            <td>{{x.email}}</td>
-                            <td>{{x.phone_no}}</td>
-                            <td>
-                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
-                            </td>
-                        </tr>
-                    {% endfor %}
+                    
                     </tbody>
                     <tfoot>
                         <tr>
@@ -103,48 +71,100 @@
                 </div>
             </div>
         
-        <div class="col-xl-12">
-                <div class="card bg-warning text-white mb-4" id='hr'>
-                    <div class="card-body">Create HR Staff</div>
-                    <div class="card-footer d-flex align-items-center justify-content-between">
-                        <a class="small text-white stretched-link" href="/hr-registration">Create HR Account</a>
-                        <div class="small text-white"><i class="fas fa-angle-right"></i></div>
-                    </div>
+    </div>
+{% elif session['access_level'] == 'hr' %}
+
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Dashboard</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item active">Dashboard</li>
+    </ol>
+    <div class="row">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">Create Doctor Staff</div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="/doctor-registration">Create Doctor's Account</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
                 </div>
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <i class="fas fa-chart-bar me-1"></i>
-                        HR List
-                    </div>
-                    <table id="datatablesSimple" class="table table-striped table-bordered">
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">Create Researcher Staff</div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a class="small text-white stretched-link" href="/researchers-registration">Create Researcher's Account</a>
+                    <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                </div>
+            </div>
+        </div>
+
+        
+    </div>
+    <div class="row">
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card mb-">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Users List
+                </div>
+                <table id="datatablesSimple">
                     <thead>
                         <tr>
-                            <th>HR ID</th>
+                            <th>User ID</th>
                             <th>Full Name</th>
-                            <th>Username</th>
+                            <th>Staff Number</th>
                             <th>Email</th>
                             <th>Phone Number</th>
-                            <th>Options</th>
+                            <th>Roles</th>
+                            <th>Address</th>
+                            <th>Postal Code</th>
                         </tr>
                     </thead>
                     <tbody>
-                    {% for x in hr %}
+
+                    {% for x in doctors %}
                         <tr>
-                            <td>{{x.hr_id}}</td>
+                            <td>{{x.staff_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
+                            <td>{{x.access_level}}</td>
+                            <td>{{x.address}}</td>
+                            <td>{{x.postal_code}}</td>
+
+
                             <td>
                                 <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
-                    </tbody>
-            </table>
-        </div>
-    </div>
 
-{% endif %}
+                    {% for x in researchers %}
+                    <tr>
+                        <td>{{x.researcher_id}}</td>
+                        <td>{{x.first_name}} {{x.last_name}}</td>
+                        <td>{{x.username}}</td>
+                        <td>{{x.email}}</td>
+                        <td>{{x.phone_no}}</td>
+                        <td>{{x.access_level}}</td>
+                        <td>{{x.address}}</td>
+                        <td>{{x.postal_code}}</td>
+                        <td>
+                            <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
+                        </td>
+                    </tr>
+                {% endfor %}               
+                
+            </table>
+            </div>
+        </div>
+    
+</div>
+{% elif session['access_level'] == 'doctor' %}
+    {% endif %}
 {% endblock %}
 
