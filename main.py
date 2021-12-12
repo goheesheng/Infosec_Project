@@ -1637,6 +1637,7 @@ with app.app_context():
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
+        print(data)
         mask = ''
         year = datetime.today().year
         # Age
@@ -1728,6 +1729,13 @@ with app.app_context():
         #print(appointment[0].split(',')[0],session['username'])
 
 
+    @app.route('/cancelappointment')
+    def cancelappointment():
+        cursor = cnxn.cursor()
+        cursor.execute("update patients set appointment = NULL where patient_id = ?",(session['id']))
+        cursor.commit()
+        flash("Your appointment has been cancelled","success")
+        return redirect(url_for('viewappointment'))
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
