@@ -8,8 +8,6 @@
           margin-top: 10px;
         }
 
-
-
 </style>
 {% for msg in get_flashed_messages() %}
 <div class="alert alert-warning alert-dismissible pb-100 " role='alert'>{{ msg }}
@@ -32,13 +30,10 @@
 {% endif %}
 
 <h1 class="display-4">Account Details</h1>
-
 {% if session['access_level'] == 'patient' %}
-
 <div>
     <table class="table table-striped">
         <thead>
-
         <tr>
             <th>First Name: {{ session['first_name'] }}</th>
         </tr>
