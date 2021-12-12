@@ -81,7 +81,7 @@
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=doctors)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -93,7 +93,7 @@
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -105,7 +105,7 @@
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -117,7 +117,7 @@
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -161,7 +161,7 @@
                     <table id="datatablesSimple" class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Access Level</th>
+                            <th>Staff ID</th>
                             <th>Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
@@ -172,13 +172,13 @@
                     <tbody>
                     {% for x in doctors %}
                         <tr>
-                            <td>{{x.access_level}}</td>
+                            <td>{{x.staff_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -202,7 +202,7 @@
                     <table id="datatablesSimple" class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Access Level</th>
+                            <th>Patient ID</th>
                             <th>Full Name</th>
                             <th>NRIC</th>
                             <th>Email</th>
@@ -213,13 +213,13 @@
                     <tbody>
                     {% for x in patients %}
                         <tr>
-                            <td>{{x.access_level}}</td>
+                            <td>{{x.patient_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -243,7 +243,7 @@
                     <table id="datatablesSimple" class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Access Level</th>
+                            <th>HR ID</th>
                             <th>Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
@@ -254,13 +254,13 @@
                     <tbody>
                     {% for x in hrs %}
                         <tr>
-                            <td>{{x.access_level}}</td>
+                            <td>{{x.hr_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -284,7 +284,7 @@
                     <table id="datatablesSimple" class="table table-striped table-bordered">
                     <thead>
                         <tr>
-                            <th>Access Level</th>
+                            <th>Company</th>
                             <th>Full Name</th>
                             <th>Username</th>
                             <th>Email</th>
@@ -295,13 +295,13 @@
                     <tbody>
                     {% for x in researchers %}
                         <tr>
-                            <td>{{x.access_level}}</td>
+                            <td>{{x.company}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" href="{{url_for('remove', variable=x.user_id)}}">Remove</button>
+                                <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
                         </tr>
                     {% endfor %}

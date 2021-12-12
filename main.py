@@ -1174,6 +1174,7 @@ with app.app_context():
 
 
     @app.route('/doctor-registration', methods=['GET', 'POST'])
+    # @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
         if request.method == "POST" and doc_form.validate():
@@ -1206,7 +1207,7 @@ with app.app_context():
                 insert_query = "INSERT INTO doctors (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,department) \
                                             VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
                 values = (username, firstname, lastname, md5Hashed,
-                          email, otp_code, phone_no, 'doctor', address, postal_code, department)
+                          email, otp_code, phone_no, 'doctor', postal_code,address, department)
                 cursor.execute(insert_query, values)
                 cursor.commit()
                 cursor.close()
@@ -1227,6 +1228,7 @@ with app.app_context():
         return render_template('register_doctor.html', form=doc_form)
 
     @app.route('/patient-registration', methods=['GET', 'POST'])
+    # @custom_login_required
     def register_patient():
         pat_form = Register(request.form)
         if request.method == "POST" and pat_form.validate():
@@ -1275,6 +1277,7 @@ with app.app_context():
 
 
     @app.route('/researchers-registration', methods=['GET', 'POST'])
+    # @custom_login_required
     def register_researcher():
         researcher_form = RegisterResearcher(request.form)
         if request.method == "POST" and researcher_form.validate():
@@ -1380,9 +1383,26 @@ with app.app_context():
             return redirect(url_for('dashboard'))
         return render_template('register_hr.html', form=hr_form)
 
-    @app.route('/<variable>/remove', methods=['GET', 'POST'])
-    def remove(variable):
-        return redirect(url_for('homepage'))
+    @app.route('/remove/<string:identifier>/<string:table>', methods=['GET', 'POST'])
+    def remove(identifier,table):
+        cursor = cnxn.cursor()
+        if table == 'doctor':
+            cursor.execute('DELETE FROM doctors WHERE username=?',(identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'patient':
+            cursor.execute('DELETE FROM patients WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'hr':
+            cursor.execute('DELETE FROM hr WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'researcher':
+            cursor.execute('DELETE FROM researchers WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        return redirect(url_for('dashboard'))
 
     @app.route('/<variable>/patient', methods=['GET', 'POST'])
     def patient(variable):
