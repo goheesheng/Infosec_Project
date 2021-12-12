@@ -2,7 +2,7 @@ import re
 from wtforms import StringField, validators, SubmitField, FileField, PasswordField
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField, DateField
 from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
-#from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
+from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
 #from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
 
 class FileSubmit(Form):
