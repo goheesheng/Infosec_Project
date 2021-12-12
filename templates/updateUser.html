@@ -1,0 +1,58 @@
+{% extends "baseForAccess.html" %}
+{% block title %}Library Loan System - Update User{% endblock %}
+
+{% block main_content %}
+
+
+<style>
+        body {
+          padding-top: 10px;
+        }
+
+
+</style>
+
+{% from "includes/_formHelper.html" import render_field %}
+
+<h1 class="display-4">Update User</h1> <!-- Display 1 - >4 are the size of fonts, 1 is the biggest -->
+
+
+<form method="POST" action="">
+    <div class="form-group">
+        {{ render_field(form.username, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.firstname, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.lastname, class="form-control") }}
+    </div>
+
+    <div class="form-group">
+        {{ render_field(form.address, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.phone_no, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.postal_code, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.email, class="form-control") }}
+    </div>
+
+    <div class="form-group">
+
+        {{ render_field(form.password, class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ render_field(form.confirmPassword, class="form-control") }}
+    </div>
+    {% if session['Head_Admin'] == True %}
+    <div class="form-group">
+        {{ render_field(form.become_admin, class="form-check") }}
+    </div>
+    {% endif %}
+    <input type='submit' value='Update' class="'btn btn-primary">
+</form>
+{% endblock %}

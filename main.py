@@ -17,7 +17,7 @@ import hashlib
 import re
 import random
 import bcrypt
-from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment,Patient_UpdateForm
 from functools import wraps
 import pyodbc
 import textwrap
@@ -427,16 +427,257 @@ with app.app_context():
             print(session)
             return render_template("customerDetail.html")
 
+    @app.route('/updateUser', methods=['GET', 'POST'])
+    def update_user():
+        update_user_form = Patient_UpdateForm(request.form)
+        if request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'patient':  # POST method, update upon clicking submission
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            
+            cursor = cnxn.cursor()
+            username = update_user_form.username.data
+            firstname = update_user_form.firstname.data
+            lastname = update_user_form.lastname.data
+            address = update_user_form.address.data
+            phone_no = update_user_form.phone_no.data
+            postal_code = update_user_form.postal_code.data
+            email = update_user_form.email.data
+            insert_query1 = ('UPDATE patients \
+                              SET username = ?,\
+                              SET first_name = ?,\
+                              SET last_name = ?,\
+                              SET address = ?,\
+                              SET phone_no = ?,\
+                              SET postal_code = ?,\
+                              SET email = ?,\
+                              WHERE username = ?\
+                              VALUES (?, ?, ?, ?,?,?,?,?);')
+            
+            values1 = (username, firstname, lastname, address,phone_no,postal_code,email,session['username'])
+
+            insert_query2 = ("UPDATE access_list \
+                            SET username = ?, \
+                            WHERE username = ? \
+                            VALUES (?,?); ")
+            values2 = (username,session['username'])
+
+            if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
+                print('did not update ')
+                pass
+            else:
+                md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                insert_query3 = (' UPDATE patients \
+                              SET pass_hash = ?,\
+                              WHERE username = ?\
+                              VALUES (?, ?);')
+            
+                values3 = (md5Hashed,session['username'])
+                cursor = cnxn.cursor()
+                cursor.execute(insert_query, values2)
+                cnxn.commit()
+              
+                insert_query = textwrap.dedent('''
+                    UPDATE access_list 
+                    SET pass_hash = ?, \
+                    WHERE username = ?
+                    VALUES (?,?); 
+                ''')
+                values3 = (md5Hashed,username)
+                cursor.execute(insert_query1, values1)
+                cursor.execute(insert_query2, values2)
+                cursor.execute3(insert_query3, values3)
+
+                cnxn.commit()
+
+                print('updated')
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                "select * from patients where username = ? and pass_hash = ?",
+                (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+                session['id'] = user_info[0]
+                session['username'] = user_info[1].strip()
+                session['first_name'] = user_info[2].strip()
+                session['last_name'] = user_info[3].strip()
+                session['phone_no'] =  user_info[7].strip()
+                session['email'] =  user_info[6].strip()
+                session['address'] =  user_info[8].strip()
+                session['postal_code'] =  user_info[9].strip()
+                session['access_level'] = user_info[13].strip()
+                cursor.close()
+
+            return redirect(url_for('viewUser'))
+
+
+        # to retrieve data from shelve and diplay previous data
+        # so bascially this will come first as admin did not click update thus post doesnt work first
+        elif request.method == 'GET' and session['access_level'] == 'patient':  # get method
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            cursor = cnxn.cursor()
+            user_info = cursor.execute(
+                "select * from patients where username = ?",
+                (session['username'])).fetchone() #fetchone() dont delete this except others
+
+            print(user_info,'user_id')
+            print(cursor,'cursor')
+
+            get_username = user_info[1].strip()
+            get_firstname = user_info[2].strip()
+            get_lastname = user_info[3].strip()
+            get_address = user_info[8].strip()
+            get_phone_no = user_info[7].strip()
+            get_postal_code = user_info[9].strip()
+            get_email = user_info[6].strip()
+
+            update_user_form.username.data = get_username
+            update_user_form.firstname.data =get_firstname
+            update_user_form.lastname.data = get_lastname
+            update_user_form.address.data = get_address
+            update_user_form.phone_no.data = get_phone_no
+            update_user_form.postal_code.data = get_postal_code
+            update_user_form.email.data = get_email
+
+        # elif request.method == 'POST' and update_user_form.validate() and session['Head_Admin'] == False:  # customer side
+        #     if session['admin']:
+        #         users_dict = {}
+        #         db = shelve.open('storage.db', 'w')
+        #         users_dict = db['Users']
+
+        #         user = users_dict.get(nric)
+        #         user.set_first_name(update_user_form.first_name.data)
+        #         user.set_last_name(update_user_form.last_name.data)
+        #         user.set_race(update_user_form.race.data)
+        #         user.set_phone_no(update_user_form.phone_no.data)
+        #         user.set_email(update_user_form.email.data)
+        #         user.set_gender(update_user_form.gender.data)
+        #         if update_user_form.password.data == '' and update_user_form.confirm_password.data == '':
+        #             print('did not update/ ')
+        #             pass
+        #         else:
+        #             user.set_password(update_user_form.password.data)
+        #         print('updated')
+        #         user.set_address_1(update_user_form.address_1.data)
+        #         user.set_address_2(update_user_form.address_2.data)
+        #         user.set_postal_code(update_user_form.postal_code.data)
+
+        #         db['Users'] = users_dict
+        #         db.close()
+        #         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
+
+        #         return redirect(url_for('retrieve_users'))
+        #     elif session['admin'] == False:
+        #         users_dict = {}
+        #         db = shelve.open('storage.db', 'w')
+        #         users_dict = db['Users']
+
+        #         user = users_dict.get(nric)
+        #         user.set_first_name(update_user_form.first_name.data)
+        #         user.set_last_name(update_user_form.last_name.data)
+        #         user.set_race(update_user_form.race.data)
+        #         user.set_phone_no(update_user_form.phone_no.data)
+        #         user.set_email(update_user_form.email.data)
+        #         user.set_gender(update_user_form.gender.data)
+        #         # if nothing is filled in the webpage, password will not be changed
+        #         if update_user_form.password.data == '' and update_user_form.confirm_password.data == '':
+        #             print('did not update/ ')
+        #             pass
+        #         else:
+        #             user.set_password(update_user_form.password.data)
+        #         user.set_address_1(update_user_form.address_1.data)
+        #         user.set_address_2(update_user_form.address_2.data)
+        #         user.set_postal_code(update_user_form.postal_code.data)
+
+        #         db['Users'] = users_dict
+        #         db.close()
+        #         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
+
+        #         return redirect(url_for('upload', nric=nric))
+
+      
+        # elif request.method == 'GET' and session['Head_Admin'] == True:  # get method
+        #     users_dict = {}
+        #     db = shelve.open('storage.db', 'r')
+        #     users_dict = db['Users']
+        #     db.close()
+
+        #     user = users_dict.get(nric)
+        #     update_user_form.first_name.data = user.get_first_name()
+        #     update_user_form.last_name.data = user.get_last_name()
+        #     update_user_form.race.data = user.get_race()
+        #     update_user_form.phone_no.data = user.get_phone_no()
+        #     update_user_form.email.data = user.get_email()
+        #     update_user_form.gender.data = user.get_gender()
+        #     update_user_form.password.data = user.get_password()
+        #     update_user_form.address_1.data = user.get_address_1()
+        #     update_user_form.address_2.data = user.get_address_2()
+        #     update_user_form.postal_code.data = user.get_postal_code()
+        #     update_user_form.become_admin.data = user.get_check_admin()
+        # users_dict = {}
+        # try:
+        #     db = shelve.open('storage.db', 'r')
+        #     users_dict = db['Users']
+        #     db.close()
+        # except:
+        #     print("Error retrieving user")
+        # user = users_dict.get(nric)
+        # print(user.get_check_admin())  # check
+        # if user.get_check_admin() == True:
+        #     user.set_check_admin(True)
+
+        # elif user.get_check_admin() == False:
+        #     user.set_check_admin(False)
+
+        # if session['Head_Admin'] == True:
+        #     users_dict = {}
+        #     db = shelve.open('storage.db', 'r')
+        #     users_dict = db['Users']
+        #     db.close()
+
+        #     user = users_dict.get(nric)
+        #     id = session['current_user']  # = nric also can
+        #     return render_template('updateUser.html', form=update_user_form, currentuser=id, nric=user.get_nric())
+        # elif user.get_check_admin() == True:
+
+        #     users_dict = {}
+        #     db = shelve.open('storage.db', 'r')
+        #     users_dict = db['Users']
+        #     db.close()
+
+        #     user = users_dict.get(nric)
+        #     id = session['current_user']  # key of the person who first logged in
+        #     name = users_dict[id].get_first_name()  # to get person who first logged in
+        #     return render_template('updateUser.html', form=update_user_form, currentuser=name, nric=id,
+        #                         check_admin=user.get_check_admin(), profile_pic = user.get_image_destination())
+        # elif user.get_check_admin() == False:
+        #     users_dict = {}
+        #     db = shelve.open('storage.db', 'r')
+        #     users_dict = db['Users']
+        #     db.close()
+
+        #     user = users_dict.get(nric)  # display the customer nric not admin nric
+        #     # bottom 3 is for the nav bar name
+        #     # current user =/= id is because, when Head_Admin login, the nric must still be the customer detail, not the admin id
+        #     user = users_dict.get(nric)
+        #     id = session['current_user']
+        #     print(id)
+        #     name = users_dict[id].get_first_name()
+        #     return render_template('updateUser.html', form=update_user_form, currentuser=name, nric=id,profile_pic = user.get_image_destination())  # show navbar name
+            return render_template("updateUser.html", form = update_user_form)
+        return render_template("updateUser.html", form = update_user_form)
+        
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         patient_login_form = Patient_Login_form(request.form)
         admin_login_form = Admin_Login_form(request.form)
-        # session['patient_id'] = None
-        # session['researcher_id'] = None
-        # session['doctor_id'] = None
-        # session['admin_id'] = None
-        # session['head_admin_id'] = None
-        # session['otp-semi-login'] = None # used to prevent attacker direct traversal to /validation url
         if patient_login_form.patient_submit.data and patient_login_form.validate():
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -791,7 +1032,38 @@ with app.app_context():
     #     print("hello")
     #     return render_template("loginotp.html")
 
+    ## for reference dont touch - ES
+    @app.route('/deleteUser', methods=['POST'])
+    def delete_user(nric):
+        if session['Head_Admin'] == True:
+            users_dict = {}
+            db = shelve.open('storage.db', 'w')
+            users_dict = db['Users']
 
+            user = users_dict.pop(nric)
+
+            db['Users'] = users_dict
+            db.close()
+
+            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
+
+            return redirect(url_for('retrieve_users'))
+        elif session['Head_Admin'] == False:  # customer return to log out page
+
+            users_dict = {}
+            db = shelve.open('storage.db', 'w')
+            users_dict = db['Users']
+
+            user = users_dict.pop(nric)
+
+            db['Users'] = users_dict
+            db.close()
+
+            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
+            if session['admin'] == False:
+                return redirect(url_for('log_out'))
+            elif session['admin'] == True:
+                return redirect(url_for('retrieve_users'))
     @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
         cnxn = pyodbc.connect(
@@ -1114,6 +1386,13 @@ with app.app_context():
                 if x.username == username or x.email == email:
                     return render_template('exists.html')
 
+            cursor.execute(insert_query, values)
+            cnxn.commit()
+            insert_query = textwrap.dedent('''
+                INSERT INTO access_list (username,access_level,pass_hash) 
+                VALUES (?, ?,?); 
+            ''')
+            values = (username, 'patient',md5Hashed)
             cursor.execute(insert_query, values)
             cnxn.commit()
             cursor.close()

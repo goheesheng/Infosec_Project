@@ -33,7 +33,7 @@
 
 <h1 class="display-4">Account Details</h1>
 
-{% if session['access_level'] == 'patients' %}
+{% if session['access_level'] == 'patient' %}
 
 <div>
     <table class="table table-striped">
@@ -77,7 +77,7 @@
     </table>
 </div>
 
-{% elif session['access_level'] == 'researchers' %}
+{% elif session['access_level'] == 'researcher' %}
 
 <div>
     <table class="table table-striped">
@@ -194,7 +194,7 @@
 </div>
 
 
-{% elif session['access_level'] == 'doctors' %}
+{% elif session['access_level'] == 'doctor' %}
 
 <div>
     <table class="table table-striped">
@@ -233,4 +233,10 @@
 </div>
 
 {% endif %}
+<table>
+<tr>
+    <td><a href="/updateUser" class="btn btn-warning">Edit Infomation</a>
+    </td>
+</tr>
+</table>
 {% endblock %}
