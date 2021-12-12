@@ -11,13 +11,15 @@
                             <div class="card-header"><h3 class="text-center font-weight-light my-4">Appointment</h3></div>
                             <div class="card-body">
                                 {% if appointment == None %}
-                                "You currently do not have any appointment booked"
-                                <br>
+                                <p>You currently do not have any appointment booked</p>
                                 <div class="text-center">
                                     <a href="/appointment"><button type="submit" class="btn btn-primary">Book Appointment</button></a>
                                 </div>
                                 {% else %}
-                                Your next appointment is on  {{ appointment }}
+                                <p>Your next appointment is on  {{ appointment }}</p>
+                                <div class="text-center">
+                                    <a href="/cancelappointment"><button type="submit" class="btn btn-danger">Cancel Appointment</button></a>
+                                </div>
                                 {% endif %}
                               </form>
                             </div>

@@ -1593,6 +1593,7 @@ with app.app_context():
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
+        print(data)
         mask = ''
         year = datetime.today().year
         # Age
@@ -1627,11 +1628,13 @@ with app.app_context():
         z = z + random.randint(int(-z / 2), int(z / 2))
         mask += f'Visited Angel Health {z} times this year\n'
         r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+        r = set(r)
         mask += f'Outstanding health problems:\n'
         if len(r) != 0:
-            for i in r[0]:
-                if i != '':
-                    mask += f'{i.capitalize()}\n'
+            for i in r:
+                for j in i:
+                    if j != '':
+                        mask += f'{j.capitalize()}\n'
         else:
             mask += f'None'
         cursor.close()
@@ -1682,6 +1685,13 @@ with app.app_context():
         #print(appointment[0].split(',')[0],session['username'])
 
 
+    @app.route('/cancelappointment')
+    def cancelappointment():
+        cursor = cnxn.cursor()
+        cursor.execute("update patients set appointment = NULL where patient_id = ?",(session['id']))
+        cursor.commit()
+        flash("Your appointment has been cancelled","success")
+        return redirect(url_for('viewappointment'))
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
