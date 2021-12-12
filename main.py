@@ -1464,12 +1464,12 @@ with app.app_context():
         #dpvalidationhere
         cursor= cnxn.cursor()
         if 'access_level' not in session:
-            return redirect(request.referrer)
+            return redirect(url_for('login'))
         else:
             tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
             if session['username'] != tending_physician :
-                flash("You unauthorized  to view this patients information")
-                return redirect(request.referrer)
+                flash("You unauthorized  to view this patients information","error")
+                return redirect(url_for('homepage'))
 
         return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
 
