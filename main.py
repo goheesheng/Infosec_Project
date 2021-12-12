@@ -1637,7 +1637,6 @@ with app.app_context():
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
-        #print(data)
         mask = ''
         year = datetime.today().year
         # Age
@@ -1659,6 +1658,10 @@ with app.app_context():
         # Gender
         r = re.findall(r"(?i)(gender.+)", data)
         mask += f'{r[0]}\n'
+        #Postal Code
+        cursor.execute("select postal_code from patients where patient_id = ?", (id))
+        postal_code = cursor.fetchall()[0][0]
+        mask += f'Postal Code: {str(postal_code[0:2]) + "X"*(len(postal_code)-2)}\n'
         # Amount of times they visited
         r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\n")
         z = 0
@@ -1676,7 +1679,7 @@ with app.app_context():
         else:
             mask += f'None'
         cursor.close()
-        print(mask)
+        #print(data,'\n\n',mask)
         return render_template('data.html',data = mask)
 
     @app.route('/appointment',methods=['GET','POST'])
@@ -1691,11 +1694,38 @@ with app.app_context():
             cursor = cnxn.cursor()
             user_appointment = str(appointment.date.data) + ", " + appointment.time.data
             print(user_appointment)
-            cursor.execute("update patients set appointment = ? where username = ?",(user_appointment,session['patients']))
-            flash(f'Your appointment has been booked on: {user_appointment}','success')
-            return redirect(url_for('appointment'))
-        print(session['patients'])
-        return render_template('appointment.html', form = appointment)
+            cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['id']))
+            cursor.commit()
+            flash(f'Your appointment has been successfully booked!','success')
+            return redirect(url_for('viewappointment'))
+        print(session['id'])
+        cursor = cnxn.cursor()
+        cursor.execute("select appointment from patients where username = ?", (session['username']))
+        existingappointment = cursor.fetchone()
+        if existingappointment[0] == None:
+            return render_template('appointment.html', form=appointment)
+        else:
+            flash(f'You have an existing appointment booked on: {existingappointment[0]}','error')
+            return render_template('appointment.html', form=appointment)
+
+    @app.route('/viewappointment')
+    def viewappointment():
+        cursor = cnxn.cursor()
+        cursor.execute("select appointment from patients where username = ?", (session['username']))
+        appointment = cursor.fetchone()
+        print(appointment)
+        if appointment[0] == None:
+            return render_template('viewappointment.html',appointment = None)
+        else:
+            appointmentcheck = datetime.strptime(appointment[0].split(',')[0],'%Y-%m-%d')
+            if appointmentcheck >= datetime.now():
+                return render_template('viewappointment.html',appointment = appointment[0])
+            elif appointment < datetime.now():
+                cursor.execute("update patients set appointment = NULL where patient_id = ?", (session['id']))
+                return render_template('viewwappointment.html',appointment = None)
+        #print(appointment[0].split(',')[0],session['username'])
+
+
 
     @app.route('/register', methods=['GET', 'POST'])
     def register():
@@ -2025,5 +2055,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    add_admin()
+    #add_admin()
     app.run(debug=True)
