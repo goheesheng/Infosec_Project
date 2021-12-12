@@ -18,7 +18,7 @@ import re
 import random
 import bcrypt
 from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, \
-    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm,Admin_UpdateUserForm
+    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm
 from functools import wraps
 import pyodbc
 import textwrap
@@ -229,7 +229,10 @@ with app.app_context():
     @custom_login_required
     def homepage():
         flash("welcome")
-        return render_template('homepage.html')
+        if session['access_level'] == 'patient':
+            return render_template('homepage.html')
+        elif session['access_level'] == 'head_admin':
+            return redirect(url_for('dashboard'))
 
     @app.route('/')
     def index():
@@ -250,7 +253,7 @@ with app.app_context():
         doctors = cursor.execute("SELECT * FROM doctors").fetchall()
         hr = cursor.execute("SELECT * FROM hr").fetchall()
         researcher = cursor.execute("SELECT * FROM researchers").fetchall()
-        return render_template('dashboard.html', patients=patients, doctors=doctors, hrs=hr, researchers=researcher)
+        return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
 
 
     @app.route('/401')
@@ -1381,47 +1384,43 @@ with app.app_context():
         )
         if request.method=="POST":
             cursor = cnxn.cursor()
-            print(session,'otpval check sess')
-            if session['otp-semi-login'] and session['access_level'] == 'patient':
-                # cursor.execute("select access_level from ")
-                value =  session['username']
+            # print(session,'otpval check sess')
+            # if session['otp-semi-login'] and session['access_level'] == 'patient':
+            #     # cursor.execute("select access_level from ")
+            #     value =  session['username']
+            #     (otp_seed) = cursor.execute(
+            #                         "select otp_code from patients where username = ?",
+            #                         (value)
+            #                     ).fetchone()
+            # elif session['otp-semi-login'] and session['access_level'] == 'doctor':
+            #     value =  session['username']
+            #     (otp_seed) = cursor.execute(
+            #             "select otp_code from doctors where username = ?",
+            #             (value)
+            #         ).fetchone()
+            # elif session['otp-semi-login'] and session['access_level'] == 'researcher':
+            #     value =  session['username']
+            #     (otp_seed) = cursor.execute(
+            #         "select otp_code from researchers where username = ?",
+            #         (value)
+            #     ).fetchone()
+            # elif session['otp-semi-login'] and session['access_level'] == 'hr':
+            #     value =  session['username']
+            #     (otp_seed) = cursor.execute(
+            #             "select otp_code from hr where username = ?",
+            #             (value)
+            #         ).fetchone()
+            # elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
+            #     value =  session['username']
+            #     print(value,'this is value')
+            #     (otp_seed) = cursor.execute(
+            #         "select otp_code from head_admin where username = ?",
+            #         (value)).fetchone()
 
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                                    "select otp_code, username, first_name, last_name from patients where username = ?",
-                                    (value)
-                                ).fetchone()
-            elif session['otp-semi-login'] and session['access_level'] == 'doctor':
-                value =  session['username']
-
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                        "select otp_code, username, first_name, last_name from doctors where username = ?",
-                        (value)
-                    ).fetchone()
-            elif session['otp-semi-login'] and session['access_level'] == 'researcher':
-                value =  session['username']
-
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from researchers where username = ?",
-                    (value)
-                ).fetchone()[0]
-            elif session['otp-semi-login'] and session['access_level'] == 'hr':
-                value =  session['username']
-                (otp_seed, username, first_name, last_name) = cursor.execute(
-                        "select otp_code, username, first_name, last_name from hr where username = ?",
-                        (value)
-                    ).fetchone()[0]
-            elif session['otp-semi-login'] and session['access_level'] == 'head_admin':
-                value =  session['username']
-                print(value,'this is value')
-                (otp_seed) = cursor.execute(
-                    "select otp_code, username, first_name, last_name from head_admin where username = ?",
-                    (value)).fetchone()[0]
-
-            #PleaseNerfDictionary,
-            # access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
-            # if session['access_level'] in access_list:
-            #     query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
-            #     otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+            access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+            if session['access_level'] in access_list and session['otp-semi-login']:
+                query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
+                otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
 
             otp = int(request.form.get("otp"))
             print(otp_seed)
@@ -1448,7 +1447,8 @@ with app.app_context():
         if request.method == "GET":
             return render_template("loginotp.html")
 
-    @app.route('/passwordreset', methods=['GET', 'POST'])
+    ####????????????????????????????????????????????????? render tempplate and no real function  I like -ES
+    @app.route('/passwordreset', methods=['GET', 'POST']) 
     @custom_login_required
     def passwordreset():
         return render_template('passwordreset.html')
@@ -1685,6 +1685,7 @@ with app.app_context():
         return render_template('data.html',data = mask)
 
     @app.route('/appointment',methods=['GET','POST'])
+    @custom_login_required
     def appointment():
         appointment = Appointment(request.form)
         if request.method == "POST":
@@ -1838,9 +1839,12 @@ with app.app_context():
                 image.png('image.png', scale=5)
                 SendMail("image.png", email, "Doctor")
                 os.remove('image.png')
+            else:
+                flash("Doctor Account already exists!")
             return render_template('dashboard.html')
         return render_template('register_doctor.html', form=doc_form)
 
+### nani???????????????????????? -ES already have reg mah
     @app.route('/patient-registration', methods=['GET', 'POST'])
     # @custom_login_required
     def register_patient():
@@ -1884,9 +1888,11 @@ with app.app_context():
             qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
             image = pyqrcode.create(qr)
             image.png('image.png', scale=5)
-            SendMail("image.png", email, "Researcher")
+            SendMail("image.png", email, "Patient")
             os.remove('image.png')
             return redirect(url_for('dashboard'))
+        else:
+            flash("Patient Account already exists!")
         return render_template('register_patient.html', form=pat_form)
 
 
@@ -1941,11 +1947,14 @@ with app.app_context():
                 image.png('image.png', scale=5)
                 SendMail("image.png", email, "Researcher")
                 os.remove('image.png')
+            else:
+                flash("Researcher Account already exists!")
             return redirect(url_for('dashboard'))
         return render_template('register_researcher.html', form=researcher_form)
 
 
     @app.route('/hr-registration', methods=['GET', 'POST'])
+    @custom_login_required
     def register_hr():
         hr_form = RegisterHr(request.form)
         if request.method == "POST" and hr_form.validate():
@@ -1970,6 +1979,7 @@ with app.app_context():
                 if check_email == None and check_username == None:
                     continue
                 else:
+                    print('check is false')
                     check = False
                     break
 
@@ -1992,8 +2002,12 @@ with app.app_context():
                 qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                 image = pyqrcode.create(qr)
                 image.png('image.png', scale=5)
-                SendMail("image.png", email, "Researcher")
+                SendMail("image.png", email, "HR")
                 os.remove('image.png')
+            else:
+                flash("Human Resource Account already exists!")
+                return render_template('register_hr.html', form=hr_form)
+
             return redirect(url_for('dashboard'))
         return render_template('register_hr.html', form=hr_form)
 
@@ -2003,18 +2017,30 @@ with app.app_context():
         if table == 'doctor':
             cursor.execute('DELETE FROM doctors WHERE username=?',(identifier))
             cursor.commit()
+            cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
+            cursor.commit()
+            flash(f'{identifier} has been deleted!')
             cursor.close()
         elif table == 'patient':
             cursor.execute('DELETE FROM patients WHERE username=?', (identifier))
             cursor.commit()
+            cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
+            cursor.commit()
+            flash(f'{identifier} has been deleted!')
             cursor.close()
         elif table == 'hr':
             cursor.execute('DELETE FROM hr WHERE username=?', (identifier))
             cursor.commit()
+            cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
+            cursor.commit()
+            flash(f'{identifier} has been deleted!')
             cursor.close()
         elif table == 'researcher':
             cursor.execute('DELETE FROM researchers WHERE username=?', (identifier))
             cursor.commit()
+            cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
+            cursor.commit()
+            flash(f'{identifier} has been deleted!')
             cursor.close()
         return redirect(url_for('dashboard'))
 
