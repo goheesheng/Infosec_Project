@@ -1637,7 +1637,6 @@ with app.app_context():
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
-        #print(data)
         mask = ''
         year = datetime.today().year
         # Age
@@ -1659,6 +1658,10 @@ with app.app_context():
         # Gender
         r = re.findall(r"(?i)(gender.+)", data)
         mask += f'{r[0]}\n'
+        #Postal Code
+        cursor.execute("select postal_code from patients where patient_id = ?", (id))
+        postal_code = cursor.fetchall()[0][0]
+        mask += f'Postal Code: {str(postal_code[0:2]) + "X"*(len(postal_code)-2)}\n'
         # Amount of times they visited
         r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\n")
         z = 0
@@ -1676,7 +1679,7 @@ with app.app_context():
         else:
             mask += f'None'
         cursor.close()
-        print(mask)
+        #print(data,'\n\n',mask)
         return render_template('data.html',data = mask)
 
     @app.route('/appointment',methods=['GET','POST'])
