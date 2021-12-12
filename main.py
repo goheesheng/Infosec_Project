@@ -17,7 +17,7 @@ import hashlib
 import re
 import random
 import bcrypt
-from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment,Patient_UpdateForm
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, RegisterDoctor, RegisterResearcher, RegisterHr,Patient_UpdateForm
 from functools import wraps
 import pyodbc
 import textwrap
@@ -245,9 +245,11 @@ with app.app_context():
                                     Trusted_Connection=yes;'
         )
         cursor = cnxn.cursor()
-        users = cursor.execute("SELECT * FROM patients")
-        print(users)
-        return render_template('dashboard.html', patients=users)
+        patients = cursor.execute("SELECT * FROM patients").fetchall()
+        doctors = cursor.execute("SELECT * FROM doctors").fetchall()
+        hr = cursor.execute("SELECT * FROM hr").fetchall()
+        researcher = cursor.execute("SELECT * FROM researchers").fetchall()
+        return render_template('dashboard.html', patients=patients, doctors=doctors, hrs=hr, researchers=researcher)
 
 
     @app.route('/401')
@@ -270,13 +272,13 @@ with app.app_context():
     def table():
         return render_template('table.html')
 
-    def SendMail(ImgFileName, email):
+    def SendMail(ImgFileName, email,topic):
         with open(ImgFileName, 'rb') as f:
             img_data = f.read()
         sender = "IT2566proj@gmail.com"
         senderpass = 'FishNugget123'
         msg = MIMEMultipart()
-        msg['Subject'] = 'Head Admin Qr Code For Google Authenticator'
+        msg['Subject'] = topic+' Qr Code For Google Authenticator'
         msg['From'] = 'AngelHealth@mail.gov.sg'
         msg['To'] = email
 
@@ -356,7 +358,7 @@ with app.app_context():
                     qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                     image = pyqrcode.create(qr)
                     image.png('image.png', scale=5)
-                    SendMail("image.png", email)
+                    SendMail("image.png", email, "Head Admin")
                     os.remove('image.png')
                     print('Successful creating Head Admin')
                     cursor = cnxn.cursor()
@@ -716,21 +718,32 @@ with app.app_context():
             #     ,[access_level]13
             # FROM [database1].[dbo].[patients]
             if user_info != None:
+            #     #alternative way
+            #     access_list = {'patient': 'patients', 'doctor': 'doctors', 'researcher': 'researchers', 'hr': 'hr','head_admin': 'head_admin'}
+            #     if user_info[0] in access_list:
+            #         col_name_query=f"select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = {access_list[user_info]};"
+            #         print(col_name_query)
+            #         col_names = cursor.execute(col_name_query)
+            #         for count,col_name in enumerate(col_names):
+            #             if type(user_info)==str:
+            #                 session[col_name]=user_info[count].strip()
+            #             else:
+            #                 session[col_name]=user_info[count]
+            #
                 passed = True
-
                 print(user_info[0],'id')
                 print(user_info[1].strip(),'id')
                 print(user_info[3].strip(),'id')
                 print(user_info[4].strip(),'id')
-                print(user_info[7].strip(),'id')
+                print(user_info[7],'id')
                 session['id'] = user_info[0]
                 session['username'] = user_info[1].strip()
                 session['first_name'] = user_info[2].strip()
                 session['last_name'] = user_info[3].strip()
-                session['phone_no'] =  user_info[7].strip()
+                session['phone_no'] =  user_info[7]
                 session['email'] =  user_info[6].strip()
                 session['address'] =  user_info[8].strip()
-                session['postal_code'] =  user_info[9].strip()
+                session['postal_code'] =  user_info[9]
                 session['access_level'] = user_info[13].strip()
 
                 # should we add this too? as session?
@@ -1110,11 +1123,17 @@ with app.app_context():
                     "select otp_code, username, first_name, last_name from head_admin where username = ?",
                     (value)).fetchone()[0]
 
+            #PleaseNerfDictionary,
+            # access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+            # if session['access_level'] in access_list:
+            #     query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
+            #     otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+
             otp = int(request.form.get("otp"))
             print(otp_seed)
             print(pyotp.TOTP(otp_seed).now())
             # verifying submitted OTP with PyOTP
-            if pyotp.TOTP(otp_seed).verify(int(otp)):
+            if pyotp.TOTP(otp_seed).verify(otp):
                 print("correct")
                 session['login'] = True
                 cursor.close()
@@ -1150,6 +1169,15 @@ with app.app_context():
     @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
     def download(filename):
         #dpvalidationhere
+        cursor= cnxn.cursor()
+        if 'access_level' not in session:
+            return redirect(request.referrer)
+        else:
+            tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
+            if session['username'] != tending_physician :
+                flash("You unauthorized  to view this patients information")
+                return redirect(request.referrer)
+
         return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
 
     @app.route('/requestPatientInformation',methods=['GET','POST'])
@@ -1185,17 +1213,32 @@ with app.app_context():
                         if not(check_file_hash(file_name,stored_hash)):
                             with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
                                 file_override.write(file_content)
+                    print(session,'here')
                     return redirect(url_for("submission", pid=patient[0]))
 
                 cursor.close()
             flash("NRIC either does not exist or is invalid", "error")
             return redirect(url_for('requestPatientInformation'))
-        return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
+
+        if request.method=="GET" and session["access_level"] =="patient":
+            return send_from_directory(directory=app.config['UPLOAD_FOLDER'],path=f"{session['username']}.docx")
+        else:
+            return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
     # @login_required
     def submission(pid):
         cursor = cnxn.cursor()
+        if 'access_level' not in session:
+            return redirect(url_for('homepage'))
+        elif session['access_level'] != 'doctor':
+            return redirect(url_for('homepage'))
+        else:
+            tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
+            if session['username'] != tending_physician:
+                flash("You are a doctor but unauthorized to view this patients information")
+                return redirect(url_for('homepage'))
+
         patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
         cursor.close()
         file_submit = FileSubmit(request.form)
@@ -1379,7 +1422,6 @@ with app.app_context():
                 VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
             ''')
             values = (username, firstname, lastname, md5Hashed, otp_code, email,phone_no,address,postal_code,'patient')
-
             cursor = cnxn.cursor()
             cursor.execute('SELECT username, email FROM patients')
             for x in cursor:
@@ -1387,6 +1429,13 @@ with app.app_context():
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
+            #addPatient to access_list table ?
+            insert_query = textwrap.dedent('''
+                            INSERT INTO access_list (username, pass_hash,access_level) 
+                            VALUES (?, ?, ?); 
+                        ''')
+            values = (username, md5Hashed,'patient')
+            cursor.execute(insert_query,values)
             cnxn.commit()
             insert_query = textwrap.dedent('''
                 INSERT INTO access_list (username,access_level,pass_hash) 
@@ -1403,9 +1452,236 @@ with app.app_context():
         return render_template('register.html', form=register)
 
 
-    @app.route('/<variable>/remove', methods=['GET', 'POST'])
-    def remove(variable):
-        return redirect(url_for('homepage'))
+    @app.route('/doctor-registration', methods=['GET', 'POST'])
+    # @custom_login_required
+    def register_doctor():
+        doc_form = RegisterDoctor(request.form)
+        if request.method == "POST" and doc_form.validate():
+            cursor = cnxn.cursor()
+            username = doc_form.username.data
+            firstname = doc_form.firstname.data
+            lastname = doc_form.lastname.data
+            address = doc_form.address.data
+            phone_no = doc_form.phone_no.data
+            postal_code = doc_form.postal_code.data
+            email = doc_form.email.data
+            department = doc_form.department.data
+            otp_code = pyotp.random_base32()
+            md5Hash = hashlib.md5(doc_form.password.data.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            tables=["patients", "researchers", "hr", "head_admin", "doctors"]
+            check = True
+            for table in tables:
+                check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
+                                                (username)).fetchval()  # prevent sql injection
+                check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
+                                             (email)).fetchval()  # prevent sql injection
+                if check_email == None and check_username == None:
+                    continue
+                else:
+                    check = False
+                    break
+
+            if check:
+                insert_query = "INSERT INTO doctors (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,department) \
+                                            VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
+                values = (username, firstname, lastname, md5Hashed,
+                          email, otp_code, phone_no, 'doctor', postal_code,address, department)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                cursor = cnxn.cursor()
+                insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                                            VALUES (?, ?,?); "
+                values = (username, 'doctor', md5Hashed)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                print('Sending email OTP...')
+                qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                image = pyqrcode.create(qr)
+                image.png('image.png', scale=5)
+                SendMail("image.png", email, "Doctor")
+                os.remove('image.png')
+            return render_template('dashboard.html')
+        return render_template('register_doctor.html', form=doc_form)
+
+    @app.route('/patient-registration', methods=['GET', 'POST'])
+    # @custom_login_required
+    def register_patient():
+        pat_form = Register(request.form)
+        if request.method == "POST" and pat_form.validate():
+            print("hello")
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            username = pat_form.username.data
+            firstname = pat_form.firstname.data
+            lastname = pat_form.lastname.data
+            address = pat_form.address.data
+            phone_no = pat_form.phone_no.data
+            postal_code = pat_form.postal_code.data
+            email = pat_form.email.data
+            print(username)
+
+            md5Hash = hashlib.md5(pat_form.password.data.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            otp_code = pyotp.random_base32()
+            insert_query = textwrap.dedent('''
+                INSERT INTO patients (username, first_name, last_name, pass_hash, otp_code,email,phone_no,address,postal_code,access_level) 
+                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); 
+            ''')
+            values = (
+            username, firstname, lastname, md5Hashed, otp_code, email, phone_no, address, postal_code, 'patient')
+
+            cursor = cnxn.cursor()
+            cursor.execute('SELECT username, email FROM patients')
+            for x in cursor:
+                if x.username == username or x.email == email:
+                    return redirect(url_for('dashboard'))
+            cursor.execute(insert_query, values)
+            cnxn.commit()
+            cursor.close()
+            print('Sending email OTP...')
+            qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+            image = pyqrcode.create(qr)
+            image.png('image.png', scale=5)
+            SendMail("image.png", email, "Researcher")
+            os.remove('image.png')
+            return redirect(url_for('dashboard'))
+        return render_template('register_patient.html', form=pat_form)
+
+
+    @app.route('/researchers-registration', methods=['GET', 'POST'])
+    # @custom_login_required
+    def register_researcher():
+        researcher_form = RegisterResearcher(request.form)
+        if request.method == "POST" and researcher_form.validate():
+            cursor = cnxn.cursor()
+            username = researcher_form.username.data
+            firstname = researcher_form.firstname.data
+            lastname = researcher_form.lastname.data
+            address = researcher_form.address.data
+            phone_no = researcher_form.phone_no.data
+            postal_code = researcher_form.postal_code.data
+            email = researcher_form.email.data
+            company = researcher_form.company.data
+            otp_code = pyotp.random_base32()
+            md5Hash = hashlib.md5(researcher_form.password.data.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
+            check = True
+            for table in tables:
+                check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
+                                                (username)).fetchval()  # prevent sql injection
+                check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
+                                             (email)).fetchval()  # prevent sql injection
+                if check_email == None and check_username == None:
+                    continue
+                else:
+                    check = False
+                    break
+
+            if check:
+                insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
+                                            VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
+                values = (username, firstname, lastname, md5Hashed,
+                          email, otp_code, phone_no, 'researcher', address, postal_code, company)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                cursor = cnxn.cursor()
+                insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                                            VALUES (?, ?,?); "
+                values = (username, 'researcher', md5Hashed)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                print('Sending email OTP...')
+                qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                image = pyqrcode.create(qr)
+                image.png('image.png', scale=5)
+                SendMail("image.png", email, "Researcher")
+                os.remove('image.png')
+            return redirect(url_for('dashboard'))
+        return render_template('register_researcher.html', form=researcher_form)
+
+
+    @app.route('/hr-registration', methods=['GET', 'POST'])
+    def register_hr():
+        hr_form = RegisterHr(request.form)
+        if request.method == "POST" and hr_form.validate():
+            cursor = cnxn.cursor()
+            username = hr_form.username.data
+            firstname = hr_form.firstname.data
+            lastname = hr_form.lastname.data
+            address = hr_form.address.data
+            phone_no = hr_form.phone_no.data
+            postal_code = hr_form.postal_code.data
+            email = hr_form.email.data
+            otp_code = pyotp.random_base32()
+            md5Hash = hashlib.md5(hr_form.password.data.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
+            check = True
+            for table in tables:
+                check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
+                                                ( username)).fetchval()  # prevent sql injection
+                check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
+                                             ( email)).fetchval()  # prevent sql injection
+                if check_email == None and check_username == None:
+                    continue
+                else:
+                    check = False
+                    break
+
+            if check:
+                insert_query = "INSERT INTO hr (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address) \
+                                                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?); "
+                values = (username, firstname, lastname, md5Hashed,
+                          email, otp_code, phone_no, 'hr', postal_code,address)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                cursor = cnxn.cursor()
+                insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                                                VALUES (?, ?,?); "
+                values = (username, 'hr', md5Hashed)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                print('Sending email OTP...')
+                qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                image = pyqrcode.create(qr)
+                image.png('image.png', scale=5)
+                SendMail("image.png", email, "Researcher")
+                os.remove('image.png')
+            return redirect(url_for('dashboard'))
+        return render_template('register_hr.html', form=hr_form)
+
+    @app.route('/remove/<string:identifier>/<string:table>', methods=['GET', 'POST'])
+    def remove(identifier,table):
+        cursor = cnxn.cursor()
+        if table == 'doctor':
+            cursor.execute('DELETE FROM doctors WHERE username=?',(identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'patient':
+            cursor.execute('DELETE FROM patients WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'hr':
+            cursor.execute('DELETE FROM hr WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        elif table == 'researcher':
+            cursor.execute('DELETE FROM researchers WHERE username=?', (identifier))
+            cursor.commit()
+            cursor.close()
+        return redirect(url_for('dashboard'))
 
     @app.route('/<variable>/patient', methods=['GET', 'POST'])
     def patient(variable):

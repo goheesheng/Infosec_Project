@@ -159,13 +159,14 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[patient_file](
-	[patient_id] [int] IDENTITY(1,1) NOT NULL,
+	[patient_id] [int] ,
 	[file_name] [varchar](20) NOT NULL,
 	[file_content] [varbinary](max) NOT NULL,
 	[file_last_modified_time] [varchar](20) NOT NULL,
 	[name_of_staff_that_modified_it] [varchar](20) NOT NULL,
 	[id_of_staff_modified_it] [int] NOT NULL,
 	[md5sum_] [varchar](64) NOT NULL
+	 CONSTRAINT patient_id PRIMARY KEY (patient_id)
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[patients]    Script Date: 12/11/2021 8:46:32 AM ******/

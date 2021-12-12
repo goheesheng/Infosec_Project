@@ -1,0 +1,59 @@
+{% extends "baseForNoAccess.html" %}
+{% block content %}
+{% from "includes/_formHelper.html" import render_field %}
+<div id="layoutAuthentication_content">
+    <main>
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+                    <div class="card shadow-lg border-0 rounded-lg mt-5">
+                        <div class="card-header"><h3 class="text-center font-weight-light my-4">Create Doctor Account</h3></div>
+                        <div class="card-body">
+                            <form method="POST" action="" enctype="multipart/form-data">
+                                      <div class="col-auto">
+                                        {{ render_field(form.username, class="form-control") }}
+                                      </div>
+                                      <div class="col-auto">
+                                        {{ render_field(form.firstname, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.lastname, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.email, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.phone_no, class="form-control") }}
+                                      </div>
+    
+                                    <div class="col-auto">
+                                        {{ render_field(form.address, class="form-control") }}
+                                      </div>
+                                    
+                                    <div class="col-auto">
+                                        {{ render_field(form.postal_code, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.department, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.password, class="form-control") }}
+                                      </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.confirmPassword , class="form-control") }}
+                                    </div>
+                                    <div class="col-auto">
+                                        {{ render_field(form.submit, class="form-control") }}
+                                    </div>
+                                </form>
+                        </div>
+                        <div class="card-footer text-center py-3">
+                            <div class="small"><a href="/">Have an account? Go to login</a></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
