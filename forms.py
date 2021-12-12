@@ -98,21 +98,6 @@ class RegisterHr(Form):
     submit = SubmitField("Submit")
 
 class Admin_UpdateUserForm(Form):
-    first_name = StringField('Username', [validators.Length(min=1, max=30), validators.DataRequired()])
-    last_name = StringField('Last Name', [validators.Length(min=1, max=30), validators.DataRequired()],render_kw={"placeholder": "E.g Goh"})
-    race = SelectField("Race", [validators.DataRequired()], choices=[('', 'Select'), ('C','Chinese'), ('M','Malay'), ('I','Indian'), ('O','Others')],default='')
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
-    email = StringField('Email', [validators.DataRequired(),validators.Email(),validators.Length(max=50)],render_kw={"placeholder": "E.g you@example.com"})
-    gender = SelectField('Gender', [validators.DataRequired()], choices=[('', 'Select'), ('F', 'Female'), ('M', 'Male')], default='')
-    password = PasswordField('Password',[validators.Length(min=0, message='Password should be at least %(min)d characters long')],render_kw={"placeholder": "Leave blank to not change password "})
-    confirm_password = PasswordField('Confirm Password', [validators.EqualTo('password', message='Both password fields must be equal!')])
-    address_1 = TextAreaField('Address (First)', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
-    address_2 = TextAreaField('Address (Second) (Optional)', [validators.Optional()],render_kw={"placeholder": "#08-1899"})
-    postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
-    receive_emails = BooleanField("I want to receive Angel's Email")
-    become_admin = SelectField('Gender', [validators.DataRequired()], choices=[('', 'Select'), ('Researcher', 'researchers'), ('Doctor', 'doctors'),('Human Resource', 'hr'),('Patient', 'patient')], default='')
-
-class Patient_UpdateForm(Form):
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
@@ -120,6 +105,19 @@ class Patient_UpdateForm(Form):
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
     password = PasswordField('New Password', render_kw={"placeholder": "Leave blank to not change password"})
+    confirmPassword = PasswordField('Re-enter Password', [validators.EqualTo('password',message='Both password fields must be equal!')])
+    roles = SelectField('Change Roles', choices=[('', 'Select'), ('Researcher', 'researchers'), ('Doctor', 'doctors'),('Human Resource', 'hr'),('Patient', 'patient')], default='')
+
+class General_UpdateForm(Form):
+    firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
+    lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
+    address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
+    postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
+    password = PasswordField('New Password', [
+        validators.Optional() ,validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])'), message= "Password must contain 10-20 characters, number, uppercase, lowercase, special character."),
+    ])
     confirmPassword = PasswordField('Re-enter Password', [validators.EqualTo('password',message='Both password fields must be equal!')])
     submit = SubmitField("Submit")
   

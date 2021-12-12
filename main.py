@@ -17,7 +17,8 @@ import hashlib
 import re
 import random
 import bcrypt
-from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, RegisterDoctor, RegisterResearcher, RegisterHr,Patient_UpdateForm
+from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, \
+    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm,Admin_UpdateUserForm
 from functools import wraps
 import pyodbc
 import textwrap
@@ -431,7 +432,7 @@ with app.app_context():
 
     @app.route('/updateUser', methods=['GET', 'POST'])
     def update_user():
-        update_user_form = Patient_UpdateForm(request.form)
+        update_user_form = General_UpdateForm(request.form)
         if request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'patient':  # POST method, update upon clicking submission
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -447,17 +448,11 @@ with app.app_context():
             phone_no = update_user_form.phone_no.data
             postal_code = update_user_form.postal_code.data
             email = update_user_form.email.data
-            # insert_query1 = ('UPDATE patients \
-            #                   SET first_name = ?,\
-            #                    last_name = ?,\
-            #                    address = ?,\
-            #                    phone_no = ?,\
-            #                    postal_code = ?,\
-            #                    email = ? \
-            #                   WHERE username = ?;')
+
             insert_query1 = ('UPDATE patients SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
             
             values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
+
 
         
 
@@ -467,9 +462,74 @@ with app.app_context():
             else:
                 md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
                 md5Hashed = md5Hash.hexdigest()
-                insert_query2 = (' UPDATE patients \
-                              SET pass_hash = ?\
-                              WHERE username = ?;')
+                insert_query2 = ('UPDATE patients  SET pass_hash = ? WHERE username = ?;')
+            
+                values2 = (md5Hashed,session['username'])
+              
+                insert_query3 = textwrap.dedent('''
+                    UPDATE access_list SET pass_hash = ? WHERE username = ?; 
+                ''')
+                values3 = (md5Hashed,session['username'])
+                cursor.execute(insert_query2, values2)
+                cursor.execute(insert_query3, values3)
+            cursor.execute(insert_query1, values1)
+            print(cursor.execute(insert_query1, values1),'check up date not pw')
+            
+            cursor.commit()
+
+            print('updated')
+            cursor = cnxn.cursor()
+
+        
+            user_info = cursor.execute(
+            "select * from patients where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
+            session['id'] = user_info[0]
+            session['username'] = user_info[1].strip()
+            session['first_name'] = user_info[2].strip()
+            session['last_name'] = user_info[3].strip()
+            session['phone_no'] =  user_info[7].strip()
+            session['email'] =  user_info[6].strip()
+            session['address'] =  user_info[8].strip()
+            session['postal_code'] =  user_info[9].strip()
+            session['access_level'] = user_info[13].strip()
+
+            print(user_info)
+            print(session['id'],'this is session')
+
+            cursor.close()
+
+            return redirect(url_for('viewUser'))
+
+
+        # to retrieve data from shelve and diplay previous data
+        # so bascially this will come first as admin did not click update thus post doesnt work first
+        elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'head_admin': 
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            
+            cursor = cnxn.cursor()
+            firstname = update_user_form.firstname.data
+            lastname = update_user_form.lastname.data
+            address = update_user_form.address.data
+            phone_no = update_user_form.phone_no.data
+            postal_code = update_user_form.postal_code.data
+            email = update_user_form.email.data
+
+            insert_query1 = ('UPDATE head_admin SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            
+            values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
+
+            if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
+                print('did not update [asswprd')
+                pass
+            else:
+                md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                insert_query2 = ('UPDATE head_admin SET pass_hash = ? WHERE username = ?;')
             
                 values2 = (md5Hashed,session['username'])
               
@@ -482,52 +542,295 @@ with app.app_context():
                 cursor.execute(insert_query2, values2)
                 cursor.execute(insert_query3, values3)
             cursor.execute(insert_query1, values1)
-            print(cursor.execute(insert_query1, values1),'check up date not pw')
             
             cursor.commit()
 
             print('updated')
             cursor = cnxn.cursor()
+
             user_info = cursor.execute(
-            "select * from patients where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
-            print(user_info)
+            "select * from head_admin where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
             session['id'] = user_info[0]
             session['username'] = user_info[1].strip()
             session['first_name'] = user_info[2].strip()
             session['last_name'] = user_info[3].strip()
             session['phone_no'] =  user_info[7].strip()
             session['email'] =  user_info[6].strip()
-            session['address'] =  user_info[8].strip()
+            session['address'] =  user_info[10].strip()
             session['postal_code'] =  user_info[9].strip()
-            session['access_level'] = user_info[13].strip()
+            session['access_level'] =  user_info[8].strip()
+            print(user_info)
+            print(session['id'],'this is session')
+
             cursor.close()
 
             return redirect(url_for('viewUser'))
-
-
-        # to retrieve data from shelve and diplay previous data
-        # so bascially this will come first as admin did not click update thus post doesnt work first
-        elif request.method == 'GET' and session['access_level'] == 'patient':  # get method
+        elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'hr': 
             cnxn = pyodbc.connect(
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + server + '; \
                 DATABASE=' + database + ';\
                 Trusted_Connection=yes;'
             )
+            
             cursor = cnxn.cursor()
-            user_info = cursor.execute(
-                "select * from patients where username = ?",
-                (session['username'])).fetchone() #fetchone() dont delete this except others
+            firstname = update_user_form.firstname.data
+            lastname = update_user_form.lastname.data
+            address = update_user_form.address.data
+            phone_no = update_user_form.phone_no.data
+            postal_code = update_user_form.postal_code.data
+            email = update_user_form.email.data
+            insert_query1 = ('UPDATE hr  SET first_name = ?, last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            # insert_query1 = ('UPDATE patients SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            
+            values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
 
+
+        
+
+            if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
+                print('did not update [asswprd')
+                pass
+            else:
+                md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                insert_query2 = (' UPDATE hr SET pass_hash = ? WHERE username = ?;')
+            
+                values2 = (md5Hashed,session['username'])
+              
+                insert_query3 = textwrap.dedent('''
+                    UPDATE access_list SET pass_hash = ? WHERE username = ?; 
+                ''')
+                values3 = (md5Hashed,session['username'])
+                cursor.execute(insert_query2, values2)
+                cursor.execute(insert_query3, values3)
+            cursor.execute(insert_query1, values1)
+            print(cursor.execute(insert_query1, values1),'check up date not pw')
+            
+            cursor.commit()
+
+            print('updated')
+            cursor = cnxn.cursor()
+
+            user_info = cursor.execute(
+            "select * from hr where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
+            session['id'] = user_info[0]
+            session['username'] = user_info[1].strip()
+            session['first_name'] = user_info[2].strip()
+            session['last_name'] = user_info[3].strip()
+            session['phone_no'] =  user_info[9].strip()
+            session['email'] =  user_info[8].strip()
+            session['address'] =  user_info[6].strip()
+            session['postal_code'] =  user_info[7].strip()
+            session['access_level'] =  user_info[10].strip()
+            print(user_info)
+            print(session['id'],'this is session')
+
+            cursor.close()
+
+            return redirect(url_for('viewUser'))
+        elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'doctor': 
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            
+            cursor = cnxn.cursor()
+            firstname = update_user_form.firstname.data
+            lastname = update_user_form.lastname.data
+            address = update_user_form.address.data
+            phone_no = update_user_form.phone_no.data
+            postal_code = update_user_form.postal_code.data
+            email = update_user_form.email.data
+            insert_query1 = ('UPDATE doctors SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            # insert_query1 = ('UPDATE patients SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            
+            values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
+
+
+        
+
+            if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
+                print('did not update [asswprd')
+                pass
+            else:
+                md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                insert_query2 = (' UPDATE doctors SET pass_hash = ? WHERE username = ?;')
+            
+                values2 = (md5Hashed,session['username'])
+              
+                insert_query3 = textwrap.dedent('''
+                    UPDATE access_list SET pass_hash = ? WHERE username = ?; 
+                ''')
+                values3 = (md5Hashed,session['username'])
+                cursor.execute(insert_query2, values2)
+                cursor.execute(insert_query3, values3)
+            cursor.execute(insert_query1, values1)
+            print(cursor.execute(insert_query1, values1),'check up date not pw')
+            
+            cursor.commit()
+
+            print('updated')
+            cursor = cnxn.cursor()
+
+            user_info = cursor.execute(
+            "select * from doctors where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
+            session['id'] = user_info[0]
+            session['username'] = user_info[1].strip()
+            session['first_name'] = user_info[2].strip()
+            session['last_name'] = user_info[3].strip()
+            session['phone_no'] =  user_info[11].strip()
+            session['email'] =  user_info[6].strip()
+            session['address'] =  user_info[7].strip()
+            session['postal_code'] =  user_info[8].strip()
+            session['access_level'] =  user_info[10].strip()
+            print(user_info)
+            print(session['id'],'this is session')
+
+            cursor.close()
+
+            return redirect(url_for('viewUser'))
+        elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'researcher': 
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            
+            cursor = cnxn.cursor()
+            firstname = update_user_form.firstname.data
+            lastname = update_user_form.lastname.data
+            address = update_user_form.address.data
+            phone_no = update_user_form.phone_no.data
+            postal_code = update_user_form.postal_code.data
+            email = update_user_form.email.data
+            insert_query1 = ('UPDATE researchers SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            # insert_query1 = ('UPDATE patients SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
+            
+            values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
+
+
+        
+
+            if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
+                print('did not update [asswprd')
+                pass
+            else:
+                md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                insert_query2 = ('UPDATE researchers SET pass_hash = ? WHERE username = ?;')
+            
+                values2 = (md5Hashed,session['username'])
+              
+                insert_query3 = textwrap.dedent('''
+                    UPDATE access_list SET pass_hash = ? WHERE username = ?; 
+                ''')
+                values3 = (md5Hashed,session['username'])
+                cursor.execute(insert_query2, values2)
+                cursor.execute(insert_query3, values3)
+            cursor.execute(insert_query1, values1)
+            print(cursor.execute(insert_query1, values1),'check up date not pw')
+            
+            cursor.commit()
+
+            print('updated')
+            cursor = cnxn.cursor()
+
+            user_info = cursor.execute(
+            "select * from researchers where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
+            session['id'] = user_info[10]
+            session['username'] = user_info[0].strip()
+            session['first_name'] = user_info[1].strip()
+            session['last_name'] = user_info[2].strip()
+            session['phone_no'] =  user_info[6].strip()
+            session['email'] =  user_info[5].strip()
+            session['address'] =  user_info[7].strip()
+            session['postal_code'] =  user_info[8].strip()
+            session['access_level'] =  user_info[11].strip()
+            print(user_info)
+            print(session['id'],'this is session')
+
+            cursor.close()
+
+            return redirect(url_for('viewUser'))
+
+
+        elif request.method == 'GET':  # get method
+            cnxn = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server + '; \
+                DATABASE=' + database + ';\
+                Trusted_Connection=yes;'
+            )
+            if session['access_level'] == 'patient':
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                    "select * from patients where username = ?",
+                    (session['username'])).fetchone() #fetchone() dont delete this except others
+           
+                get_firstname = user_info[2].strip()
+                get_lastname = user_info[3].strip()
+                get_phone_no =  user_info[7]
+                get_email =  user_info[6].strip()
+                get_address =  user_info[8].strip()
+                get_postal_code =  user_info[9]
+                
+
+            elif session['access_level'] == 'researcher':
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                    "select * from researchers where username = ?",
+                    (session['username'])).fetchone() #fetchone() dont delete this except others
+                get_firstname = user_info[1].strip()
+                get_lastname = user_info[2].strip()
+                get_phone_no =  user_info[6].strip()
+                get_email =  user_info[5].strip()
+                get_address =  user_info[7].strip()
+                get_postal_code =  user_info[8].strip()
+
+
+            elif session['access_level'] == 'doctor':
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                    "select * from doctos where username = ?",
+                    (session['username'])).fetchone() #fetchone() dont delete this except others
+                get_firstname = user_info[2].strip()
+                get_lastname = user_info[3].strip()
+                get_phone_no =  user_info[11].strip()
+                get_email =   user_info[6].strip()
+                get_address =  user_info[7].strip()
+                get_postal_code =  user_info[8].strip()
+
+            elif session['access_level'] == 'hr':
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                    "select * from hr where username = ?",
+                    (session['username'])).fetchone() #fetchone() dont delete this except others
+                get_firstname = user_info[2].strip()
+                get_lastname = user_info[3].strip()
+                get_phone_no =  user_info[9].strip()
+                get_email =  user_info[8].strip()
+                get_address =  user_info[6].strip()
+                get_postal_code =  user_info[7].strip()
+
+            elif session['access_level'] == 'head_admin':
+                cursor = cnxn.cursor()
+                user_info = cursor.execute(
+                    "select * from head_admin where username = ?",
+                    (session['username'])).fetchone() #fetchone() dont delete this except others
+                get_firstname = user_info[2].strip()
+                get_lastname = user_info[3].strip()
+                get_phone_no =  user_info[7].strip()
+                get_email =  user_info[6].strip()
+                get_address =  user_info[10].strip()
+                get_postal_code =  user_info[9].strip()
             print(user_info,'user_id')
             print(cursor,'cursor')
 
-            get_firstname = user_info[2].strip()
-            get_lastname = user_info[3].strip()
-            get_address = user_info[8].strip()
-            get_phone_no = user_info[7].strip()
-            get_postal_code = user_info[9].strip()
-            get_email = user_info[6].strip()
 
             update_user_form.firstname.data =get_firstname
             update_user_form.lastname.data = get_lastname
@@ -535,6 +838,8 @@ with app.app_context():
             update_user_form.phone_no.data = get_phone_no
             update_user_form.postal_code.data = get_postal_code
             update_user_form.email.data = get_email
+
+    
 
         # elif request.method == 'POST' and update_user_form.validate() and session['Head_Admin'] == False:  # customer side
         #     if session['admin']:

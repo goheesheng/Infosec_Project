@@ -13,7 +13,6 @@
 </style>
 
 {% from "includes/_formHelper.html" import render_field %}
-
 <h1 class="display-4">Update User</h1> <!-- Display 1 - >4 are the size of fonts, 1 is the biggest -->
 
 
@@ -48,11 +47,12 @@
     <div class="form-group">
         {{ render_field(form.confirmPassword, class="form-control") }}
     </div>
-    {% if session['Head_Admin'] == True %}
+    {% if session['head_admin'] == True %}
     <div class="form-group">
-        {{ render_field(form.become_admin, class="form-check") }}
+        {{ render_field(form.roles, class="form-control") }}
     </div>
     {% endif %}
     <input type='submit' value='Update' class="'btn btn-primary">
 </form>
+
 {% endblock %}
