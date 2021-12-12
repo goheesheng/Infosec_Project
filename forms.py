@@ -113,7 +113,6 @@ class Admin_UpdateUserForm(Form):
     become_admin = SelectField('Gender', [validators.DataRequired()], choices=[('', 'Select'), ('Researcher', 'researchers'), ('Doctor', 'doctors'),('Human Resource', 'hr'),('Patient', 'patient')], default='')
 
 class Patient_UpdateForm(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[a-zA-Z]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})

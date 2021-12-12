@@ -441,76 +441,66 @@ with app.app_context():
             )
             
             cursor = cnxn.cursor()
-            username = update_user_form.username.data
             firstname = update_user_form.firstname.data
             lastname = update_user_form.lastname.data
             address = update_user_form.address.data
             phone_no = update_user_form.phone_no.data
             postal_code = update_user_form.postal_code.data
             email = update_user_form.email.data
-            insert_query1 = ('UPDATE patients \
-                              SET username = ?,\
-                              SET first_name = ?,\
-                              SET last_name = ?,\
-                              SET address = ?,\
-                              SET phone_no = ?,\
-                              SET postal_code = ?,\
-                              SET email = ?,\
-                              WHERE username = ?\
-                              VALUES (?, ?, ?, ?,?,?,?,?);')
+            # insert_query1 = ('UPDATE patients \
+            #                   SET first_name = ?,\
+            #                    last_name = ?,\
+            #                    address = ?,\
+            #                    phone_no = ?,\
+            #                    postal_code = ?,\
+            #                    email = ? \
+            #                   WHERE username = ?;')
+            insert_query1 = ('UPDATE patients SET first_name = ?,last_name = ?,address = ?,phone_no = ?,postal_code = ?,email = ? WHERE username = ?;')
             
-            values1 = (username, firstname, lastname, address,phone_no,postal_code,email,session['username'])
+            values1 = (firstname, lastname, address,phone_no,postal_code,email,session['username'])
 
-            insert_query2 = ("UPDATE access_list \
-                            SET username = ?, \
-                            WHERE username = ? \
-                            VALUES (?,?); ")
-            values2 = (username,session['username'])
+        
 
             if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
-                print('did not update ')
+                print('did not update [asswprd')
                 pass
             else:
                 md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
                 md5Hashed = md5Hash.hexdigest()
-                insert_query3 = (' UPDATE patients \
-                              SET pass_hash = ?,\
-                              WHERE username = ?\
-                              VALUES (?, ?);')
+                insert_query2 = (' UPDATE patients \
+                              SET pass_hash = ?\
+                              WHERE username = ?;')
             
-                values3 = (md5Hashed,session['username'])
-                cursor = cnxn.cursor()
-                cursor.execute(insert_query, values2)
-                cnxn.commit()
+                values2 = (md5Hashed,session['username'])
               
-                insert_query = textwrap.dedent('''
+                insert_query3 = textwrap.dedent('''
                     UPDATE access_list 
-                    SET pass_hash = ?, \
-                    WHERE username = ?
-                    VALUES (?,?); 
+                    SET pass_hash = ? \
+                    WHERE username = ?; 
                 ''')
-                values3 = (md5Hashed,username)
-                cursor.execute(insert_query1, values1)
+                values3 = (md5Hashed,session['username'])
                 cursor.execute(insert_query2, values2)
-                cursor.execute3(insert_query3, values3)
+                cursor.execute(insert_query3, values3)
+            cursor.execute(insert_query1, values1)
+            print(cursor.execute(insert_query1, values1),'check up date not pw')
+            
+            cursor.commit()
 
-                cnxn.commit()
-
-                print('updated')
-                cursor = cnxn.cursor()
-                user_info = cursor.execute(
-                "select * from patients where username = ? and pass_hash = ?",
-                (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-                session['id'] = user_info[0]
-                session['username'] = user_info[1].strip()
-                session['first_name'] = user_info[2].strip()
-                session['last_name'] = user_info[3].strip()
-                session['phone_no'] =  user_info[7].strip()
-                session['email'] =  user_info[6].strip()
-                session['address'] =  user_info[8].strip()
-                session['postal_code'] =  user_info[9].strip()
-                session['access_level'] = user_info[13].strip()
-                cursor.close()
+            print('updated')
+            cursor = cnxn.cursor()
+            user_info = cursor.execute(
+            "select * from patients where username = ?",(session['username'])).fetchone() #fetchone() dont delete this except others
+            print(user_info)
+            session['id'] = user_info[0]
+            session['username'] = user_info[1].strip()
+            session['first_name'] = user_info[2].strip()
+            session['last_name'] = user_info[3].strip()
+            session['phone_no'] =  user_info[7].strip()
+            session['email'] =  user_info[6].strip()
+            session['address'] =  user_info[8].strip()
+            session['postal_code'] =  user_info[9].strip()
+            session['access_level'] = user_info[13].strip()
+            cursor.close()
 
             return redirect(url_for('viewUser'))
 
@@ -532,7 +522,6 @@ with app.app_context():
             print(user_info,'user_id')
             print(cursor,'cursor')
 
-            get_username = user_info[1].strip()
             get_firstname = user_info[2].strip()
             get_lastname = user_info[3].strip()
             get_address = user_info[8].strip()
@@ -540,7 +529,6 @@ with app.app_context():
             get_postal_code = user_info[9].strip()
             get_email = user_info[6].strip()
 
-            update_user_form.username.data = get_username
             update_user_form.firstname.data =get_firstname
             update_user_form.lastname.data = get_lastname
             update_user_form.address.data = get_address
@@ -1280,8 +1268,8 @@ with app.app_context():
                 filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
                 md5Hash = hashlib.md5(filecontent)
                 fileHashed = md5Hash.hexdigest()
-                VALUES = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
-                cursor.execute(alter_query,VALUES)
+                values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                cursor.execute(alter_query,values)
                 cursor.commit()
                 cursor.close()
 
