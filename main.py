@@ -1476,7 +1476,7 @@ with app.app_context():
     @app.route('/requestPatientInformation',methods=['GET','POST'])
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
-        if request.method=='POST' :
+        if request.method=='POST':
             if requestPatientInformationForm.validate():
                 patient_nric=requestPatientInformationForm.patient_nric.data
                 cursor = cnxn.cursor()
@@ -1513,10 +1513,16 @@ with app.app_context():
             flash("NRIC either does not exist or is invalid", "error")
             return redirect(url_for('requestPatientInformation'))
 
-        if request.method=="GET" and session["access_level"] =="patient":
-            return send_from_directory(directory=app.config['UPLOAD_FOLDER'],path=f"{session['username']}.docx")
-        else:
-            return render_template("requestPatientInformation.html",form=requestPatientInformationForm)
+        if request.method=="GET":
+            if session["access_level"] =="patient":
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'],f"session['username'].docx")):
+                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'],path=f"{session['username']}.docx")
+                else:
+                    flash("No medical record exists for your account","error")
+                    return redirect(url_for('homepage'))
+            else:
+                return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
+
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
     # @login_required
