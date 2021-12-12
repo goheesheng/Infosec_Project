@@ -1671,11 +1671,13 @@ with app.app_context():
         z = z + random.randint(int(-z / 2), int(z / 2))
         mask += f'Visited Angel Health {z} times this year\n'
         r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+        r = set(r)
         mask += f'Outstanding health problems:\n'
         if len(r) != 0:
-            for i in r[0]:
-                if i != '':
-                    mask += f'{i.capitalize()}\n'
+            for i in r:
+                for j in i:
+                    if j != '':
+                        mask += f'{j.capitalize()}\n'
         else:
             mask += f'None'
         cursor.close()
