@@ -1423,64 +1423,67 @@ with app.app_context():
             return redirect(url_for('login'))
         else:
             tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
-            if session['username'] != tending_physician :
-                flash("You unauthorized  to view this patients information","error")
-                return redirect(url_for('homepage'))
+            if tending_physician is not None:
+                if session['username'] != tending_physician.strip() :
+                    flash("You unauthorized  to view this patients information","error")
+                    return redirect(url_for('homepage'))
 
         return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
 
     @app.route('/requestPatientInformation',methods=['GET','POST'])
+    @custom_login_required
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
-        if session['access_level'] != 'doctor':
-            return redirect(url_for('access_denied'))
-        else:
-            if request.method=='POST':
-                if requestPatientInformationForm.validate():
-                    patient_nric=requestPatientInformationForm.patient_nric.data
-                    cursor = cnxn.cursor()
-                    #Checking if patient exists in database with NRIC/USERNAME
-                    patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
-                    if patient is not None:
-                        retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
-                        if retrieved is None:
-                            # Creating Base Document File for patient,insert file name,content,md5... into db
-                            cursor = cnxn.cursor()
-                            patient_name=f"{patient[2].strip()} {patient[3].strip()}"
-                            insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
-                            newDocument=Document()
-                            newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
-                            newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                            filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
-                            md5Hash = hashlib.md5(filecontent)
-                            fileHashed = md5Hash.hexdigest()
-                            VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
-                            cursor.execute(insert_query, VALUES)
-                            cursor.commit()
-                            cursor.close()
-                        else:
-                            file_name=retrieved[1]
-                            file_content=retrieved[2]
-                            stored_hash=retrieved[6]
-                            if not(check_file_hash(file_name,stored_hash)):
-                                with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
-                                    file_override.write(file_content)
-                        print(session,'here')
-                        return redirect(url_for("submission", pid=patient[0]))
-
-                    cursor.close()
-                flash("NRIC either does not exist or is invalid", "error")
-                return redirect(url_for('requestPatientInformation'))
-
-            if request.method=="GET":
-                if session["access_level"] =="patient":
-                    if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'],f"session['username'].docx")):
-                        return send_from_directory(directory=app.config['UPLOAD_FOLDER'],path=f"{session['username']}.docx")
-                    else:
-                        flash("No medical record exists for your account","error")
-                        return redirect(url_for('homepage'))
+        if request.method == "GET":
+            if session["access_level"] == "patient":
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
+                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
                 else:
-                    return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
+                    flash("No medical record exists for your account", "error")
+                    return redirect(url_for('homepage'))
+
+            elif session["access_level"] == "doctor":
+                return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
+            else:
+                return redirect(url_for('access_denied'))
+
+        else:
+            if requestPatientInformationForm.validate():
+                patient_nric=requestPatientInformationForm.patient_nric.data
+                cursor = cnxn.cursor()
+                #Checking if patient exists in database with NRIC/USERNAME
+                patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
+                if patient is not None:
+                    retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
+                    if retrieved is None:
+                        # Creating Base Document File for patient,insert file name,content,md5... into db
+                        cursor = cnxn.cursor()
+                        patient_name=f"{patient[2].strip()} {patient[3].strip()}"
+                        insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
+                        newDocument=Document()
+                        newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
+                        newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                        filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
+                        md5Hash = hashlib.md5(filecontent)
+                        fileHashed = md5Hash.hexdigest()
+                        VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
+                        cursor.execute(insert_query, VALUES)
+                        cursor.commit()
+                        cursor.close()
+                    else:
+                        file_name=retrieved[1]
+                        file_content=retrieved[2]
+                        stored_hash=retrieved[6]
+                        if not(check_file_hash(file_name,stored_hash)):
+                            with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
+                                file_override.write(file_content)
+                    print(session,'here')
+                    return redirect(url_for("submission", pid=patient[0]))
+
+                cursor.close()
+            flash("NRIC either does not exist or is invalid", "error")
+            return redirect(url_for('requestPatientInformation'))
+
 
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
@@ -1838,58 +1841,58 @@ with app.app_context():
         researcher_form = RegisterResearcher(request.form)
         if session['access_level'] != 'hr':
             return redirect(url_for('access_denied'))
-            if request.method == "POST" and researcher_form.validate():
-                cursor = cnxn.cursor()
-                username = researcher_form.username.data
-                firstname = researcher_form.firstname.data
-                lastname = researcher_form.lastname.data
-                address = researcher_form.address.data
-                phone_no = researcher_form.phone_no.data
-                postal_code = researcher_form.postal_code.data
-                email = researcher_form.email.data
-                company = researcher_form.company.data
-                otp_code = pyotp.random_base32()
-                md5Hash = hashlib.md5(researcher_form.password.data.encode("utf-8"))
-                md5Hashed = md5Hash.hexdigest()
-                tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
-                check = True
-                for table in tables:
-                    check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
-                                                    (username)).fetchval()  # prevent sql injection
-                    check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
-                                                (email)).fetchval()  # prevent sql injection
-                    if check_email == None and check_username == None:
-                        continue
-                    else:
-                        check = False
-                        break
-
-                if check:
-                    insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
-                                                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
-                    values = (username, firstname, lastname, md5Hashed,
-                            email, otp_code, phone_no, 'researcher', address, postal_code, company)
-                    cursor.execute(insert_query, values)
-                    cursor.commit()
-                    cursor.close()
-                    cursor = cnxn.cursor()
-                    insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
-                                                VALUES (?, ?,?); "
-                    values = (username, 'researcher', md5Hashed)
-                    cursor.execute(insert_query, values)
-                    cursor.commit()
-                    cursor.close()
-                    print('Sending email OTP...')
-                    qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
-                    image = pyqrcode.create(qr)
-                    image.png('image.png', scale=5)
-                    SendMail("image.png", email, "Researcher")
-                    os.remove('image.png')
+        if request.method == "POST" and researcher_form.validate():
+            cursor = cnxn.cursor()
+            username = researcher_form.username.data
+            firstname = researcher_form.firstname.data
+            lastname = researcher_form.lastname.data
+            address = researcher_form.address.data
+            phone_no = researcher_form.phone_no.data
+            postal_code = researcher_form.postal_code.data
+            email = researcher_form.email.data
+            company = researcher_form.company.data
+            otp_code = pyotp.random_base32()
+            md5Hash = hashlib.md5(researcher_form.password.data.encode("utf-8"))
+            md5Hashed = md5Hash.hexdigest()
+            tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
+            check = True
+            for table in tables:
+                check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
+                                                (username)).fetchval()  # prevent sql injection
+                check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
+                                            (email)).fetchval()  # prevent sql injection
+                if check_email == None and check_username == None:
+                    continue
                 else:
-                    flash("Account already exists!")
-                    return render_template('register_researcher.html', form=researcher_form)
-                return redirect(url_for('dashboard'))
-            return render_template('register_researcher.html', form=researcher_form)
+                    check = False
+                    break
+
+            if check:
+                insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
+                                            VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
+                values = (username, firstname, lastname, md5Hashed,
+                        email, otp_code, phone_no, 'researcher', address, postal_code, company)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                cursor = cnxn.cursor()
+                insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                                            VALUES (?, ?,?); "
+                values = (username, 'researcher', md5Hashed)
+                cursor.execute(insert_query, values)
+                cursor.commit()
+                cursor.close()
+                print('Sending email OTP...')
+                qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                image = pyqrcode.create(qr)
+                image.png('image.png', scale=5)
+                SendMail("image.png", email, "Researcher")
+                os.remove('image.png')
+            else:
+                flash("Account already exists!")
+                return render_template('register_researcher.html', form=researcher_form)
+            return redirect(url_for('dashboard'))
+        return render_template('register_researcher.html', form=researcher_form)
 
 
     @app.route('/hr-registration', methods=['GET', 'POST'])
