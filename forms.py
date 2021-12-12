@@ -50,7 +50,7 @@ class Register(Form):
     submit = SubmitField("Submit")
 
 class RegisterDoctor(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
+    username = StringField("Username", [validators.Length(min=1, max=400), validators.DataRequired()])
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     department = StringField("Department", [validators.Length(min=1, max=400), validators.DataRequired()])
@@ -66,7 +66,7 @@ class RegisterDoctor(Form):
     submit = SubmitField("Submit")
 
 class RegisterResearcher(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
+    username = StringField("Username", [validators.Length(min=1, max=400), validators.DataRequired()])
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     company = StringField("Company", [validators.Length(min=1, max=400), validators.DataRequired()])
@@ -82,7 +82,7 @@ class RegisterResearcher(Form):
     submit = SubmitField("Submit")
 
 class RegisterHr(Form):
-    username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
+    username = StringField("Username", [validators.Length(min=1, max=400), validators.DataRequired()])
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
 
@@ -98,7 +98,7 @@ class RegisterHr(Form):
     submit = SubmitField("Submit")
 
 class Admin_UpdateUserForm(Form):
-    first_name = StringField('First Name', [validators.Length(min=1, max=30),validators.DataRequired()],render_kw={"placeholder": "E.g Samuel"})  # can edit length,validators.DataRequired() means data required
+    first_name = StringField('Username', [validators.Length(min=1, max=30), validators.DataRequired()])
     last_name = StringField('Last Name', [validators.Length(min=1, max=30), validators.DataRequired()],render_kw={"placeholder": "E.g Goh"})
     race = SelectField("Race", [validators.DataRequired()], choices=[('', 'Select'), ('C','Chinese'), ('M','Malay'), ('I','Indian'), ('O','Others')],default='')
     phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
