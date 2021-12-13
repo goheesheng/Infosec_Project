@@ -1838,6 +1838,7 @@ with app.app_context():
         researcher_form = RegisterResearcher(request.form)
         if session['access_level'] != 'hr':
             return redirect(url_for('access_denied'))
+        else:
             if request.method == "POST" and researcher_form.validate():
                 cursor = cnxn.cursor()
                 username = researcher_form.username.data
@@ -2000,5 +2001,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    #add_admin()
+    add_admin()
     app.run(debug=True)

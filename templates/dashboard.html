@@ -30,25 +30,27 @@
                     <table id="datatablesSimple">
                     <thead>
                         <tr>
-                            <th>Access Level</th>
-                            <th>User ID</th>
+                            <th>HR's ID</th>
                             <th>Full Name</th>
-                            <th>Username/NRIC</th>
+                            <th>Admin No</th>
                             <th>Email</th>
                             <th>Phone Number</th>
-                            <th>Options</th>
+                            <th>Address</th>
+                            <th>Postal Code</th>
                         </tr>
                     </thead>
                     <tbody>
 
                     {% for x in hr %}
                         <tr>
-                            <td>{{x.access_level}}</td>
                             <td>{{x.hr_id}}</td>
                             <td>{{x.first_name}} {{x.last_name}}</td>
                             <td>{{x.username}}</td>
                             <td>{{x.email}}</td>
                             <td>{{x.phone_no}}</td>
+                            <td>{{x.address}}</td>
+                            <td>{{x.postal_code}}</td>
+
                             <td>
                                 <a href="{{url_for('remove', identifier=x.username, table=x.access_level)}}"><button type="button" class="btn btn-danger" href="{{url_for('remove', identifier=x.username, table=x.access_level)}}">Remove</button></a>
                             </td>
@@ -56,17 +58,7 @@
                     {% endfor %}
                     
                     </tbody>
-                    <tfoot>
-                        <tr>
-                            <th>Access Level</th>
-                            <th>Full Name</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Hospital</th>
-                            <th>Phone Number</th>
-                            <th>Options</th>
-                        </tr>
-                    </tfoot>
+
                 </table>
                 </div>
             </div>
