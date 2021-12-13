@@ -1841,28 +1841,55 @@ with app.app_context():
         researcher_form = RegisterResearcher(request.form)
         if session['access_level'] != 'hr':
             return redirect(url_for('access_denied'))
-        if request.method == "POST" and researcher_form.validate():
-            cursor = cnxn.cursor()
-            username = researcher_form.username.data
-            firstname = researcher_form.firstname.data
-            lastname = researcher_form.lastname.data
-            address = researcher_form.address.data
-            phone_no = researcher_form.phone_no.data
-            postal_code = researcher_form.postal_code.data
-            email = researcher_form.email.data
-            company = researcher_form.company.data
-            otp_code = pyotp.random_base32()
-            md5Hash = hashlib.md5(researcher_form.password.data.encode("utf-8"))
-            md5Hashed = md5Hash.hexdigest()
-            tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
-            check = True
-            for table in tables:
-                check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
-                                                (username)).fetchval()  # prevent sql injection
-                check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
-                                            (email)).fetchval()  # prevent sql injection
-                if check_email == None and check_username == None:
-                    continue
+
+        else:
+            if request.method == "POST" and researcher_form.validate():
+                cursor = cnxn.cursor()
+                username = researcher_form.username.data
+                firstname = researcher_form.firstname.data
+                lastname = researcher_form.lastname.data
+                address = researcher_form.address.data
+                phone_no = researcher_form.phone_no.data
+                postal_code = researcher_form.postal_code.data
+                email = researcher_form.email.data
+                company = researcher_form.company.data
+                otp_code = pyotp.random_base32()
+                md5Hash = hashlib.md5(researcher_form.password.data.encode("utf-8"))
+                md5Hashed = md5Hash.hexdigest()
+                tables = ["patients", "researchers", "hr", "head_admin", "doctors"]
+                check = True
+                for table in tables:
+                    check_username = cursor.execute("SELECT username FROM "+table+" WHERE username = ?",
+                                                    (username)).fetchval()  # prevent sql injection
+                    check_email = cursor.execute("SELECT email FROM "+table+" WHERE email = ?",
+                                                (email)).fetchval()  # prevent sql injection
+                    if check_email == None and check_username == None:
+                        continue
+                    else:
+                        check = False
+                        break
+
+                if check:
+                    insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
+                                                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
+                    values = (username, firstname, lastname, md5Hashed,
+                            email, otp_code, phone_no, 'researcher', address, postal_code, company)
+                    cursor.execute(insert_query, values)
+                    cursor.commit()
+                    cursor.close()
+                    cursor = cnxn.cursor()
+                    insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                                                VALUES (?, ?,?); "
+                    values = (username, 'researcher', md5Hashed)
+                    cursor.execute(insert_query, values)
+                    cursor.commit()
+                    cursor.close()
+                    print('Sending email OTP...')
+                    qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                    image = pyqrcode.create(qr)
+                    image.png('image.png', scale=5)
+                    SendMail("image.png", email, "Researcher")
+                    os.remove('image.png')
                 else:
                     check = False
                     break
@@ -2003,5 +2030,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    #add_admin()
+    add_admin()
     app.run(debug=True)
