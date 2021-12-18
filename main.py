@@ -18,7 +18,7 @@ import re
 import random
 import bcrypt
 from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, \
-    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm
+    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm, Assign_PhysiciantForm
 from functools import wraps
 import pyodbc
 import textwrap
@@ -142,6 +142,17 @@ def custom_login_required(f):
 
     return wrap
 
+def doctor_and_patient_needed(needpatientandresearcher):
+    @wraps(needpatientandresearcher)
+    def decorated_func(*args, **kwargs):
+        print(session)
+        if "access_level" in session:
+            if session['access_level'] in ["doctor","patient"]:
+                return needpatientandresearcher(*args, **kwargs)
+        flash("Invalid access","error")
+        return redirect(url_for('homepage'))
+    return decorated_func
+
 
 def researcher_needed(needresearcher):
     @wraps(needresearcher)
@@ -170,12 +181,22 @@ def patient_needed(needpatient):
 def doctor_needed(needdoctor):
     @wraps(needdoctor)
     def decorated_func(*args, **kwargs):
-        if session['access'] != '2':
-            flash("Invalid User")
-            return redirect(url_for('home'))
+        if session['access_level'] != 'doctor':
+            flash("Invalid User","error")
+            return redirect(url_for('homepage'))
         else:
             return needdoctor(*args, **kwargs)
+    return decorated_func
 
+
+def hr_needed(needHR):
+    @wraps(needHR)
+    def decorated_func(*args, **kwargs):
+        if session['access_level'] != 'hr':
+            flash("Invalid User","error")
+            return redirect(url_for('homepage'))
+        else:
+            return needHR(*args, **kwargs)
     return decorated_func
 
 
@@ -1423,87 +1444,85 @@ with app.app_context():
             return redirect(url_for('login'))
         else:
             tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
+            cursor.close()
             if tending_physician is not None:
-                if session['username'] != tending_physician.strip() :
-                    flash("You unauthorized  to view this patients information","error")
-                    return redirect(url_for('homepage'))
-
-        return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
+                if session['username'] == tending_physician.strip() :
+                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
+            flash("You unauthorized  to view this patients information", "error")
+            return redirect(url_for('homepage'))
 
     @app.route('/requestPatientInformation',methods=['GET','POST'])
     @custom_login_required
+    @doctor_and_patient_needed
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
-        if session["access_level"] == "patient":
-            if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
-                return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
-            else:
-                flash("No medical record exists for your account", "error")
-                return redirect(url_for('homepage'))
+        if request.method=="GET":
+            if session["access_level"] == "patient":
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
+                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
+                else:
+                    flash("No medical record exists for your account", "error")
+                    return redirect(url_for('homepage'))
 
-        elif session["access_level"] == "doctor":
-                pass
-        else:
-            return redirect(url_for('access_denied'))
+            elif session["access_level"] == "doctor":
+                return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
 
-        if request.method=="POST":
-            if requestPatientInformationForm.validate():
-                patient_nric=requestPatientInformationForm.patient_nric.data
-                cursor = cnxn.cursor()
-                #Checking if patient exists in database with NRIC/USERNAME
-                patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
-                if patient is not None:
-                    retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
-                    if retrieved is None:
-                        # Creating Base Document File for patient,insert file name,content,md5... into db
-                        cursor = cnxn.cursor()
-                        patient_name=f"{patient[2].strip()} {patient[3].strip()}"
-                        insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
-                        newDocument=Document()
-                        newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
-                        newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                        filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
-                        md5Hash = hashlib.md5(filecontent)
-                        fileHashed = md5Hash.hexdigest()
-                        VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
-                        cursor.execute(insert_query, VALUES)
-                        cursor.commit()
-                        cursor.close()
-                    else:
-                        file_name=retrieved[1]
-                        file_content=retrieved[2]
-                        stored_hash=retrieved[6]
-                        if not(check_file_hash(file_name,stored_hash)):
-                            with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
-                                file_override.write(file_content)
-                    print(session,'here')
-                    return redirect(url_for("submission", pid=patient[0]))
+        if request.method == "POST":
+            if  session["access_level"] == "doctor":
+                if requestPatientInformationForm.validate():
+                    patient_nric=requestPatientInformationForm.patient_nric.data
+                    cursor = cnxn.cursor()
+                    #Checking if patient exists in database with NRIC/USERNAME
+                    patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
+                    if patient is not None:
+                        retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
+                        if retrieved is None:
+                            # Creating Base Document File for patient,insert file name,content,md5... into db
+                            cursor = cnxn.cursor()
+                            patient_name=f"{patient[2].strip()} {patient[3].strip()}"
+                            insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
+                            newDocument=Document()
+                            newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
+                            newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                            filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
+                            md5Hash = hashlib.md5(filecontent)
+                            fileHashed = md5Hash.hexdigest()
+                            VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
+                            cursor.execute(insert_query, VALUES)
+                            cursor.commit()
+                            cursor.close()
+                        else:
+                            file_name=retrieved[1]
+                            file_content=retrieved[2]
+                            stored_hash=retrieved[6]
+                            if not(check_file_hash(file_name,stored_hash)):
+                                with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
+                                    file_override.write(file_content)
+                        print(session,'here')
+                        return redirect(url_for("submission", pid=patient[0]))
 
-                cursor.close()
-            flash("NRIC either does not exist or is invalid", "error")
-            return redirect(url_for('requestPatientInformation'))
-
-        return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
+                    cursor.close()
+                flash("NRIC either does not exist or is invalid", "error")
+                return redirect(url_for('requestPatientInformation'))
+            return redirect(url_for('homepage'))
+        return redirect(url_for("homepage"))
 
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
     @custom_login_required
+    @doctor_needed
     def submission(pid):
         cursor = cnxn.cursor()
-        if 'access_level' not in session:
+        tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
+        if tending_physician is None:
+            flash("You are unauthorized to view this patients information", "error")
             return redirect(url_for('homepage'))
-        elif session['access_level'] != 'doctor':   
-            return redirect(url_for('access_denied'))
         else:
-            tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
-            print(session['username'])
-            print(tending_physician)
-            try: # means that it does not exist
-                tending_physician = tending_physician.strip()
-            except:
-                tending_physician = None
-            if session['username'] != tending_physician:
-                flash("You are unauthorized to view this patients information","error")
+            if tending_physician.strip() == session['username']:
+                pass
+            else:
+                flash("You are unauthorized to view this patients information", "error")
+                cursor.close()
                 return redirect(url_for('homepage'))
 
         patient = cursor.execute("select * from patients where patient_id=?", (pid)).fetchone()
@@ -1512,9 +1531,8 @@ with app.app_context():
         file_submit.patient_nric.data=patient[1].strip()
         file_submit.patient_name.data=f"{patient[2].strip()} {patient[3].strip()}"
         filesname=f"{patient[1].strip()}.docx"
-        print(filesname)
 
-        if request.method == "POST" and file_submit.validate():
+        if request.method == "POST" and file_submit.validate() and session["access_level"]=="doctor":
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
                 return  redirect(url_for('submission'),pid)
@@ -1555,15 +1573,56 @@ with app.app_context():
 
                 flash("Patient record successfully updated")
                 return redirect(url_for('homepage'))
-
-            # md5Hash = hashlib.md5(readFile.encode("utf-8"))
-            # md5Hashed = md5Hash.hexdigest()
-            # transaction = blockchain.new_transaction(file_submit.recipient.data, file_submit.sender.data, md5Hashed)
-            # blockchain.new_block('123')
-            # return render_template('test.html', chain=blockchain.chain)
             return redirect(url_for("submission",file=filesname ))
+        if request.method=="GET" and session["access_level"]=="doctor":
+            return render_template('submission.html', form=file_submit,file=filesname)
 
-        return render_template('submission.html', form=file_submit,file=filesname)
+        return redirect(url_for('homepage'))
+    @app.route('/assignDoctor',methods=['GET','POST'])
+    @custom_login_required
+    # @hr_needed
+    def assignDoctor():
+        doctor_patient_form = Assign_PhysiciantForm(request.form)
+        cursor = cnxn.cursor()
+        doctor_choices, patient_choices = [], []
+        doctor_choices.append(("NULL", "No doctor"))
+        all_doctors = cursor.execute("select username,first_name,last_name from doctors").fetchall()
+        all_patients = cursor.execute("select username,first_name,last_name from patients").fetchall()
+        if all_doctors is not None and all_patients is not None:
+            for doctor in all_doctors:
+                doctor_name = doctor[1].strip() + " " + doctor[2].strip()
+                doctor_choices.append((doctor[0].strip(), doctor_name))
+
+            for patient in all_patients:
+                patient_name = patient[1].strip() + " " + patient[2].strip()
+                patient_choices.append((patient[0].strip(), patient_name))
+            doctor_patient_form.doctor.choices, doctor_patient_form.patient.choices = doctor_choices, patient_choices
+            cursor.close()
+        else:
+            flash("There is no patient or doctor to be assigned!", "error")
+            return redirect(url_for('hmepage'))
+
+
+        if request.method=="POST" and session["access_level"]!="hr" and doctor_patient_form.validate():
+            cursor = cnxn.cursor()
+            doctor_username,patient_username=doctor_patient_form.doctor.data,doctor_patient_form.patient.data
+            print(doctor_username,"entered")
+            if doctor_username !="NULL":
+                update_patient_query= textwrap.dedent('''UPDATE patients set tending_physician= (?) where username=(?); ''')
+                cursor.execute(update_patient_query,(doctor_username,patient_username))
+                cursor.commit()
+                flash("successfully added tending physician")
+                return redirect(url_for('homepage'))
+            else:
+                check_patient_query = textwrap.dedent('''select username from patients where username=(?)''')
+                update_patient_query = textwrap.dedent(
+                    '''UPDATE patients set tending_physician= (?) where username=(?); ''')
+                cursor.execute(update_patient_query, (doctor_username, patient_username))
+                cursor.commit()
+                flash("successfully removed tending physician")
+                return redirect(url_for('homepage'))
+
+        return render_template('hrAssignTending.html', form=doctor_patient_form)
 
 
     @app.route('/verification')
@@ -1892,7 +1951,7 @@ with app.app_context():
                     os.remove('image.png')
                 else:
                     check = False
-                    break
+
 
             if check:
                 insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
@@ -2030,5 +2089,5 @@ with app.app_context():
         return redirect(url_for('homepage'))
 
 if __name__ == "__main__":
-    add_admin()
+    # add_admin()
     app.run(debug=True)

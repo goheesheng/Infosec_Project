@@ -5,6 +5,8 @@ from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
 # from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
 #from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
 
+
+
 class FileSubmit(Form):
     patient_nric = StringField("Patient NRIC", [validators.DataRequired()])
     patient_name=StringField("Patient Name",[validators.DataRequired()])
@@ -120,6 +122,11 @@ class General_UpdateForm(Form):
     confirmPassword = PasswordField('Re-enter Password', [validators.EqualTo('password',message='Both password fields must be equal!')])
     submit = SubmitField("Submit")
   
+class Assign_PhysiciantForm(Form):
+    doctor=SelectField("Doctor",[validators.DataRequired()],choices=[])
+    patient=SelectField("Patient",[validators.DataRequired()],choices=[])
+
+
 
 class Appointment(Form):
     date = DateField("Enter date for appointment", validators=[validators.DataRequired()])
