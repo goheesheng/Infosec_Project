@@ -1464,7 +1464,7 @@ with app.app_context():
                     flash("No medical record exists for your account", "error")
                     return redirect(url_for('homepage'))
 
-            elif session["access_level"] == "doctor":
+            if session["access_level"] == "doctor":
                 return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
 
         if request.method == "POST":
@@ -1532,7 +1532,7 @@ with app.app_context():
         file_submit.patient_name.data=f"{patient[2].strip()} {patient[3].strip()}"
         filesname=f"{patient[1].strip()}.docx"
 
-        if request.method == "POST" and file_submit.validate() and session["access_level"]=="doctor":
+        if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
                 return  redirect(url_for('submission'),pid)
@@ -1574,7 +1574,7 @@ with app.app_context():
                 flash("Patient record successfully updated")
                 return redirect(url_for('homepage'))
             return redirect(url_for("submission",file=filesname ))
-        if request.method=="GET" and session["access_level"]=="doctor":
+        if request.method=="GET":
             return render_template('submission.html', form=file_submit,file=filesname)
 
         return redirect(url_for('homepage'))
@@ -1603,7 +1603,7 @@ with app.app_context():
             return redirect(url_for('hmepage'))
 
 
-        if request.method=="POST" and session["access_level"]!="hr" and doctor_patient_form.validate():
+        if request.method=="POST" and doctor_patient_form.validate():
             cursor = cnxn.cursor()
             doctor_username,patient_username=doctor_patient_form.doctor.data,doctor_patient_form.patient.data
             print(doctor_username,"entered")
