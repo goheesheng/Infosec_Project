@@ -1,5 +1,6 @@
 import hashlib
 import ssl
+from typing import ContextManager
 import pyqrcode
 from docx import Document
 from docxcompose.composer import Composer
@@ -25,6 +26,7 @@ import textwrap
 from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
+from pydrive.drive import GoogleDrive
 
 context = ssl.create_default_context()
 
@@ -2088,6 +2090,38 @@ with app.app_context():
     def admin(variable):
         return redirect(url_for('homepage'))
 
+    def populate_db():
+        cnxn = pyodbc.connect(
+                            'DRIVER={ODBC Driver 17 for SQL Server}; \
+                            SERVER=' + server + '; \
+                            DATABASE=' + database + ';\
+                            Trusted_Connection=yes;'
+                            ,autocommit=True)
+        backup_database_query = """BACKUP DATABASE[database1] TO DISK = N'C:\\SQL BACKUP \\ database1.bak"""
+        cursor = cnxn.cursor().execute(backup_database_query)
+        while cursor.nextset():
+            pass
+        print("Database backed up locally")
+
+        folder_id,timestamp = create_folders_in_gdrive.main()
+        path = "C:/SQL BACKUP/"
+        files = os.listdir(path)
+        my_drive = google_cloud_backup.MyDrive()
+        for item in files:
+            my_drive.upload_file(item,path,folder_id)
+        print("Uploaded to GDrive!")
+
+        t = time.localtime()
+        current_time = time.strftime("%H:%M:%S",t)
+        backup_date = str(timestamp[0] + " " + str(timestamp[1]))
+
+        sql_backup = "INSERT INTO Backups(ID, BackupDate) VALUES (?, ?)"
+        parameters = (folder_id,backup_date)
+        cursor = cnxn.cursor().execute(sql_backup,parameters)
+        cursor.commit()
+        cnxn.close()
+        print("Writing to SQL database1")
+
 if __name__ == "__main__":
     # add_admin()
-    app.run(debug=True)
+    app.run(debug=True,port=8080)
