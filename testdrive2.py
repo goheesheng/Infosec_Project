@@ -1,6 +1,6 @@
 from Google import Create_Service
 
-CLIENT_SECRET_FILE = 'test.json'
+CLIENT_SECRET_FILE = 'credientials.json'
 API_NAME = 'drive'
 API_VERSION = 'v3'
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -19,3 +19,6 @@ for x in colours:
     }
 
     service.files().create(body=file_metadata).execute()
+
+# from streamlit import caching
+# caching.clear_memo_cache()
