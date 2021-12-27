@@ -7,6 +7,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+#This script is to check if google drive api is working
+
+
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/drive']
 
@@ -97,4 +100,4 @@ def create_folder():
 
 if __name__ == '__main__':
     main()
-    create_folder()
+    # create_folder()

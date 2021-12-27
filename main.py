@@ -26,7 +26,6 @@ import textwrap
 from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
-from pydrive.drive import GoogleDrive
 
 context = ssl.create_default_context()
 
@@ -1811,14 +1810,7 @@ with app.app_context():
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
-            #addPatient to access_list table ?
-            insert_query = textwrap.dedent('''
-                            INSERT INTO access_list (username, pass_hash,access_level) 
-                            VALUES (?, ?, ?); 
-                        ''')
-            values = (username, md5Hashed,'patient')
-            cursor.execute(insert_query,values)
-            cnxn.commit()
+            #addPatient to access_list table 
             insert_query = textwrap.dedent('''
                 INSERT INTO access_list (username,access_level,pass_hash) 
                 VALUES (?, ?,?); 
@@ -2123,5 +2115,5 @@ with app.app_context():
         print("Writing to SQL database1")
 
 if __name__ == "__main__":
-    # add_admin()
+    add_admin()
     app.run(debug=True,port=8080)
