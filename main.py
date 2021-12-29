@@ -29,7 +29,7 @@ from datetime import datetime
 
 context = ssl.create_default_context()
 
-salt = bcrypt.gensalt()
+salt = bcrypt.gensalt() 
 cnxn = pyodbc.connect(
     'DRIVER={ODBC Driver 17 for SQL Server}; \
     SERVER=' + server + '; \
@@ -1348,38 +1348,6 @@ with app.app_context():
 
 
 
-    ## for reference dont touch - ES
-    @app.route('/deleteUser', methods=['POST'])
-    def delete_user(nric):
-        if session['Head_Admin'] == True:
-            users_dict = {}
-            db = shelve.open('storage.db', 'w')
-            users_dict = db['Users']
-
-            user = users_dict.pop(nric)
-
-            db['Users'] = users_dict
-            db.close()
-
-            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
-
-            return redirect(url_for('retrieve_users'))
-        elif session['Head_Admin'] == False:  # customer return to log out page
-
-            users_dict = {}
-            db = shelve.open('storage.db', 'w')
-            users_dict = db['Users']
-
-            user = users_dict.pop(nric)
-
-            db['Users'] = users_dict
-            db.close()
-
-            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
-            if session['admin'] == False:
-                return redirect(url_for('log_out'))
-            elif session['admin'] == True:
-                return redirect(url_for('retrieve_users'))
 
     @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
@@ -2036,6 +2004,49 @@ with app.app_context():
 
                 return redirect(url_for('dashboard'))
             return render_template('register_hr.html', form=hr_form)
+    @custom_login_required
+    @app.route('/backup', methods=['GET', 'POST'])
+    def generate_backup():
+        database = 'database1'
+        connection = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + server + '; \
+            DATABASE=' + database + ';\
+            Trusted_Connection=yes;' \
+            , autocommit=True
+        )
+        backup = "BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak'"
+        cursor = connection.cursor().execute(backup)
+        while (cursor.nextset()):
+            pass
+        print('Backup successful')
+        connection.close()
+        return redirect(url_for('dashboard'))
+
+    @custom_login_required
+    @app.route('/restore', methods=['GET', 'POST'])
+    def restore_backup():
+        cnct_str = pyodbc.connect( # need use master db because 
+            'DRIVER={ODBC Driver 17 for SQL Server}; \
+            SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+            DATABASE=' + 'master' + ';\
+            Trusted_Connection=yes;' \
+            ,autocommit=True)
+        executelock = ("alter database database1 set offline with rollback immediate ")
+        releaselock = ("alter database database1 set online")
+        cur = cnct_str.cursor()
+
+        statement = (
+            """RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE""" ) #  file name and db must be the same
+        create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
+        cur.execute(create_db)
+        cur.execute(executelock)
+        cur.execute(statement)
+        while cur.nextset():
+            pass
+        cur.execute(releaselock)
+        print("restore_backup completed successfully")
+        return redirect(url_for('dashboard'))
 
     @app.route('/remove/<string:identifier>/<string:table>', methods=['GET', 'POST'])
     def remove(identifier,table):
@@ -2114,6 +2125,25 @@ with app.app_context():
         cnxn.close()
         print("Writing to SQL database1")
 
+    def shutdown_server():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+        
+    @app.get('/shutdown')
+    def shutdown():
+        shutdown_server()
+        print('before')
+        time.sleep(4)
+        print('after')
+        start_server()
+       
+
+    def start_server():
+        app.run()
+
+import time
 if __name__ == "__main__":
     add_admin()
-    app.run(debug=True,port=8080)
+    app.run(debug=True)
