@@ -218,9 +218,8 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[google](
-	[folder_name] [nchar](100) NOT NULL,
 	[folder_id] [nchar](100) NOT NULL,
-	[folder_path] [varchar](100) NOT NULL,
+	[backup_date] [varchar](100) NOT NULL,
 ) ON [PRIMARY]
 
 GO
