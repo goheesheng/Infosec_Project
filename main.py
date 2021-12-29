@@ -26,7 +26,7 @@ import textwrap
 from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
-
+from Google import MyDrive
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
@@ -2015,14 +2015,26 @@ with app.app_context():
             Trusted_Connection=yes;' \
             , autocommit=True
         )
-        backup = "BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak'"
+        t = time.localtime()
+        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+
+        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
         cursor = connection.cursor().execute(backup)
         while (cursor.nextset()):
             pass
-        print('Backup successful')
+        print('Local Backup successful')
         connection.close()
+
+        # Update to Google Drive
+        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+        for folder in folders:
+            my_drive.create_file(folder, folder_path)
+        print('Drive backup successful')
+        flash('Local and cloud backup successful')
         return redirect(url_for('dashboard'))
 
+    # need to do more shit, if database down then use restore and use the backup db for whole code.Need do wrapper to solve this issue
     @custom_login_required
     @app.route('/restore', methods=['GET', 'POST'])
     def restore_backup():
@@ -2146,4 +2158,5 @@ with app.app_context():
 import time
 if __name__ == "__main__":
     add_admin()
+    my_drive = MyDrive()
     app.run(debug=True)

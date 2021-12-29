@@ -1,6 +1,5 @@
 from re import DEBUG
-import pyodbc
-import pyodbc
+import pyodbc,time
 from datetime import datetime
 import os
 
@@ -15,14 +14,18 @@ def generate_backup():
         Trusted_Connection=yes;' \
         , autocommit=True
     )
+    t = time.localtime()
+    # current_time = str(time.strftime("%d %B %Y_(%H,%M,%S)",t))
+    current_time = time.strftime("%m/%d/%Y, %H:%M:%S",t)
 
-    backup = "BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak'"
+    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+    # backup = "BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak'"
     cursor = connection.cursor().execute(backup)
     while (cursor.nextset()):
         pass
     print('Backup successful')
     connection.close()
-# generate_backup()
+generate_backup()
 
 ## RESTORE DB
 #
