@@ -53,7 +53,7 @@ class MyDrive():
             for item in items:
                 print(u'{0} ({1})'.format(item['name'], item['id']))
 
-    def create_file(self, filename, path):
+    def create_file(self, filename, path,connection):
         folder_id = "1gXysKHVy8QXGKs-rhSLwDpnW9O3Gkh-_" #is on google drive URL
         
         media = MediaFileUpload(f"{path}{filename}")
@@ -72,22 +72,21 @@ class MyDrive():
             print(f"A new file was created {file.get('id')}")
 
             t = time.localtime()
-            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t))
+            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #e.g 30 December 2021_21;20;28 hour minute second
 
-            cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + 'GOHDESKTOP\SQLEXPRESS' + '; \
-            DATABASE=' + 'database1' + ';\
-            Trusted_Connection=yes;'
-            )
-            cursor = cnxn.cursor()
+            # cnxn = pyodbc.connect(
+            # 'DRIVER={ODBC Driver 17 for SQL Server}; \
+            # SERVER=' + 'GOHDESKTOP\SQLEXPRESS' + '; \
+            # DATABASE=' + 'database1' + ';\
+            # Trusted_Connection=yes;'
+            # )
+            cursor = connection
 
 
             sql_backup = "INSERT INTO google(folder_id, backup_date) VALUES (?, ?)"
             parameters = (file.get('id'),current_time)
             cursor.execute(sql_backup, parameters)
             cursor.commit()
-            cursor.close()
         # else: # To update files in drive
         #     for file in response.get('files', []):
         #         # Process change

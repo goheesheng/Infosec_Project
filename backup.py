@@ -3,6 +3,9 @@ import pyodbc,time
 from datetime import datetime
 import os
 
+
+#This file is used for testing purposes
+
 ## BACKUP DB
 server = 'GOHDESKTOP\SQLEXPRESS'
 def generate_backup():
@@ -25,23 +28,29 @@ def generate_backup():
         pass
     print('Backup successful')
     connection.close()
-generate_backup()
+# generate_backup()
 
 ## RESTORE DB
 #
-def restore_backup(db_bak_name,filepath):
+def restore_backup():
     cnct_str = pyodbc.connect( # need use master db because 
         'DRIVER={ODBC Driver 17 for SQL Server}; \
-        SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
-        DATABASE=' + 'master' + ';\
+        SERVER=' + 'GOHDESKTOP\SQLEXPRESS' + '; \
+        DATABASE=' + 'database1' + ';\
         Trusted_Connection=yes;' \
         ,autocommit=True)
     executelock = ("alter database database1 set offline with rollback immediate ")
     releaselock = ("alter database database1 set online")
     cur = cnct_str.cursor()
 
-    statement = (
-        """RESTORE DATABASE [%s] FROM  DISK = N'%s' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE""" % (db_bak_name, filepath)) #  file name and db must be the same
+    #restore to server 2
+    # statement = (
+    #     """RESTORE DATABASE [%s] FROM  DISK = N'%s' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE""" % (db_bak_name, filepath)) #  file name and db must be the same
+    #restore to server 1 btm 3 lines
+    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+    statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
+    
     cur.execute(executelock)
     cur.execute(statement)
     while cur.nextset():
@@ -49,4 +58,4 @@ def restore_backup(db_bak_name,filepath):
     cur.execute(releaselock)
     print("restore_backup completed successfully")
     
-# restore_backup('database1','C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak')
+restore_backup()
