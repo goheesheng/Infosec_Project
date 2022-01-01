@@ -28,7 +28,7 @@ def generate_backup():
         pass
     print('Backup successful')
     connection.close()
-# generate_backup()
+generate_backup()
 
 ## RESTORE DB
 #

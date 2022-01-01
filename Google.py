@@ -63,6 +63,7 @@ class MyDrive():
                                         spaces='drive',                                   #we do not want to upload to that file but the file we want thus use the folder_id
                                         fields='nextPageToken, files(id, name)',
                                         pageToken=None).execute()
+        print(response)
         if len(response['files']) == 0: #To create the filed in drive if not created
             file_metadata = {
                 'name': filename,
@@ -87,15 +88,16 @@ class MyDrive():
             parameters = (file.get('id'),current_time)
             cursor.execute(sql_backup, parameters)
             cursor.commit()
-        # else: # To update files in drive
-        #     for file in response.get('files', []):
-        #         # Process change
-
-        #         update_file = self.service.files().update(
-        #             fileId=file.get('id'),
-        #             media_body=media,
-        #         ).execute()
-        #         print(f'Updated File')
+        else: # To update files in drive
+            pass
+            # for file in response.get('files', []):
+            #     # Process change
+            #
+            #     update_file = self.service.files().update(
+            #         fileId=file.get('id'),
+            #         media_body=media,
+            #     ).execute()
+            #     print(f'Updated File')
 
     # def create_folder(self, filename,path):
     #     cnxn = pyodbc.connect(
@@ -159,8 +161,11 @@ def main():
 
     # folder_path = cursor.execute("select * from google").fetchall()
     # print(folder_path)
-    for folder in folders:
-        my_drive.create_file(folder, folder_path)
+
+
+    my_drive.list_files()
+    # for folder in folders:
+    #     my_drive.create_file(folder, folder_path)
 
     # cursor.close()
 

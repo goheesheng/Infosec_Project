@@ -29,8 +29,8 @@ from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
 from Google import MyDrive
-from apscheduler.schedulers.background import BackgroundScheduler
-
+from flask_apscheduler import APScheduler
+import atexit
 
 context = ssl.create_default_context()
 
@@ -43,37 +43,40 @@ salt = bcrypt.gensalt()
 # )
 
 
-sched = BackgroundScheduler(daemon=True)
 # sched.add_job(generate_backup,'interval',seconds=3)
-sched.start()
 
-@sched.scheduled_job('interval',seconds=5)
 def autonomous_backup():
+    connection = auto_use_seconddb()
+    t = time.localtime()
+    current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+
+    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+    cur = connection.cursor()
+    cur.execute(backup)
+    while (cur.nextset()):
+        pass
+    print('Local Backup successful')
+
+    # Update to Google Drive
+    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
     try:
-        connection = auto_use_seconddb()
-        t = time.localtime()
-        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
-
-        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-        cur = connection.cursor()
-        cur.execute(backup)
-        while (cur.nextset()):
-            pass
-        print('Local Backup successful')
-
-        # Update to Google Drive
-        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
         for folder in folders:
             my_drive.create_file(folder, folder_path,connection) #function in backup.py file
         print('Drive backup successful')
-        cur.close()
-        # flash('Local and cloud backup successful')
     except:
         pass
+    scheduler.remove_all_jobs()
+    time.sleep(15)
+    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
+
+    cur.close()
+    # flash('Local and cloud backup successful')
+
 
 
 app = Flask(__name__)
+# sched = APScheduler()
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
@@ -1999,8 +2002,11 @@ with app.app_context():
     @custom_login_required
     @app.route('/backup', methods=['GET', 'POST'])
     def generate_backup():
+        #checkforifitsrunning
+        #regex to find datetime here
         connection = auto_use_seconddb()
-        t = time.localtime()
+
+        t=time.localtime()
         current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
 
         backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
@@ -2013,10 +2019,16 @@ with app.app_context():
         # Update to Google Drive
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-        for folder in folders:
-            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-        print('Drive backup successful')
-        flash('Local and cloud backup successful')
+        try:
+            for folder in folders:
+                my_drive.create_file(folder, folder_path,connection) #function in backup.py file
+                print('Drive backup successful')
+            flash('Local and cloud backup successful')
+
+        except:
+            print('Drive backup failure')
+            flash('Local and cloud backup failure','error')
+
         return redirect(url_for('dashboard'))
 
     #This function is used to change back to server1 database1, assuming that vulnerability is resolved.
@@ -2116,4 +2128,10 @@ import time
 if __name__ == "__main__":
     add_admin()
     my_drive = MyDrive()
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
+    scheduler.start()
     app.run()
+
+    atexit.register(lambda: scheduler.shutdown())
