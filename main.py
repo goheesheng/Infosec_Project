@@ -29,6 +29,9 @@ from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
 from Google import MyDrive
+from apscheduler.schedulers.background import BackgroundScheduler
+
+
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
@@ -39,6 +42,35 @@ salt = bcrypt.gensalt()
 #     Trusted_Connection=yes;'
 # )
 
+
+sched = BackgroundScheduler(daemon=True)
+# sched.add_job(generate_backup,'interval',seconds=3)
+sched.start()
+
+@sched.scheduled_job('interval',seconds=5)
+def autonomous_backup():
+    try:
+        connection = auto_use_seconddb()
+        t = time.localtime()
+        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+
+        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+        cur = connection.cursor()
+        cur.execute(backup)
+        while (cur.nextset()):
+            pass
+        print('Local Backup successful')
+
+        # Update to Google Drive
+        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+        for folder in folders:
+            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
+        print('Drive backup successful')
+        cur.close()
+        # flash('Local and cloud backup successful')
+    except:
+        pass
 
 
 app = Flask(__name__)
@@ -325,7 +357,7 @@ with app.app_context():
         image = MIMEImage(img_data, name=os.path.basename(ImgFileName))
         msg.attach(image)
 
-        s = smtplib.SMTP('smtp.gmail.com:587')
+        s = smtplib.SMTP('smtp.gmail.com:465')
         s.ehlo()
         s.starttls()
         s.ehlo()
@@ -2062,33 +2094,6 @@ with app.app_context():
     def admin(variable):
         return redirect(url_for('homepage'))
 
-    def populate_db():
-        cnxn = auto_use_seconddb()
-        backup_database_query = """BACKUP DATABASE[database1] TO DISK = N'C:\\SQL BACKUP \\ database1.bak"""
-        cursor = cnxn.cursor().execute(backup_database_query)
-        while cursor.nextset():
-            pass
-        print("Database backed up locally")
-
-        folder_id,timestamp = create_folders_in_gdrive.main()
-        path = "C:/SQL BACKUP/"
-        files = os.listdir(path)
-        my_drive = google_cloud_backup.MyDrive()
-        for item in files:
-            my_drive.upload_file(item,path,folder_id)
-        print("Uploaded to GDrive!")
-
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S",t)
-        backup_date = str(timestamp[0] + " " + str(timestamp[1]))
-
-        sql_backup = "INSERT INTO Backups(ID, BackupDate) VALUES (?, ?)"
-        parameters = (folder_id,backup_date)
-        cursor = cnxn.cursor().execute(sql_backup,parameters)
-        cursor.commit()
-        cnxn.close()
-        print("Writing to SQL database1")
-
     def shutdown_server():
         func = request.environ.get('werkzeug.server.shutdown')
         if func is None:
@@ -2111,4 +2116,4 @@ import time
 if __name__ == "__main__":
     add_admin()
     my_drive = MyDrive()
-    app.run(debug=True)
+    app.run()
