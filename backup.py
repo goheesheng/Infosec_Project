@@ -19,7 +19,7 @@ def generate_backup():
     )
     t = time.localtime()
     # current_time = str(time.strftime("%d %B %Y_(%H,%M,%S)",t))
-    current_time = time.strftime("%m/%d/%Y, %H:%M:%S",t)
+    current_time = time.strftime("%m/%d/%Y, %H;%M;%S",t)
 
     backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
     # backup = "BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\database1.bak'"

@@ -2005,17 +2005,6 @@ with app.app_context():
         #checkforifitsrunning
         #regex to find datetime here
         connection = auto_use_seconddb()
-
-        t=time.localtime()
-        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
-
-        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-        cur = connection.cursor()
-        cur.execute(backup)
-        while (cur.nextset()):
-            pass
-        print('Local Backup successful')
-
         # Update to Google Drive
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
@@ -2028,6 +2017,17 @@ with app.app_context():
         except:
             print('Drive backup failure')
             flash('Local and cloud backup failure','error')
+
+        t=time.localtime()
+        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+
+        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+        cur = connection.cursor()
+        cur.execute(backup)
+        while (cur.nextset()):
+            pass
+        print('Local Backup successful')
+
 
         return redirect(url_for('dashboard'))
 
@@ -2046,6 +2046,7 @@ with app.app_context():
         cur = cnct_str.cursor()
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+        print(folders[-1])
         statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
         create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
         cur.execute(create_db)
