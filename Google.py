@@ -45,13 +45,17 @@ class MyDrive():
         results = self.service.files().list(
             pageSize=page_size, fields="nextPageToken, files(id, name)").execute()
         items = results.get('files', [])
-
+        fileid_list = []
         if not items:
             print('No files found.')
         else:
             print('Files:')
+            # print('items',items)
             for item in items:
                 print(u'{0} ({1})'.format(item['name'], item['id']))
+                fileid_list.append(item['id'])
+            print(fileid_list)
+            return fileid_list
 
     def create_file(self, filename, path,connection):
         folder_id = "1gXysKHVy8QXGKs-rhSLwDpnW9O3Gkh-_" #is on google drive URL
@@ -88,6 +92,7 @@ class MyDrive():
             parameters = (file.get('id'),current_time)
             cursor.execute(sql_backup, parameters)
             cursor.commit()
+            print('update google table')
         else: # To update files in drive
             pass
             # for file in response.get('files', []):
