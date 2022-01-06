@@ -1,7 +1,8 @@
-import time
-t = time.localtime()
-current_time = str(time.strftime("%m/%d/%Y, %H:%M:%S",t))
+import base64
 
-print(current_time)
-print(type(current_time))
+string = "6b30afcbcafd3188e962ecdcdc2a6377:1641449084"
 
+print(string.split(':'))
+
+base = string.split(':')[0]
+print(base)

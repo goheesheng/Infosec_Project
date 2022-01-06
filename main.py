@@ -31,19 +31,19 @@ from datetime import datetime
 from Google import MyDrive
 from flask_apscheduler import APScheduler
 import atexit
+import time
 
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
-# cnxn = pyodbc.connect(
-#     'DRIVER={ODBC Driver 17 for SQL Server}; \
-#     SERVER=' + server + '; \
-#     DATABASE=' + database + ';\
-#     Trusted_Connection=yes;'
-# )
+db_connection = pyodbc.connect( # 
+'DRIVER={ODBC Driver 17 for SQL Server}; \
+SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+DATABASE=' + 'database1' + ';\
+Trusted_Connection=yes;' \
+,autocommit=True)
 
 
-# sched.add_job(generate_backup,'interval',seconds=3)
 
 def autonomous_backup():
     connection = auto_use_seconddb()
@@ -407,7 +407,7 @@ with app.app_context():
         image = MIMEImage(img_data, name=os.path.basename(ImgFileName))
         msg.attach(image)
 
-        s = smtplib.SMTP('smtp.gmail.com:465')
+        s = smtplib.SMTP('smtp.gmail.com:587')
         s.ehlo()
         s.starttls()
         s.ehlo()
@@ -1402,10 +1402,6 @@ with app.app_context():
                     cursor.close()
                     flash("Wrong OTP", "error")
                     return redirect(url_for("otpvalidation"))
-                # else:
-                #     print('false')
-                #     flash('Wrong username or password!')
-                #     return redirect(url_for("login"))
             if request.method == "GET":
                 return render_template("loginotp.html")
 
@@ -1445,7 +1441,8 @@ with app.app_context():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
             if session["access_level"] == "patient":
-                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
+                print(app.config['UPLOAD_FOLDER'],'kkb')
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['username']}.docx")):
                     return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
                 else:
                     flash("No medical record exists for your account", "error")
@@ -1563,7 +1560,11 @@ with app.app_context():
 
                 flash("Patient record successfully updated")
                 return redirect(url_for('homepage'))
-            return redirect(url_for("submission",file=filesname ))
+            else:
+                flash("Invalid filetype or filename")
+                return redirect(url_for("submission", pid=pid))
+
+                # return redirect(url_for("submission",file=filesname ))
         if request.method=="GET":
             return render_template('submission.html', form=file_submit,file=filesname)
 
@@ -2172,7 +2173,6 @@ with app.app_context():
     def start_server():
         app.run()
 
-import time
 if __name__ == "__main__":
     add_admin()
     my_drive = MyDrive()
