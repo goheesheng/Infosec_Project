@@ -32,6 +32,10 @@ from Google import MyDrive
 from flask_apscheduler import APScheduler
 import atexit
 import time
+from virustotal import virusTotal
+import os.path,base64
+from virustotal_python import Virustotal, virustotal
+from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 
 context = ssl.create_default_context()
 
@@ -1521,7 +1525,7 @@ with app.app_context():
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return  redirect(url_for('submission'),pid)
+                return redirect(url_for('submission'),pid)
 
             file = request.files["submission"]
             if file.filename.strip()=="":
@@ -1538,30 +1542,35 @@ with app.app_context():
                         file_override.write(storedfiledata[2])
 
             if allowed_filename(file.filename):
+
                 path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{patient[1].strip()}.docx")
-                file.save(path)
-                mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                composer=Composer(mainDocument)
-                toAddDocument=Document(path)
-                composer.append(toAddDocument)
-                composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                os.remove(path)
+                if virustotal(vtotal,path) is False: #If there is no virus
+                    file.save(path)
+                    mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                    composer=Composer(mainDocument)
+                    toAddDocument=Document(path)
+                    composer.append(toAddDocument)
+                    composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                    os.remove(path)
 
-                connection = auto_use_seconddb()
-                cursor = connection.cursor()
-                alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
-                filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
-                md5Hash = hashlib.md5(filecontent)
-                fileHashed = md5Hash.hexdigest()
-                values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
-                cursor.execute(alter_query,values)
-                cursor.commit()
-                cursor.close()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
+                    alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
+                    filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
+                    md5Hash = hashlib.md5(filecontent)
+                    fileHashed = md5Hash.hexdigest()
+                    values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                    cursor.execute(alter_query,values)
+                    cursor.commit()
+                    cursor.close()
 
-                flash("Patient record successfully updated")
-                return redirect(url_for('homepage'))
+                    flash("Patient record successfully updated")
+                    return redirect(url_for('homepage'))
+                else:
+                    flash("Virus File")
+                    return redirect(url_for("submission", pid=pid))
             else:
-                flash("Invalid filetype or filename")
+                flash("Invalid filetype or filename",'error')
                 return redirect(url_for("submission", pid=pid))
 
                 # return redirect(url_for("submission",file=filesname ))
@@ -2177,6 +2186,8 @@ if __name__ == "__main__":
     add_admin()
     my_drive = MyDrive()
     scheduler = APScheduler()
+    vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
+
     scheduler.init_app(app)
     scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
     scheduler.start()
