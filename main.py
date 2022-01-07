@@ -34,7 +34,7 @@ import atexit
 import time
 from virustotal import virusTotal
 import os.path,base64
-from virustotal_python import Virustotal, virustotal
+from virustotal_python import Virustotal
 from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 
 context = ssl.create_default_context()
@@ -1542,10 +1542,10 @@ with app.app_context():
                         file_override.write(storedfiledata[2])
 
             if allowed_filename(file.filename):
-
+                
                 path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{patient[1].strip()}.docx")
-                if virustotal(vtotal,path) is False: #If there is no virus
-                    file.save(path)
+                file.save(path)
+                if virusTotal(vtotal,path) == False: #If there is no virus
                     mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
                     composer=Composer(mainDocument)
                     toAddDocument=Document(path)
@@ -1567,7 +1567,7 @@ with app.app_context():
                     flash("Patient record successfully updated")
                     return redirect(url_for('homepage'))
                 else:
-                    flash("Virus File")
+                    flash("U are virus","error")
                     return redirect(url_for("submission", pid=pid))
             else:
                 flash("Invalid filetype or filename",'error')

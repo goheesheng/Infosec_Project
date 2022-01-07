@@ -59,12 +59,13 @@ def virusTotal(vtotal,filepath):
 
     pprint(resp.data['id']) #Id contains bb9e1ff3e0501466fdd7104aba40ee96:1641448194, there is a colon and the numbers are 'first_submission_date': 1641449084 so need to split them
     decode_fileid = base64.b64decode(resp.data['id']).decode('utf-8')
-    print(decode_fileid)
-    try:
+    colon = ':'
+    if colon in decode_fileid:
         base64_decoded_id = decode_fileid.split(':')[0]
-    except:
+    else:
         base64_decoded_id = decode_fileid.split('-')[0]
-    print(base64_decoded_id)
+        print('except')
+    print(base64_decoded_id,'decode')
 
     # # Or if you provided COMPATIBILITY_ENABLED=True to the Virustotal class
     # # pprint(resp["json_resp"])
@@ -85,9 +86,14 @@ def virusTotal(vtotal,filepath):
     # "type-unsupported" (AV can't analyse that file. Only returned in file analyses).
     pprint(resp.data['attributes']['last_analysis_stats']['malicious']) 
 
-    if resp.data['attributes']['last_analysis_stats']['malicious'] >= 0:
+    if resp.data['attributes']['last_analysis_stats']['malicious'] > 0:
         return True
     else:
         return False
 
-# print(virusTotal(vtotal,'saved\\fakevirust.txt'))
+# if virusTotal(vtotal,'saved\\virustest.txt') is False:
+#     print('false')
+# else:
+#     print('lmao')
+
+
