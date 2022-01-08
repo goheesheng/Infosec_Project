@@ -91,9 +91,10 @@ def virusTotal(vtotal,filepath):
     else:
         return False
 
-# if virusTotal(vtotal,'saved\\virustest.txt') is False:
-#     print('false')
-# else:
-#     print('lmao')
+if __name__ == "__main__":
+    if virusTotal(vtotal,'saved\\virustest.txt') is False:
+        print('This file is clean!')
+    else:
+        print('This file is malicious!')
 
 
