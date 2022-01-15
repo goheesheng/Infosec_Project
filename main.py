@@ -42,10 +42,9 @@ context = ssl.create_default_context()
 salt = bcrypt.gensalt() 
 db_connection = pyodbc.connect( # 
 'DRIVER={ODBC Driver 17 for SQL Server}; \
-SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+SERVER=' + 'DESKTOP-75MSPGF' + '; \
 DATABASE=' + 'database1' + ';\
-Trusted_Connection=yes;' \
-,autocommit=True)
+Trusted_Connection=yes;',autocommit=True)
 
 
 
@@ -143,7 +142,7 @@ def auto_use_seconddb():
     try:  #Try the first server if connection can be established
         db_connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + 'GOHDESKTOP\SQLEXPRESS' + '; \
+            SERVER=' + 'DESKTOP-75MSPGF' + '; \
             DATABASE=' + 'database1' + ';\
             Trusted_Connection=yes;'
             , autocommit=True
@@ -155,7 +154,7 @@ def auto_use_seconddb():
             try:
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+                SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
                 DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes;' \
                 ,autocommit=True)
@@ -177,7 +176,7 @@ def auto_use_seconddb():
                 if should_backup == False: #don't need to backup as it is already backed up.
                     db_connection = pyodbc.connect( # need use back the recovered db  
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+                    SERVER=' + 'DESKTOP-75MSPGF' + '; \
                     DATABASE=' + 'database1' + ';\
                     Trusted_Connection=yes;' \
                     ,autocommit=True)
@@ -200,7 +199,7 @@ def auto_use_seconddb():
                     cur.execute(releaselock)
                     db_connection = pyodbc.connect( # need use back the recovered db  
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+                    SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
                     DATABASE=' + 'database1' + ';\
                     Trusted_Connection=yes;' \
                     ,autocommit=True)
@@ -209,7 +208,7 @@ def auto_use_seconddb():
             except: #if secondary db was deleted, it will auto restore 
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+                SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
                 Trusted_Connection=yes;' \
                 ,autocommit=True)
                 cur = db_connection.cursor()
@@ -230,7 +229,7 @@ def auto_use_seconddb():
                 cur.execute(releaselock)
                 db_connection = pyodbc.connect( # need use back the recovered db  
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'GOHDESKTOP\SQLEXPRESS01' + '; \
+                SERVER=' + 'DESKTOP-75MSPGF\SMSSQL15.MSSQLSERVER01' + '; \
                 DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes;' \
                 ,autocommit=True)
@@ -2183,7 +2182,7 @@ with app.app_context():
         app.run()
 
 if __name__ == "__main__":
-    add_admin()
+    # add_admin()
     my_drive = MyDrive()
     scheduler = APScheduler()
     vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
