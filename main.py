@@ -71,7 +71,7 @@ def autonomous_backup():
         pass
     scheduler.remove_all_jobs()
     time.sleep(15)
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
+    scheduler.add_job(id = 'Scheduled Task',func = inomous_backup, trigger="interval", minutes=60)
 
     cur.close()
     # flash('Local and cloud backup successful')
