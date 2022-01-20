@@ -1,5 +1,5 @@
 import hashlib
-import ssl
+import ssl, csv
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -1646,17 +1646,17 @@ with app.app_context():
 
 
     @app.route('/export')
-    @custom_login_required
+    #@custom_login_required
     def export():
-        if session['access_level'] != 'doctor':
-            return redirect(url_for('access_denied'))
-        else:
-            cursor = cnxn.cursor()
-            cursor.execute("select patient_id,file_content from patient_file")
-            results = cursor.fetchall()
-            print(results)
-            cursor.close()
-            return render_template('export.html',results = results)
+        #if session['access_level'] != 'doctor':
+            #return redirect(url_for('access_denied'))
+        #else:
+        cursor = cnxn.cursor()
+        cursor.execute("select patient_id,file_content from patient_file")
+        results = cursor.fetchall()
+        print(results)
+        cursor.close()
+        return render_template('export.html',results = results)
 
 
     @app.route('/data/<int:id>')
@@ -1713,6 +1713,67 @@ with app.app_context():
         cursor.close()
         #print(data,'\n\n',mask)
         return render_template('data.html',data = mask)
+
+    @app.route('/exportdata/<int:id>')
+    #@custom_login_required
+    def exportdata(id):
+        cursor = cnxn.cursor()
+        cursor.execute("select file_content from patient_file where patient_id = ?",(id))
+        data = cursor.fetchall()
+        data = data[0][0].decode("utf-8")
+        #print(data)
+        header = ['Age','BMI','Sex','Postal Code',',']
+        mask = []
+        year = datetime.today().year
+        # Age
+        r = re.findall(r"(?i)(DOB.+)", data)
+        date = re.findall(r"\d{4}", r[0])[0]
+        age = year - int(date)
+        age += random.randint(int(-age/10), int(age/10))
+        mask.append(age)
+        # BMI
+        r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
+        if "." not in r:
+            r = float(r) / 100
+        height = float(r)
+        r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
+        weight = float(r)
+        bmi = weight / (height ** 2)
+        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
+        mask.append(bmi)
+        # Gender
+        r = re.findall(r"(?i)(gender.+)", data)[0]
+        mask.append(r[-2])
+        #Postal Code
+        cursor.execute("select postal_code from patients where patient_id = ?", (id))
+        postal_code = cursor.fetchall()[0][0]
+        mask.append(str(postal_code[0:2]) + "X"*(len(postal_code)-2))
+        # Amount of times they visited
+        r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\r\n")
+        print(r,'r')
+        z = 0
+        for i in range(len(r)):
+            if str(year) in r[i]:
+                z += 1
+            print(year,z,r[i])
+        z = z + random.randint(int(-z / 2), int(z / 2))
+        mask += f'{z},'
+        r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+        r = set(r)
+        #mask += f'Outstanding health problems:\n'
+        if len(r) != 0:
+            for i in r:
+                for j in i:
+                    if j != '':
+                        mask.append(j.capitalize())
+        else:
+            mask.append('None')
+        cursor.close()
+        #print(data,'\n\n',mask)
+        with open('saved/export.csv','w',newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(mask)
+        return render_template('data.html', data = mask)
 
     @app.route('/appointment',methods=['GET','POST'])
     @custom_login_required
