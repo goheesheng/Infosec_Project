@@ -236,7 +236,7 @@ BACKUP DATABASE [database1] TO DISK =N'C:\Backup\database1.bak'
 --Create Master Key
 USE master;
 GO
-CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'PASSWORD'
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'masterPASSWORD'
 GO
 
 --Create Certificate
@@ -256,7 +256,7 @@ USE MASTER
 GO
 BACKUP CERTIFICATE SERVERCERT
 TO FILE = 'C:\Backup\ServerCert.cer'
-WITH PRIVATE KEY (File='C:\Backup\ServerCert_Cert_Key.pvk' , ENCRYPTION BY PASSWORD ='PASSWORD')
+WITH PRIVATE KEY (File='C:\Backup\ServerCert_Cert_Key.pvk' , ENCRYPTION BY PASSWORD ='certPASSWORD')
 GO
 
 --Enable Encryption

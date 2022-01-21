@@ -2,6 +2,7 @@ from enum import auto
 import hashlib
 from inspect import CO_NESTED
 import ssl
+import logging
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -44,9 +45,25 @@ db_connection = pyodbc.connect( #
 'DRIVER={ODBC Driver 17 for SQL Server}; \
 SERVER=' + 'DESKTOP-75MSPGF' + '; \
 DATABASE=' + 'database1' + ';\
-Trusted_Connection=yes;',autocommit=True)
+Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+
+patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
+patientFilesModificationLogger.setLevel(logging.DEBUG)
+formatterserialize=logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
+file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
+file_handlerModification.setFormatter(formatterserialize)
+patientFilesModificationLogger.addHandler(file_handlerModification)
 
 
+class patientFileModificationFilter(logging.Filter):
+    def __init__(self, ipaddress, username):
+        self.ipaddress = ipaddress
+        self.username = username
+
+    def filter(self, record):
+        record.ipaddress = self.ipaddress
+        record.username = "action performed by:"+self.username
+        return True
 
 def autonomous_backup():
     connection = auto_use_seconddb()
@@ -1429,10 +1446,15 @@ with app.app_context():
         if 'access_level' not in session:
             return redirect(url_for('login'))
         else:
-            tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
+            result =cursor.execute("select tending_physician,username from patients where patient_id=?", (session['id'])).fetchone()
             cursor.close()
-            if tending_physician is not None:
-                if session['username'] == tending_physician.strip() :
+            if result is not None:
+                if session['username'] == result[0].strip() :
+                    print(request.remote_addr)
+                    filter = patientFileModificationFilter(ipaddress=request.remote_addr, username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(msg=f" {session['username']} has retrieved {result[1].strip()}'s medical record")
+
                     return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
             flash("You unauthorized  to view this patients information", "error")
             return redirect(url_for('homepage'))
@@ -1446,6 +1468,11 @@ with app.app_context():
             if session["access_level"] == "patient":
                 print(app.config['UPLOAD_FOLDER'],'kkb')
                 if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['username']}.docx")):
+                    filter = patientFileModificationFilter(ipaddress=request.remote_addr, username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(
+                        msg=f"{session['username']}'s has retrieved their own medical record")
+
                     return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
                 else:
                     flash("No medical record exists for your account", "error")
@@ -1524,16 +1551,17 @@ with app.app_context():
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return redirect(url_for('submission'),pid)
+                return redirect(url_for('submission', pid=pid))
 
             file = request.files["submission"]
             if file.filename.strip()=="":
                 flash("Invalid filename","error")
-                return redirect(url_for('submission'), pid)
+                return redirect(url_for('submission', pid=pid))
 
             storedfiledata=get_file_data_from_database(pid)
+            print(storedfiledata)
             if  storedfiledata != None:
-                if check_file_hash(storedfiledata[1],storedfiledata[2]):
+                if check_file_hash(storedfiledata[1],storedfiledata[6]):
                     print("Hash match")
                 else:
                     print("Hash mismatch")
@@ -1549,6 +1577,9 @@ with app.app_context():
                     composer=Composer(mainDocument)
                     toAddDocument=Document(path)
                     composer.append(toAddDocument)
+                    modifierDocument = Document()
+                    modifierDocument.add_paragraph(f"Medical record last modified by {session['username']}")
+                    composer.append(modifierDocument)
                     composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
                     os.remove(path)
 
@@ -1560,6 +1591,13 @@ with app.app_context():
                     fileHashed = md5Hash.hexdigest()
                     values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
                     cursor.execute(alter_query,values)
+                    filter=patientFileModificationFilter(ipaddress=request.remote_addr,username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(msg=f" {session['username']} has added to {patient[1].strip()}'s medical record")
+
+
+                    formatterserialize = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
+
                     cursor.commit()
                     cursor.close()
 
@@ -1837,7 +1875,7 @@ with app.app_context():
     @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
-        if session['access_level'] != 'hr':
+        if session['access_level'] == 'hr':
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
@@ -2182,8 +2220,8 @@ with app.app_context():
         app.run()
 
 if __name__ == "__main__":
-    # add_admin()
-    my_drive = MyDrive()
+    add_admin()
+    # my_drive = MyDrive()
     scheduler = APScheduler()
     vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
 
