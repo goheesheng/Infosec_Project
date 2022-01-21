@@ -10,7 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from flask_mobility import Mobility
 import os
 from datetime import *
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory,send_file
 import pyotp
 import os
 import smtplib
@@ -1714,66 +1714,76 @@ with app.app_context():
         #print(data,'\n\n',mask)
         return render_template('data.html',data = mask)
 
-    @app.route('/exportdata/<int:id>')
+    @app.route('/exportdata')
     #@custom_login_required
-    def exportdata(id):
+    def exportdata():
         cursor = cnxn.cursor()
-        cursor.execute("select file_content from patient_file where patient_id = ?",(id))
-        data = cursor.fetchall()
-        data = data[0][0].decode("utf-8")
-        #print(data)
-        header = ['Age','BMI','Sex','Postal Code',',']
-        mask = []
-        year = datetime.today().year
-        # Age
-        r = re.findall(r"(?i)(DOB.+)", data)
-        date = re.findall(r"\d{4}", r[0])[0]
-        age = year - int(date)
-        age += random.randint(int(-age/10), int(age/10))
-        mask.append(age)
-        # BMI
-        r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
-        if "." not in r:
-            r = float(r) / 100
-        height = float(r)
-        r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
-        weight = float(r)
-        bmi = weight / (height ** 2)
-        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
-        mask.append(bmi)
-        # Gender
-        r = re.findall(r"(?i)(gender.+)", data)[0]
-        mask.append(r[-2])
-        #Postal Code
-        cursor.execute("select postal_code from patients where patient_id = ?", (id))
-        postal_code = cursor.fetchall()[0][0]
-        mask.append(str(postal_code[0:2]) + "X"*(len(postal_code)-2))
-        # Amount of times they visited
-        r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\r\n")
-        print(r,'r')
-        z = 0
-        for i in range(len(r)):
-            if str(year) in r[i]:
-                z += 1
-            print(year,z,r[i])
-        z = z + random.randint(int(-z / 2), int(z / 2))
-        mask += f'{z},'
-        r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
-        r = set(r)
-        #mask += f'Outstanding health problems:\n'
-        if len(r) != 0:
-            for i in r:
-                for j in i:
-                    if j != '':
-                        mask.append(j.capitalize())
-        else:
-            mask.append('None')
-        cursor.close()
-        #print(data,'\n\n',mask)
+        cursor.execute("select patient_id, file_content from patient_file") #where patient_id = ?",(id))
+        datas = cursor.fetchall()
+        random.shuffle(datas)
+        stuff = []
+        print(datas[0][1])
+        for k in range(len(datas)):
+            data = datas[k][1].decode("utf-8")
+            print(data)
+            header = ['Age','BMI','Sex','Postal Code','Visits this year','Outstanding health problems']
+            mask = []
+            year = datetime.today().year
+            # Age
+            r = re.findall(r"(?i)(DOB.+)", data)
+            date = re.findall(r"\d{4}", r[0])[0]
+            age = year - int(date)
+            age += random.randint(int(-age/10), int(age/10))
+            mask.append(age)
+            # BMI
+            r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
+            if "." not in r:
+                r = float(r) / 100
+            height = float(r)
+            r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
+            weight = float(r)
+            bmi = weight / (height ** 2)
+            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
+            mask.append(bmi)
+            # Gender
+            r = re.findall(r"(?i)(gender.+)", data)[0]
+            mask.append(r[-2])
+            #Postal Code
+            cursor.execute("select postal_code from patients where patient_id = ?", (datas[k][0]))
+            postal_code = cursor.fetchall()[0][0]
+            mask.append(str(postal_code[0:2]) + "X"*(len(postal_code)-2))
+            # Amount of times they visited
+            r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\r\n")
+            z = 0
+            for i in range(len(r)):
+                if str(year) in r[i]:
+                    z += 1
+                print(year,z,r[i])
+            z = z + random.randint(int(-z / 2), int(z / 2))
+            mask.append(z)
+            r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+            r = set(r)
+            problem = ""
+            #mask += f'Outstanding health problems:\n'
+            if len(r) != 0:
+                for i in r:
+                    for j in i:
+                        if j != '':
+                            problem += f"{j.capitalize()};"
+                            #mask.append(j.capitalize())
+                mask.append(problem)
+            else:
+                mask.append('None')
+            stuff.append(mask)
+            #cursor.close()
+            #print(data,'\n\n',mask)
         with open('saved/export.csv','w',newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(mask)
-        return render_template('data.html', data = mask)
+            print(stuff)
+            writer.writerow(header)
+            writer.writerows(stuff)
+        return send_file('saved/export.csv',mimetype='text/csv',attachment_filename='export.csv',as_attachment=True)
+        return render_template('data.html', data = stuff)
 
     @app.route('/appointment',methods=['GET','POST'])
     @custom_login_required
@@ -2185,4 +2195,4 @@ with app.app_context():
 
 if __name__ == "__main__":
     # add_admin()
-    app.run(debug=True,port=8080)
+    app.run(port=5001)
