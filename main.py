@@ -1673,7 +1673,7 @@ with app.app_context():
         r = re.findall(r"(?i)(DOB.+)", data)
         date = re.findall(r"\d{4}", r[0])[0]
         age = year - int(date)
-        age += random.randint(int(-age/10), int(age/10))
+        age += random.randint(int(-age/9), int(age/9))
         mask += f'Age: {age}\n'
         # BMI
         r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
@@ -1720,20 +1720,22 @@ with app.app_context():
         cursor = cnxn.cursor()
         cursor.execute("select patient_id, file_content from patient_file") #where patient_id = ?",(id))
         datas = cursor.fetchall()
+        print(datas)
         random.shuffle(datas)
+        print(datas)
         stuff = []
-        print(datas[0][1])
+        header = ['Age', 'BMI', 'Sex', 'Postal Code', 'Visits this year', 'Outstanding health problems']
+        #print(datas[0][1])
         for k in range(len(datas)):
             data = datas[k][1].decode("utf-8")
-            print(data)
-            header = ['Age','BMI','Sex','Postal Code','Visits this year','Outstanding health problems']
+            #print(data)
             mask = []
             year = datetime.today().year
             # Age
             r = re.findall(r"(?i)(DOB.+)", data)
             date = re.findall(r"\d{4}", r[0])[0]
             age = year - int(date)
-            age += random.randint(int(-age/10), int(age/10))
+            age += random.randint(int(-age/9), int(age/9))
             mask.append(age)
             # BMI
             r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
@@ -1758,7 +1760,7 @@ with app.app_context():
             for i in range(len(r)):
                 if str(year) in r[i]:
                     z += 1
-                print(year,z,r[i])
+                #print(year,z,r[i])
             z = z + random.randint(int(-z / 2), int(z / 2))
             mask.append(z)
             r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
@@ -1779,11 +1781,11 @@ with app.app_context():
             #print(data,'\n\n',mask)
         with open('saved/export.csv','w',newline='') as f:
             writer = csv.writer(f)
-            print(stuff)
+            #print(stuff)
             writer.writerow(header)
             writer.writerows(stuff)
-        return send_file('saved/export.csv',mimetype='text/csv',attachment_filename='export.csv',as_attachment=True)
-        return render_template('data.html', data = stuff)
+        return send_file('saved/export.csv',mimetype='text/csv',download_name='export.csv',as_attachment=True)
+        #return redirect(url_for('export.html'))
 
     @app.route('/appointment',methods=['GET','POST'])
     @custom_login_required
