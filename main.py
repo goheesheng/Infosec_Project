@@ -1654,6 +1654,7 @@ with app.app_context():
         cursor = cnxn.cursor()
         cursor.execute("select patient_id,file_content from patient_file")
         results = cursor.fetchall()
+        random.shuffle(results)
         print(results)
         cursor.close()
         return render_template('export.html',results = results)
@@ -1683,7 +1684,7 @@ with app.app_context():
         r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
         weight = float(r)
         bmi = weight / (height ** 2)
-        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
+        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)/2
         mask += f'BMI: {bmi}\n'
         # Gender
         r = re.findall(r"(?i)(gender.+)", data)
@@ -1745,7 +1746,7 @@ with app.app_context():
             r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
             weight = float(r)
             bmi = weight / (height ** 2)
-            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
+            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)/2
             mask.append(bmi)
             # Gender
             r = re.findall(r"(?i)(gender.+)", data)[0]
