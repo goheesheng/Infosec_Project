@@ -1,8 +1,8 @@
 import re
-from wtforms import StringField, validators, SubmitField, FileField, PasswordField
+from wtforms import StringField, validators, SubmitField, FileField, PasswordField, DecimalField
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField, DateField
 from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
-# from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
+from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
 #from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
 
 
@@ -126,7 +126,13 @@ class Assign_PhysiciantForm(Form):
     doctor=SelectField("Doctor",[validators.DataRequired()],choices=[])
     patient=SelectField("Patient",[validators.DataRequired()],choices=[])
 
-
+class Baseinfo(Form):
+    height=DecimalField("Height(M)",[validators.DataRequired()])
+    weight = DecimalField("Weight(KG)", [validators.DataRequired()])
+    blood=SelectField("Blood type",[validators.DataRequired()],choices=['A','B','AB','O'])
+    DOB=DateField("Date of Birth",[validators.DataRequired()])
+    sex=SelectField("Sex",[validators.DataRequired()],choices=['M','F'])
+    submit = SubmitField("Submit")
 
 class Appointment(Form):
     date = DateField("Enter date for appointment", validators=[validators.DataRequired()])
