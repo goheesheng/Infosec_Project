@@ -211,7 +211,27 @@ CREATE TABLE [dbo].[researchers](
 	[access_level][varchar](30) NOT NULL
 ) ON [PRIMARY]
 GO
+<<<<<<< Updated upstream
+=======
+
+GO
+/****** Object:  Table [dbo].[google]    Script Date: 12/11/2021 8:46:32 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[google](
+	[folder_id] [nchar](100) NOT NULL,
+	[backup_date] [varchar](100) NOT NULL,
+) ON [PRIMARY]
+
+
+>>>>>>> Stashed changes
 USE [master]
 GO
 ALTER DATABASE [database1] SET  READ_WRITE 
 GO
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
