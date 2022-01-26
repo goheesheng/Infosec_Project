@@ -1504,7 +1504,7 @@ with app.app_context():
                         pass
                     """
                     #Checking if patient exists in database with NRIC/USERNAME
-                    patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
+                    patient = cursor.execute("select * from patients where username like ?",(patient_nric)).fetchone()
                     if patient is not None:
                         retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
                         print(retrieved)

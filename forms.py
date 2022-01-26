@@ -14,7 +14,7 @@ class FileSubmit(Form):
     submit = SubmitField("Submit")
 
 class RequestPatientInfo_Form(Form):
-    patient_nric=StringField("Patient NRIC",[validators.DataRequired(),validators.Regexp(re.compile('^[STFGstfg]\d{7}[a-zA-Z]$'))])
+    patient_nric=StringField("Patient NRIC (last 4 digits and letter): ",[validators.DataRequired(),validators.Regexp(re.compile('^\d{4}[a-zA-Z]$'))])
     submit = SubmitField("Submit")
 
 class Patient_Login_form(Form):
