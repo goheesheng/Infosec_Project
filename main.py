@@ -27,7 +27,7 @@ from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register
 from functools import wraps
 import pyodbc
 import textwrap
-from mssql_auth import database, server
+#from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
 from Google import MyDrive
@@ -44,7 +44,7 @@ context = ssl.create_default_context()
 salt = bcrypt.gensalt() 
 db_connection = pyodbc.connect( # 
 'DRIVER={ODBC Driver 17 for SQL Server}; \
-SERVER=' + 'DESKTOP-75MSPGF' + '; \
+SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
 DATABASE=' + 'database1' + ';\
 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
@@ -160,7 +160,7 @@ def auto_use_seconddb():
     try:  #Try the first server if connection can be established
         db_connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + 'DESKTOP-75MSPGF' + '; \
+            SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
             DATABASE=' + 'database1' + ';\
             Trusted_Connection=yes;'
             , autocommit=True
@@ -369,6 +369,7 @@ with app.app_context():
     @custom_login_required
     def homepage():
         flash("welcome")
+        cnxn = auto_use_seconddb()
         if session['access_level'] == 'patient' or session['access_level'] == 'doctor' or session['access_level'] == 'researcher':
             cursor = cnxn.cursor()
             cursor.execute("select file_content from patient_file where patient_id = ?", (session['id']))
@@ -1616,28 +1617,28 @@ with app.app_context():
                 path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{pid}.docx")
                 file.save(path)
                 if virusTotal(vtotal,path) == False:
-                  mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
-                  mainDocument.add_page_break()
-                  composer=Composer(mainDocument)
-                  toAddDocument=Document(path)
-                  composer.append(toAddDocument)
-                  composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
-                  os.remove(path)
+                    mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
+                    mainDocument.add_page_break()
+                    composer=Composer(mainDocument)
+                    toAddDocument=Document(path)
+                    composer.append(toAddDocument)
+                    composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
+                    os.remove(path)
 
-                  cursor = cnxn.cursor()
-                  alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
-                  filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{pid}.docx"), "rb").read()
-                  md5Hash = hashlib.md5(filecontent)
-                  fileHashed = md5Hash.hexdigest()
-                  values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
-                  cursor.execute(alter_query,values)
-                  cursor.commit()
-                  filter=patientFileModificationFilter(ipaddress=request.remote_addr,username=session['username'])
-                  patientFilesModificationLogger.addFilter(filter)
-                  patientFilesModificationLogger.debug(msg=f" {session['username']} has added to {patient[1].strip()}'s medical record")
+                    cursor = cnxn.cursor()
+                    alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
+                    filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{pid}.docx"), "rb").read()
+                    md5Hash = hashlib.md5(filecontent)
+                    fileHashed = md5Hash.hexdigest()
+                    values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                    cursor.execute(alter_query,values)
+                    cursor.commit()
+                    filter=patientFileModificationFilter(ipaddress=request.remote_addr,username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(msg=f" {session['username']} has added to {patient[1].strip()}'s medical record")
 
-                  formatterserialize = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
-                  cursor.close()
+                    formatterserialize = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
+                    cursor.close()
 
                     flash("Patient record successfully updated")
                     return redirect(url_for('homepage'))
@@ -1727,6 +1728,7 @@ with app.app_context():
         #if session['access_level'] != 'doctor':
             #return redirect(url_for('access_denied'))
         #else:
+        cnxn = auto_use_seconddb()
         cursor = cnxn.cursor()
         cursor.execute("select patient_id,file_content from patient_file")
         results = cursor.fetchall()
@@ -1841,6 +1843,7 @@ with app.app_context():
     @app.route('/exportdata')
     #@custom_login_required
     def exportdata():
+        cnxn = auto_use_seconddb()
         cursor = cnxn.cursor()
         cursor.execute("select patient_id, file_content from patient_file")
         datas = cursor.fetchall()
