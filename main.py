@@ -1467,7 +1467,7 @@ with app.app_context():
         if request.method=="GET":
             if session["access_level"] == "patient":
                 if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
-                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
+                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['id']}.docx")
                 else:
                     flash("No medical record exists for your account", "error")
                     return redirect(url_for('homepage'))
@@ -1566,11 +1566,11 @@ with app.app_context():
             newDocument.add_page_break()
             newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{session['id']}.docx"))
             cursor = cnxn.cursor()
-            cursor.execute("select patient_id from patient_file where patiend_id = ?",(session['id']))
+            cursor.execute("select patient_id from patient_file where patient_id = ?",(session['id']))
             datas = cursor.fetchall()
             if datas == None:
                 cursor.execute("insert into patient_file values ?,?,?,?,?,?",(session['id'],session['first_name']+session['last_name'],datetime.now(),"NULL","NULL",hashlib.md5(newDocument)))
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('requestPatientInformation'))
         return render_template('baseinfo.html',form=baseinfo)
 
 
