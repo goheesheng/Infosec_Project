@@ -1565,7 +1565,12 @@ with app.app_context():
                 row_cells[1].text = content[i]
             newDocument.add_page_break()
             newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{session['id']}.docx"))
-            return redirect(url_for('requestPatientInformation'))
+            cursor = cnxn.cursor()
+            cursor.execute("select patient_id from patient_file where patiend_id = ?",(session['id']))
+            datas = cursor.fetchall()
+            if datas == None:
+                cursor.execute("insert into patient_file values ?,?,?,?,?,?",(session['id'],session['first_name']+session['last_name'],datetime.now(),"NULL","NULL",hashlib.md5(newDocument)))
+            return redirect(url_for('dashboard'))
         return render_template('baseinfo.html',form=baseinfo)
 
 
