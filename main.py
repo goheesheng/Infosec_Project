@@ -1466,8 +1466,10 @@ with app.app_context():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
             if session["access_level"] == "patient":
-                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
-                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['id']}.docx")
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['id']}.docx")):
+                    print('patient request')
+                    path = 'saved/'+str(session['id'])+'.docx'
+                    return send_file(path,as_attachment=True)
                 else:
                     flash("No medical record exists for your account", "error")
                     return redirect(url_for('homepage'))
