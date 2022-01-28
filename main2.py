@@ -1,5 +1,7 @@
+from enum import auto
 import hashlib
-import ssl, csv
+from inspect import CO_NESTED
+import ssl
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -10,7 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from flask_mobility import Mobility
 import os
 from datetime import *
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory,send_file
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
 import pyotp
 import os
 import smtplib
@@ -26,53 +28,37 @@ import textwrap
 from mssql_auth import database, server,backup_server
 from flask_qrcode import QRcode
 from datetime import datetime
-from pydrive.drive import GoogleDrive
+from Google import MyDrive
+from flask_apscheduler import APScheduler
+import atexit
+import time
+from virustotal import virusTotal
+import os.path,base64
+from virustotal_python import Virustotal
+from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 
 context = ssl.create_default_context()
 
-<<<<<<< Updated upstream
-salt = bcrypt.gensalt()
-cnxn = pyodbc.connect(
-    'DRIVER={ODBC Driver 17 for SQL Server}; \
-    SERVER=' + server + '; \
-    DATABASE=' + database + ';\
-    Trusted_Connection=yes;'
-)
-=======
 salt = bcrypt.gensalt() 
 # db_connection = pyodbc.connect( # 
 # 'DRIVER={ODBC Driver 17 for SQL Server}; \
 # SERVER=' + server + '; \
 # DATABASE=' + 'database1' + ';\
 # Trusted_Connection=yes;',autocommit=True)
->>>>>>> Stashed changes
 
 
-# dont u touch u gay boi
-# class Blockchain(object):
-#     def __init__(self):
-#         self.chain = []
-#         self.pending_transactions = []
-#         self.new_block(previous_hash="hashhashhashhashhashhashhashhashhashhashhashhashhashhashhash", proof=100)
+def autonomous_backup():
+    connection = auto_use_seconddb()
+    t = time.localtime()
+    current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
 
-#     def new_block(self, proof, previous_hash=None):
-#         block = {
-#             "index": len(self.chain) + 1,
-#             'timestamp': time(),
-#             'transactions': self.pending_transactions,
-#             'proof': proof,
-#             'previous_hash': previous_hash or self.hash(self.chain[-1]),
-#         }
-#         self.pending_transactions = []
-#         self.chain.append(block)
+    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+    cur = connection.cursor()
+    cur.execute(backup)
+    while (cur.nextset()):
+        pass
+    print('Local Backup successful')
 
-#         return block
-
-<<<<<<< Updated upstream
-#     @property
-#     def last_block(self):
-#         return self.chain[-1]
-=======
     # Update to Google Drive
     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
@@ -84,35 +70,19 @@ salt = bcrypt.gensalt()
         pass
     scheduler.remove_all_jobs()
     time.sleep(15)
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
->>>>>>> Stashed changes
+    scheduler.add_job(id = 'Scheduled Task',func = inomous_backup, trigger="interval", minutes=60)
 
-#     def new_transaction(self, sender, recipient, hashval):
-#         transaction = {
-#             'sender': sender,
-#             'recipient': recipient,
-#             'hash': hashval
-#         }
-#         self.pending_transactions.append(transaction)
-#         return self.last_block['index'] + 1
+    cur.close()
+    # flash('Local and cloud backup successful')
 
-#     def hash(self, block):
-#         string_object = json.dumps(block, sort_keys=True)
-#         block_string = string_object.encode()
-
-#         raw_hash = hashlib.sha256(block_string)
-#         hex_hash = raw_hash.hexdigest()
-
-#         return hex_hash
-
-
-# blockchain = Blockchain()
 
 
 app = Flask(__name__)
+# sched = APScheduler()
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
+app.config['restoredSecondDB']=False
 
 
 # def login_required(requireslogin):
@@ -134,7 +104,7 @@ def custom_login_required(f):
         # print(session['login'],'wrapper')
         if session is None:
             return redirect(url_for('login'))
-
+# fix this later ES
 
         if 'expirydate' in app.config:
             if app.config['expirydate']<= datetime.utcnow():
@@ -142,6 +112,20 @@ def custom_login_required(f):
                 app.config['expirydate']=None
                 return redirect(url_for('login'))
 
+
+        # if session.get('csrf_token') is None:
+        #     print('session modifed')
+        #     ipaddress=request.remote_addr
+        #     try:
+        #         if app.config['lastusername'] is not None:
+        #             filter=cookieFilter(ipaddress,app.config['lastusername'])
+        #         else:
+        #             filter = cookieFilter(ipaddress)
+        #         serializationlogger.addFilter(filter)
+        #         serializationlogger.warning('Cookie has been modified')
+        #         return redirect(url_for('login'))
+        #     except:
+        #         pass
 
         if 'login' not in session or session['login']!=True:
             flash("Please log in to access this page","warning")
@@ -156,6 +140,7 @@ def custom_login_required(f):
 
 def auto_use_seconddb():
     try:  #Try the first server if connection can be established
+        app.config['restoredSecondDB']=False
         db_connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
             SERVER=' + server + '; \
@@ -167,7 +152,7 @@ def auto_use_seconddb():
         cur = db_connection.cursor()
 
     except: # If unable to connect to second server, restore the second server DB using the bak file from first server db and use the second server connection immediately, as we may not know if first server db is compromised
-            try:
+            
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + backup_server + '; \
@@ -186,17 +171,24 @@ def auto_use_seconddb():
                 print(get_dbfiles.strip(),'latest file')
                 
                 if get_dbfiles.strip() in drive_files:
+                    print(get_dbfiles.strip(),'not working')
                     should_backup = False
-                    
-                if should_backup == False: #don't need to backup as it is already backed up.
-                    db_connection = pyodbc.connect( # need use back the recovered db  
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server + '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes;' \
-                    ,autocommit=True)
-                    print('DB had been backed up.')
-                    print("Using second db")
+                print(app.config['restoredSecondDB'],)
+
+                if should_backup == False or app.config['restoredSecondDB']==True: #don't need to backup as it is already backed up.
+                    try:
+                        db_connection = pyodbc.connect( # need use back the recovered db  
+                        'DRIVER={ODBC Driver 17 for SQL Server}; \
+                        SERVER=' + backup_server + '; \
+                        DATABASE=' + 'database1' + ';\
+                        Trusted_Connection=yes;' \
+                        ,autocommit=True)
+                        print('DB had been backed up. asojifn as9-hfsani fpasiubnfoisadnf piashf psa nfiosauvb fuisduof ')
+                        print("Using second db")
+                        return redirect(url_for('home'))
+                    except:
+                        print("Ëxcpet")
+                        return redirect(url_for('home'))
                 else:
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
@@ -213,45 +205,46 @@ def auto_use_seconddb():
                         pass
                     cur.execute(releaselock)
                     db_connection = pyodbc.connect( # need use back the recovered db  
-                    'DRIVER={ODBC Driver 17 forn SQL Server}; \
+                    'DRIVER={ODBC Driver 17 for SQL Server}; \
                     SERVER=' + backup_server + '; \
                     DATABASE=' + 'database1' + ';\
                     Trusted_Connection=yes;' \
                     ,autocommit=True)
-                    
+                    app.config['restoredSecondDB']=True
                     print("Update and restore secondary db ")
                     print("Using second db!")
-            except: #if secondary db was deleted, it will auto restore 
-                db_connection = pyodbc.connect( # 
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + backup_server + '; \
-                Trusted_Connection=yes;' \
-                ,autocommit=True)
-                cur = db_connection.cursor()
+            # except: #if secondary db was deleted, it will auto restore 
+            #     db_connection = pyodbc.connect( # 
+            #     'DRIVER={ODBC Driver 17 for SQL Server}; \
+            #     SERVER=' + backup_server + '; \
+            #     Trusted_Connection=yes;' \
+            #     ,autocommit=True)
+            #     cur = db_connection.cursor()
 
-                executelock = ("alter database database1 set offline with rollback immediate ")
-                releaselock = ("alter database database1 set online")
-                folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                statement = (
-                    f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
-                create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-                print(cur.execute(create_db),'createdb')
-                cur.execute(create_db)
-                cur.execute(executelock)
-                cur.execute(statement)
-                while cur.nextset():
-                    pass
-                cur.execute(releaselock)
-                db_connection = pyodbc.connect( # need use back the recovered db  
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + backup_server + '; \
-                DATABASE=' + 'database1' + ';\
-                Trusted_Connection=yes;' \
-                ,autocommit=True)
-                print("Restored second db as it was never created.")
-                print("Using second db!")
-                print(';')
+            #     executelock = ("alter database database1 set offline with rollback immediate ")
+            #     releaselock = ("alter database database1 set online")
+            #     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+            #     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+            #     statement = (
+            #         f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+            #     create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
+            #     print(cur.execute(create_db),'createdb')
+            #     cur.execute(create_db)
+            #     cur.execute(executelock)
+            #     cur.execute(statement)
+            #     while cur.nextset():
+            #         pass
+            #     cur.execute(releaselock)
+            #     db_connection = pyodbc.connect( # need use back the recovered db  
+            #     'DRIVER={ODBC Driver 17 for SQL Server}; \
+            #     SERVER=' + backup_server + '; \
+            #     DATABASE=' + 'database1' + ';\
+            #     Trusted_Connection=yes;' \
+            #     ,autocommit=True)
+            #     app.config['restoredSecondDB']=True
+            #     print("Restored second db as it was never created.")
+            #     print("Using second db!")
+            #     print(';')
 
         # return cur
     return db_connection
@@ -349,7 +342,9 @@ def check_file_hash(file_name,stored_hash):
         return fileHashed==stored_hash
 
 def get_file_data_from_database(patient_id):
-    cursor = cnxn.cursor()
+    connection = auto_use_seconddb()
+
+    cursor = connection.cursor()
     data = cursor.execute("select * from patient_file where patient_id=?",(patient_id)).fetchone()
     cursor.close()
     return data
@@ -380,16 +375,14 @@ with app.app_context():
     @app.route('/dashboard')
     @custom_login_required
     def dashboard():
-        if session['access_level'] == 'head_admin' or session['access_level'] == 'hr':
-            cnxn = auto_use_seconddb()
-            cursor = cnxn.cursor()
-            patients = cursor.execute("SELECT * FROM patients").fetchall()
-            doctors = cursor.execute("SELECT * FROM doctors").fetchall()
-            hr = cursor.execute("SELECT * FROM hr").fetchall()
-            researcher = cursor.execute("SELECT * FROM researchers").fetchall()
-            return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
-        else:
-            return(redirect(url_for('access_denied')))
+        cnxn = auto_use_seconddb()
+        cursor = cnxn.cursor()
+        patients = cursor.execute("SELECT * FROM patients").fetchall()
+        doctors = cursor.execute("SELECT * FROM doctors").fetchall()
+        hr = cursor.execute("SELECT * FROM hr").fetchall()
+        researcher = cursor.execute("SELECT * FROM researchers").fetchall()
+        return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
+
 
     @app.route('/401')
     def access_denied():
@@ -446,7 +439,9 @@ with app.app_context():
                     print("Only first 6 digits and 1 alphabet at the end!")
                     username = input("Enter New Head Admin ID: ")
                     result = re.match(pattern,username)
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+                
+                cursor = connection.cursor()
 
                 check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
@@ -472,7 +467,7 @@ with app.app_context():
                 address = input("Enter New Head Admin address: ")
                 postal_code = input("Enter New Head Admin postal code: ")
 
-                cursor = cnxn.cursor()
+                cursor = connection.cursor()
                 check_username = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
                 check_email = cursor.execute("SELECT email FROM head_admin WHERE email = ?",
@@ -486,7 +481,8 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-                    cursor = cnxn.cursor()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                             VALUES (?, ?,?); "
                     values = (username,'head_admin',md5Hashed)
@@ -500,7 +496,7 @@ with app.app_context():
                     SendMail("image.png", email, "Head Admin")
                     os.remove('image.png')
                     print('Successful creating Head Admin')
-                    cursor = cnxn.cursor()
+                    cursor = connection.cursor()
                     check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                     print("List of Head Admins:")
                     for x in check:
@@ -517,7 +513,8 @@ with app.app_context():
             elif key == "N":
                 break
             elif key == "Show":
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+                cursor = connection.cursor()
                 check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                 print("List of Head Admins:")
                 for x in check:
@@ -530,7 +527,8 @@ with app.app_context():
                 cursor.close()
             elif key == 'Delete':
                 # try:
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+                cursor = connection.cursor()
                 key = input("Enter the Head Admin ID to delete: ")
                 check = cursor.execute("SELECT * FROM head_admin WHERE username = ?",
                                        (key)).fetchval()  # prevent sql injection
@@ -572,12 +570,7 @@ with app.app_context():
     def update_user():
         update_user_form = General_UpdateForm(request.form)
         if request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'patient':  # POST method, update upon clicking submission
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             
             cursor = cnxn.cursor()
             firstname = update_user_form.firstname.data
@@ -642,12 +635,7 @@ with app.app_context():
         # to retrieve data from shelve and diplay previous data
         # so bascially this will come first as admin did not click update thus post doesnt work first
         elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'head_admin': 
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             
             cursor = cnxn.cursor()
             firstname = update_user_form.firstname.data
@@ -704,12 +692,7 @@ with app.app_context():
 
             return redirect(url_for('viewUser'))
         elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'hr': 
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             
             cursor = cnxn.cursor()
             firstname = update_user_form.firstname.data
@@ -768,12 +751,7 @@ with app.app_context():
 
             return redirect(url_for('viewUser'))
         elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'doctor': 
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             
             cursor = cnxn.cursor()
             firstname = update_user_form.firstname.data
@@ -832,13 +810,7 @@ with app.app_context():
 
             return redirect(url_for('viewUser'))
         elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'researcher': 
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
-            
+            cnxn = auto_use_seconddb()
             cursor = cnxn.cursor()
             firstname = update_user_form.firstname.data
             lastname = update_user_form.lastname.data
@@ -898,12 +870,7 @@ with app.app_context():
 
 
         elif request.method == 'GET':  # get method
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             if session['access_level'] == 'patient':
                 cursor = cnxn.cursor()
                 user_info = cursor.execute(
@@ -1106,18 +1073,14 @@ with app.app_context():
         #     return render_template('updateUser.html', form=update_user_form, currentuser=name, nric=id,profile_pic = user.get_image_destination())  # show navbar name
             return render_template("updateUser.html", form = update_user_form)
         return render_template("updateUser.html", form = update_user_form)
-        
+
+    # @auto_use_seconddb
     @app.route('/login', methods=['GET', 'POST'])
     def login():
         patient_login_form = Patient_Login_form(request.form)
         admin_login_form = Admin_Login_form(request.form)
+        cursor = auto_use_seconddb().cursor()
         if patient_login_form.patient_submit.data and patient_login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                                DATABASE=' + database + ';\
-                                Trusted_Connection=yes;'
-            )
             passed = False
             username = patient_login_form.username.data
             password = patient_login_form.password.data
@@ -1125,7 +1088,6 @@ with app.app_context():
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
             print(md5Hashed)
-            cursor = cnxn.cursor()
             user_info = cursor.execute(
                 "select * from patients where username = ? and pass_hash = ?",
                 (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
@@ -1199,62 +1161,24 @@ with app.app_context():
                 return redirect(url_for('login'))
 
         elif admin_login_form.staff_submit.data and admin_login_form.validate():
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                                DATABASE=' + database + ';\
-                                Trusted_Connection=yes;'
-            )
             passed = False
             username = admin_login_form.username.data
             password = admin_login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
-            cursor = cnxn.cursor()
+            cursor = auto_use_seconddb().cursor()
+            print(cursor)
             access_info = cursor.execute(
                 "select * from access_list where username = ? and pass_hash = ?",
                 (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-            cursor = cnxn.close()
 
-
-            # doctorCheck = cursor.execute("select * from doctors where username = ? and pass_hash = ?",
-            #                              (username, md5Hashed)).fetchone()
-            # for x in cursor:
-            #     print(x)
-            #     name = x.username.strip()
-            #     patient_id = x.patient_id #is integer so apparently dont need strip? 
-            #     first_name = x.first_name.strip()
-            #     last_name = x.last_name.strip()
-            #     email = x.email.strip()
-            #     address = x.address.strip()
-            #     postal_code = x.postal_code.strip()
-            #     try:# if it is not None then strip
-            #         tending_physician = x.tending_physician.strip() 
-            #     except:
-            #         tending_physician = x.tending_physician
-            #     try:# if it is not None then strip
-            #         appointment = x.appointment.strip()
-            #     except:
-            #        appointment = x.appointment
-
-            # researcherCheck = cursor.execute("select * from researchers where username = ? and pass_hash = ?",
-            #                                  (username, md5Hashed)).fetchone()
-            # adminCheck = cursor.execute("select * from hr where username = ? and pass_hash = ?",
-            #                             (username, md5Hashed)).fetchone()
-            # headadminCheck = cursor.execute("select * from head_admin where username = ? and pass_hash = ?",
-                                            # (username, md5Hashed)).fetchone()
 
             #added md5Hashed password in access_list table so to user username and hashed password for checking if it is in both access_list table and unqiue role tables
-
             #check whether in access list table
             if access_info != None:
 
-                cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                                DATABASE=' + database + ';\
-                                Trusted_Connection=yes;'
-            )
+                cnxn = auto_use_seconddb()
+            
                 # session['username'] = access_info[0].strip()
                 # session['access_list'] = access_info[1].strip()
                 access_level_username = access_info[0].strip()
@@ -1458,51 +1382,13 @@ with app.app_context():
             return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
 
 
-
-    ## for reference dont touch - ES
-    @app.route('/deleteUser', methods=['POST'])
-    def delete_user(nric):
-        if session['Head_Admin'] == True:
-            users_dict = {}
-            db = shelve.open('storage.db', 'w')
-            users_dict = db['Users']
-
-            user = users_dict.pop(nric)
-
-            db['Users'] = users_dict
-            db.close()
-
-            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
-
-            return redirect(url_for('retrieve_users'))
-        elif session['Head_Admin'] == False:  # customer return to log out page
-
-            users_dict = {}
-            db = shelve.open('storage.db', 'w')
-            users_dict = db['Users']
-
-            user = users_dict.pop(nric)
-
-            db['Users'] = users_dict
-            db.close()
-
-            session['user_deleted'] = user.get_first_name() + ' ' + user.get_last_name()
-            if session['admin'] == False:
-                return redirect(url_for('log_out'))
-            elif session['admin'] == True:
-                return redirect(url_for('retrieve_users'))
-
     @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
         if 'otp-semi-login' not in session:
             return redirect(url_for('access_denied'))
         else:
-            cnxn = pyodbc.connect(
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + server + '; \
-                                    DATABASE=' + database + ';\
-                                    Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
+
             if request.method=="POST":
                 cursor = cnxn.cursor()
                 access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
@@ -1528,14 +1414,10 @@ with app.app_context():
                     cursor.close()
                     flash("Wrong OTP", "error")
                     return redirect(url_for("otpvalidation"))
-                # else:
-                #     print('false')
-                #     flash('Wrong username or password!')
-                #     return redirect(url_for("login"))
             if request.method == "GET":
                 return render_template("loginotp.html")
 
-    ####????????????????????????????????????????????????? render tempplate and no real function  I like -ES
+    ####What is this lmao
     @app.route('/passwordreset', methods=['GET', 'POST']) 
     @custom_login_required
     def passwordreset():
@@ -1551,6 +1433,7 @@ with app.app_context():
     @app.route('/downloads/<path:filename>', methods=['GET', 'POST'])
     def download(filename):
         #dpvalidationhere
+        cnxn = auto_use_seconddb()
         cursor= cnxn.cursor()
         if 'access_level' not in session:
             return redirect(url_for('login'))
@@ -1570,7 +1453,8 @@ with app.app_context():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
             if session["access_level"] == "patient":
-                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"session['username'].docx")):
+                print(app.config['UPLOAD_FOLDER'],'kkb')
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['username']}.docx")):
                     return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
                 else:
                     flash("No medical record exists for your account", "error")
@@ -1583,14 +1467,15 @@ with app.app_context():
             if  session["access_level"] == "doctor":
                 if requestPatientInformationForm.validate():
                     patient_nric=requestPatientInformationForm.patient_nric.data
-                    cursor = cnxn.cursor()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
                     #Checking if patient exists in database with NRIC/USERNAME
                     patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
                     if patient is not None:
                         retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
                         if retrieved is None:
                             # Creating Base Document File for patient,insert file name,content,md5... into db
-                            cursor = cnxn.cursor()
+                            # cursor = cnxn.cursor()
                             patient_name=f"{patient[2].strip()} {patient[3].strip()}"
                             insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
                             newDocument=Document()
@@ -1624,7 +1509,8 @@ with app.app_context():
     @custom_login_required
     @doctor_needed
     def submission(pid):
-        cursor = cnxn.cursor()
+        connection = auto_use_seconddb()
+        cursor = connection.cursor()
         tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
         if tending_physician is None:
             flash("You are unauthorized to view this patients information", "error")
@@ -1647,7 +1533,7 @@ with app.app_context():
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return  redirect(url_for('submission'),pid)
+                return redirect(url_for('submission'),pid)
 
             file = request.files["submission"]
             if file.filename.strip()=="":
@@ -1664,28 +1550,38 @@ with app.app_context():
                         file_override.write(storedfiledata[2])
 
             if allowed_filename(file.filename):
+                
                 path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{patient[1].strip()}.docx")
                 file.save(path)
-                mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                composer=Composer(mainDocument)
-                toAddDocument=Document(path)
-                composer.append(toAddDocument)
-                composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                os.remove(path)
+                if virusTotal(vtotal,path) == False: #If there is no virus
+                    mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                    composer=Composer(mainDocument)
+                    toAddDocument=Document(path)
+                    composer.append(toAddDocument)
+                    composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                    os.remove(path)
 
-                cursor = cnxn.cursor()
-                alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
-                filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
-                md5Hash = hashlib.md5(filecontent)
-                fileHashed = md5Hash.hexdigest()
-                values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
-                cursor.execute(alter_query,values)
-                cursor.commit()
-                cursor.close()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
+                    alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
+                    filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
+                    md5Hash = hashlib.md5(filecontent)
+                    fileHashed = md5Hash.hexdigest()
+                    values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                    cursor.execute(alter_query,values)
+                    cursor.commit()
+                    cursor.close()
 
-                flash("Patient record successfully updated")
-                return redirect(url_for('homepage'))
-            return redirect(url_for("submission",file=filesname ))
+                    flash("Patient record successfully updated")
+                    return redirect(url_for('homepage'))
+                else:
+                    flash("U are virus","error")
+                    return redirect(url_for("submission", pid=pid))
+            else:
+                flash("Invalid filetype or filename",'error')
+                return redirect(url_for("submission", pid=pid))
+
+                # return redirect(url_for("submission",file=filesname ))
         if request.method=="GET":
             return render_template('submission.html', form=file_submit,file=filesname)
 
@@ -1695,7 +1591,9 @@ with app.app_context():
     # @hr_needed
     def assignDoctor():
         doctor_patient_form = Assign_PhysiciantForm(request.form)
-        cursor = cnxn.cursor()
+        connection = auto_use_seconddb()
+
+        cursor = connection.cursor()
         doctor_choices, patient_choices = [], []
         doctor_choices.append(("NULL", "No doctor"))
         all_doctors = cursor.execute("select username,first_name,last_name from doctors").fetchall()
@@ -1716,7 +1614,8 @@ with app.app_context():
 
 
         if request.method=="POST" and doctor_patient_form.validate():
-            cursor = cnxn.cursor()
+            connection = auto_use_seconddb()
+            cursor = connection.cursor()
             doctor_username,patient_username=doctor_patient_form.doctor.data,doctor_patient_form.patient.data
             print(doctor_username,"entered")
             if doctor_username !="NULL":
@@ -1756,24 +1655,26 @@ with app.app_context():
 
 
     @app.route('/export')
-    #@custom_login_required
+    @custom_login_required
     def export():
-        #if session['access_level'] != 'doctor':
-            #return redirect(url_for('access_denied'))
-        #else:
-        cursor = cnxn.cursor()
-        cursor.execute("select patient_id,file_content from patient_file")
-        results = cursor.fetchall()
-        random.shuffle(results)
-        print(results)
-        cursor.close()
-        return render_template('export.html',results = results)
+        if session['access_level'] != 'doctor':
+            return redirect(url_for('access_denied'))
+        else:
+            connection = auto_use_seconddb()
+            cursor = connection.cursor()
+            cursor.execute("select patient_id,file_content from patient_file")
+            results = cursor.fetchall()
+            print(results)
+            cursor.close()
+            return render_template('export.html',results = results)
 
 
     @app.route('/data/<int:id>')
     #@custom_login_required
     def data(id):
-        cursor = cnxn.cursor()
+        connection = auto_use_seconddb()
+
+        cursor = connection.cursor()
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
@@ -1784,7 +1685,7 @@ with app.app_context():
         r = re.findall(r"(?i)(DOB.+)", data)
         date = re.findall(r"\d{4}", r[0])[0]
         age = year - int(date)
-        age += random.randint(int(-age/9), int(age/9))
+        age += random.randint(int(-age/10), int(age/10))
         mask += f'Age: {age}\n'
         # BMI
         r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
@@ -1794,7 +1695,7 @@ with app.app_context():
         r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
         weight = float(r)
         bmi = weight / (height ** 2)
-        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)/2
+        bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)
         mask += f'BMI: {bmi}\n'
         # Gender
         r = re.findall(r"(?i)(gender.+)", data)
@@ -1825,79 +1726,6 @@ with app.app_context():
         #print(data,'\n\n',mask)
         return render_template('data.html',data = mask)
 
-    @app.route('/exportdata')
-    #@custom_login_required
-    def exportdata():
-        cursor = cnxn.cursor()
-        cursor.execute("select patient_id, file_content from patient_file") #where patient_id = ?",(id))
-        datas = cursor.fetchall()
-        print(datas)
-        random.shuffle(datas)
-        print(datas)
-        stuff = []
-        header = ['Age', 'BMI', 'Sex', 'Postal Code', 'Visits this year', 'Outstanding health problems']
-        #print(datas[0][1])
-        for k in range(len(datas)):
-            data = datas[k][1].decode("utf-8")
-            #print(data)
-            mask = []
-            year = datetime.today().year
-            # Age
-            r = re.findall(r"(?i)(DOB.+)", data)
-            date = re.findall(r"\d{4}", r[0])[0]
-            age = year - int(date)
-            age += random.randint(int(-age/9), int(age/9))
-            mask.append(age)
-            # BMI
-            r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
-            if "." not in r:
-                r = float(r) / 100
-            height = float(r)
-            r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
-            weight = float(r)
-            bmi = weight / (height ** 2)
-            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)/2
-            mask.append(bmi)
-            # Gender
-            r = re.findall(r"(?i)(gender.+)", data)[0]
-            mask.append(r[-2])
-            #Postal Code
-            cursor.execute("select postal_code from patients where patient_id = ?", (datas[k][0]))
-            postal_code = cursor.fetchall()[0][0]
-            mask.append(str(postal_code[0:2]) + "X"*(len(postal_code)-2))
-            # Amount of times they visited
-            r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\r\n")
-            z = 0
-            for i in range(len(r)):
-                if str(year) in r[i]:
-                    z += 1
-                #print(year,z,r[i])
-            z = z + random.randint(int(-z / 2), int(z / 2))
-            mask.append(z)
-            r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
-            r = set(r)
-            problem = ""
-            #mask += f'Outstanding health problems:\n'
-            if len(r) != 0:
-                for i in r:
-                    for j in i:
-                        if j != '':
-                            problem += f"{j.capitalize()};"
-                            #mask.append(j.capitalize())
-                mask.append(problem)
-            else:
-                mask.append('None')
-            stuff.append(mask)
-            #cursor.close()
-            #print(data,'\n\n',mask)
-        with open('saved/export.csv','w',newline='') as f:
-            writer = csv.writer(f)
-            #print(stuff)
-            writer.writerow(header)
-            writer.writerows(stuff)
-        return send_file('saved/export.csv',mimetype='text/csv',download_name='export.csv',as_attachment=True)
-        #return redirect(url_for('export.html'))
-
     @app.route('/appointment',methods=['GET','POST'])
     @custom_login_required
     def appointment():
@@ -1910,7 +1738,9 @@ with app.app_context():
                     print("date error")
                     flash('Invalid date choice!','error')
                     return redirect(url_for('appointment'))
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+
+                cursor = connection.cursor()
                 user_appointment = str(appointment.date.data) + ", " + appointment.time.data
                 print(user_appointment)
                 cursor.execute("update patients set appointment = ? where patient_id = ?",(user_appointment,session['id']))
@@ -1918,7 +1748,9 @@ with app.app_context():
                 flash(f'Your appointment has been successfully booked!','success')
                 return redirect(url_for('viewappointment'))
             print(session['id'])
-            cursor = cnxn.cursor()
+            connection = auto_use_seconddb()
+
+            cursor = connection.cursor()
             cursor.execute("select appointment from patients where username = ?", (session['username']))
             existingappointment = cursor.fetchone()
             if existingappointment[0] == None:
@@ -1932,7 +1764,9 @@ with app.app_context():
         if session['access_level'] != 'patient':
             return redirect(url_for('access_denied'))
         else:
-            cursor = cnxn.cursor()
+            connection = auto_use_seconddb()
+
+            cursor = connection.cursor()
             cursor.execute("select appointment from patients where username = ?", (session['username']))
             appointment = cursor.fetchone()
             print(appointment)
@@ -1953,7 +1787,9 @@ with app.app_context():
         if session['access_level'] != 'patient':
             return redirect(url_for('access_denied'))
         else:
-            cursor = cnxn.cursor()
+            connection = auto_use_seconddb()
+
+            cursor = connection.cursor()
             cursor.execute("update patients set appointment = NULL where patient_id = ?",(session['id']))
             cursor.commit()
             flash("Your appointment has been cancelled","success")
@@ -1965,12 +1801,7 @@ with app.app_context():
 
         if request.method == "POST" and register.validate():
             print("hello")
-            cnxn = pyodbc.connect(
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server + '; \
-                DATABASE=' + database + ';\
-                Trusted_Connection=yes;'
-            )
+            cnxn = auto_use_seconddb()
             username = register.username.data
             firstname = register.firstname.data
             lastname = register.lastname.data
@@ -1995,14 +1826,7 @@ with app.app_context():
                     return render_template('exists.html')
 
             cursor.execute(insert_query, values)
-            #addPatient to access_list table ?
-            insert_query = textwrap.dedent('''
-                            INSERT INTO access_list (username, pass_hash,access_level) 
-                            VALUES (?, ?, ?); 
-                        ''')
-            values = (username, md5Hashed,'patient')
-            cursor.execute(insert_query,values)
-            cnxn.commit()
+            #addPatient to access_list table 
             insert_query = textwrap.dedent('''
                 INSERT INTO access_list (username,access_level,pass_hash) 
                 VALUES (?, ?,?); 
@@ -2026,7 +1850,8 @@ with app.app_context():
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+                cursor = connection.cursor()
                 username = doc_form.username.data
                 firstname = doc_form.firstname.data
                 lastname = doc_form.lastname.data
@@ -2059,7 +1884,8 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-                    cursor = cnxn.cursor()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                                 VALUES (?, ?,?); "
                     values = (username, 'doctor', md5Hashed)
@@ -2089,7 +1915,8 @@ with app.app_context():
 
         else:
             if request.method == "POST" and researcher_form.validate():
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+                cursor = connection.cursor()
                 username = researcher_form.username.data
                 firstname = researcher_form.firstname.data
                 lastname = researcher_form.lastname.data
@@ -2122,7 +1949,8 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-                    cursor = cnxn.cursor()
+                    connection = auto_use_seconddb()
+                    cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                                 VALUES (?, ?,?); "
                     values = (username, 'researcher', md5Hashed)
@@ -2147,7 +1975,9 @@ with app.app_context():
                 cursor.execute(insert_query, values)
                 cursor.commit()
                 cursor.close()
-                cursor = cnxn.cursor()
+                connection = auto_use_seconddb()
+
+                cursor = connection.cursor()
                 insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                             VALUES (?, ?,?); "
                 values = (username, 'researcher', md5Hashed)
@@ -2175,14 +2005,10 @@ with app.app_context():
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and hr_form.validate():
-<<<<<<< Updated upstream
-                cursor = cnxn.cursor()
-=======
                 print('sdagfhjasdoifb asdoiufgsa uoidf basiuobfd asuidf basfuybsad uo')
                 connection = auto_use_seconddb()
 
                 cursor = connection.cursor()
->>>>>>> Stashed changes
                 username = hr_form.username.data
                 firstname = hr_form.firstname.data
                 lastname = hr_form.lastname.data
@@ -2215,13 +2041,9 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-<<<<<<< Updated upstream
-                    cursor = cnxn.cursor()
-=======
                     # connection = auto_use_seconddb()
 
                     cursor = connection.cursor()
->>>>>>> Stashed changes
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                                     VALUES (?, ?,?); "
                     values = (username, 'hr', md5Hashed)
@@ -2242,8 +2064,6 @@ with app.app_context():
                 return redirect(url_for('dashboard'))
             return render_template('register_hr.html', form=hr_form)
 
-<<<<<<< Updated upstream
-=======
     #Still need to generate it every 5 mins
     @custom_login_required
     @app.route('/backup', methods=['GET', 'POST'])
@@ -2292,7 +2112,7 @@ with app.app_context():
         cur = cnct_str.cursor()
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-        print(folders[-1],'123123')
+        print(folders[-1])
         statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
         create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
         cur.execute(create_db)
@@ -2306,10 +2126,11 @@ with app.app_context():
         flash("Using the primary Database from Server 1!",'success')
         return redirect(url_for('dashboard'))
 
->>>>>>> Stashed changes
     @app.route('/remove/<string:identifier>/<string:table>', methods=['GET', 'POST'])
     def remove(identifier,table):
-        cursor = cnxn.cursor()
+        connection = auto_use_seconddb()
+
+        cursor = connection.cursor()
         if table == 'doctor':
             cursor.execute('DELETE FROM doctors WHERE username=?',(identifier))
             cursor.commit()
@@ -2352,43 +2173,25 @@ with app.app_context():
     def admin(variable):
         return redirect(url_for('homepage'))
 
-    def populate_db():
-        cnxn = pyodbc.connect(
-                            'DRIVER={ODBC Driver 17 for SQL Server}; \
-                            SERVER=' + server + '; \
-                            DATABASE=' + database + ';\
-                            Trusted_Connection=yes;'
-                            ,autocommit=True)
-        backup_database_query = """BACKUP DATABASE[database1] TO DISK = N'C:\\SQL BACKUP \\ database1.bak"""
-        cursor = cnxn.cursor().execute(backup_database_query)
-        while cursor.nextset():
-            pass
-        print("Database backed up locally")
+    def shutdown_server():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+        
+    @app.get('/shutdown')
+    def shutdown():
+        shutdown_server()
+        print('before')
+        time.sleep(4)
+        print('after')
+        start_server()
+       
 
-        folder_id,timestamp = create_folders_in_gdrive.main()
-        path = "C:/SQL BACKUP/"
-        files = os.listdir(path)
-        my_drive = google_cloud_backup.MyDrive()
-        for item in files:
-            my_drive.upload_file(item,path,folder_id)
-        print("Uploaded to GDrive!")
-
-        t = time.localtime()
-        current_time = time.strftime("%H:%M:%S",t)
-        backup_date = str(timestamp[0] + " " + str(timestamp[1]))
-
-        sql_backup = "INSERT INTO Backups(ID, BackupDate) VALUES (?, ?)"
-        parameters = (folder_id,backup_date)
-        cursor = cnxn.cursor().execute(sql_backup,parameters)
-        cursor.commit()
-        cnxn.close()
-        print("Writing to SQL database1")
+    def start_server():
+        app.run()
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
-    # add_admin()
-    app.run(port=5001)
-=======
     add_admin()
     my_drive = MyDrive()
     scheduler = APScheduler()
@@ -2400,4 +2203,3 @@ if __name__ == "__main__":
     app.run()
 
     atexit.register(lambda: scheduler.shutdown())
->>>>>>> Stashed changes
