@@ -154,8 +154,6 @@ def custom_login_required(f):
 
     return wrap
 
-<<<<<<< Updated upstream
-=======
 def auto_use_seconddb():
     try:  #Try the first server if connection can be established
         db_connection = pyodbc.connect(
@@ -188,7 +186,6 @@ def auto_use_seconddb():
                 print(get_dbfiles.strip(),'latest file')
                 
                 if get_dbfiles.strip() in drive_files:
-                    print(get_dbfiles.strip(),'not working')
                     should_backup = False
                     
                 if should_backup == False: #don't need to backup as it is already backed up.
@@ -260,7 +257,6 @@ def auto_use_seconddb():
     return db_connection
 
 
->>>>>>> Stashed changes
 def doctor_and_patient_needed(needpatientandresearcher):
     @wraps(needpatientandresearcher)
     def decorated_func(*args, **kwargs):
@@ -384,21 +380,6 @@ with app.app_context():
     @app.route('/dashboard')
     @custom_login_required
     def dashboard():
-<<<<<<< Updated upstream
-        cnxn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-                                    DATABASE=' + database + ';\
-                                    Trusted_Connection=yes;'
-        )
-        cursor = cnxn.cursor()
-        patients = cursor.execute("SELECT * FROM patients").fetchall()
-        doctors = cursor.execute("SELECT * FROM doctors").fetchall()
-        hr = cursor.execute("SELECT * FROM hr").fetchall()
-        researcher = cursor.execute("SELECT * FROM researchers").fetchall()
-        return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
-
-=======
         if session['access_level'] == 'head_admin' or session['access_level'] == 'hr':
             cnxn = auto_use_seconddb()
             cursor = cnxn.cursor()
@@ -409,7 +390,6 @@ with app.app_context():
             return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
         else:
             return(redirect(url_for('access_denied')))
->>>>>>> Stashed changes
 
     @app.route('/401')
     def access_denied():
