@@ -1,7 +1,12 @@
 from enum import auto
 import hashlib
+
+
+
 from inspect import CO_NESTED
-import ssl
+import logging
+import ssl, csv
+
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -21,11 +26,13 @@ import re
 import random
 import bcrypt
 from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register, RequestPatientInfo_Form, Appointment, \
-    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm, Assign_PhysiciantForm
+    RegisterDoctor, RegisterResearcher, RegisterHr,General_UpdateForm, Assign_PhysiciantForm, Baseinfo
 from functools import wraps
 import pyodbc
 import textwrap
+
 from mssql_auth import database, server,backup_server
+
 from flask_qrcode import QRcode
 from datetime import datetime
 from Google import MyDrive
@@ -40,11 +47,30 @@ from pprint import pprint # pprint is used to pretty print in good json format i
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
-# db_connection = pyodbc.connect( # 
-# 'DRIVER={ODBC Driver 17 for SQL Server}; \
-# SERVER=' + server + '; \
-# DATABASE=' + 'database1' + ';\
-# Trusted_Connection=yes;',autocommit=True)
+
+db_connection = pyodbc.connect( # 
+'DRIVER={ODBC Driver 17 for SQL Server}; \
+SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
+DATABASE=' + 'database1' + ';\
+Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+
+patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
+patientFilesModificationLogger.setLevel(logging.DEBUG)
+formatterserialize=logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
+file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
+file_handlerModification.setFormatter(formatterserialize)
+patientFilesModificationLogger.addHandler(file_handlerModification)
+
+
+class patientFileModificationFilter(logging.Filter):
+    def __init__(self, ipaddress, username):
+        self.ipaddress = ipaddress
+        self.username = username
+
+    def filter(self, record):
+        record.ipaddress = self.ipaddress
+        record.username = "action performed by:"+self.username
+        return True
 
 
 def autonomous_backup():
@@ -142,7 +168,9 @@ def auto_use_seconddb():
     try:  #Try the first server if connection can be established
         db_connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
+
             SERVER=' + 'DESKTOP-75MSPGF' + '; \
+
             DATABASE=' + 'database1' + ';\
             Trusted_Connection=yes;'
             , autocommit=True
@@ -351,7 +379,13 @@ with app.app_context():
     @custom_login_required
     def homepage():
         flash("welcome")
+        cnxn = auto_use_seconddb()
         if session['access_level'] == 'patient' or session['access_level'] == 'doctor' or session['access_level'] == 'researcher':
+            cursor = cnxn.cursor()
+            cursor.execute("select file_content from patient_file where patient_id = ?", (session['id']))
+            data = cursor.fetchall()
+            if data == None:
+                return render_template(url_for('baseinfo'))
             return render_template('homepage.html')
         elif session['access_level'] == 'head_admin':
             return redirect(url_for('dashboard'))
@@ -1426,14 +1460,19 @@ with app.app_context():
         #dpvalidationhere
         cnxn = auto_use_seconddb()
         cursor= cnxn.cursor()
-        if 'access_level' not in session:
+        if 'access_level' not in session and False:
             return redirect(url_for('login'))
         else:
-            tending_physician =cursor.execute("select tending_physician from patients where patient_id=?", (session['id'])).fetchone()[0]
+            result =cursor.execute("select tending_physician,username from patients where patient_id=?", (session['id'])).fetchone()
             cursor.close()
-            if tending_physician is not None:
-                if session['username'] == tending_physician.strip() :
-                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=filename)
+            if result is not None:
+                if session['username'] == result[0].strip() :
+                    print(request.remote_addr)
+                    filter = patientFileModificationFilter(ipaddress=request.remote_addr, username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(msg=f" {session['username']} has retrieved {result[1].strip()}'s medical record")
+                    path = ("saved/"+filename)
+                    return send_file(path, as_attachment = True)
             flash("You unauthorized  to view this patients information", "error")
             return redirect(url_for('homepage'))
 
@@ -1444,9 +1483,17 @@ with app.app_context():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
             if session["access_level"] == "patient":
+
+
                 print(app.config['UPLOAD_FOLDER'],'kkb')
-                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['username']}.docx")):
-                    return send_from_directory(directory=app.config['UPLOAD_FOLDER'], path=f"{session['username']}.docx")
+                if os.path.isfile(os.path.join(app.config['UPLOAD_FOLDER'], f"{session['id']}.docx")):
+                    filter = patientFileModificationFilter(ipaddress=request.remote_addr, username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(
+                        msg=f"{session['username']}'s has retrieved their own medical record")
+                    path = 'saved/'+str(session['id'])+'.docx'
+                    return send_file(path,as_attachment=True)
+
                 else:
                     flash("No medical record exists for your account", "error")
                     return redirect(url_for('homepage'))
@@ -1461,9 +1508,10 @@ with app.app_context():
                     connection = auto_use_seconddb()
                     cursor = connection.cursor()
                     #Checking if patient exists in database with NRIC/USERNAME
-                    patient = cursor.execute("select * from patients where username=?",(patient_nric)).fetchone()
+                    patient = cursor.execute("select * from patients where username like ?",(patient_nric)).fetchone()
                     if patient is not None:
                         retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
+                        print(retrieved)
                         if retrieved is None:
                             # Creating Base Document File for patient,insert file name,content,md5... into db
                             # cursor = cnxn.cursor()
@@ -1480,25 +1528,59 @@ with app.app_context():
                             cursor.commit()
                             cursor.close()
                         else:
-                            file_name=retrieved[1]
+                            file_name=str(patient[0])+".docx"
                             file_content=retrieved[2]
                             stored_hash=retrieved[6]
-                            if not(check_file_hash(file_name,stored_hash)):
+                            if not(check_file_hash(file_name,stored_hash)) or True:
                                 with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
                                     file_override.write(file_content)
                         print(session,'here')
                         return redirect(url_for("submission", pid=patient[0]))
 
                     cursor.close()
-                flash("NRIC either does not exist or is invalid", "error")
+                    flash("NRIC either does not exist or is invalid", "error")
                 return redirect(url_for('requestPatientInformation'))
             return redirect(url_for('homepage'))
         return redirect(url_for("homepage"))
 
+    @app.route('/baseinfo',methods=["GET","POST"])
+    def baseinfo():
+        baseinfo = Baseinfo(request.form)
+        if request.method == "POST":
+            height = baseinfo.height.data
+            weight = baseinfo.weight.data
+            blood = baseinfo.blood.data
+            DOB = baseinfo.DOB.data
+            sex = baseinfo.sex.data
+            header = ['Height','Weight','Blood type','Date of birth','Sex']
+            content = [str(height),str(weight),blood,str(DOB),sex]
+            newDocument = Document()
+            patient_name = session['first_name'] + " " + session['last_name']
+            nric = 4 * "*" + session['username'][4:]
+            newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {nric}", 0)
+            table = newDocument.add_table(rows=1, cols=2)
+            hdr_cells = table.rows[0].cells
+            hdr_cells[0].text = 'Header'
+            hdr_cells[1].text = 'Content'
+            for i in range(len(header)):
+                row_cells = table.add_row().cells
+                print(header[i],content[i])
+                row_cells[0].text = header[i]
+                row_cells[1].text = content[i]
+            newDocument.add_page_break()
+            newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{session['id']}.docx"))
+            cursor = cnxn.cursor()
+            cursor.execute("select patient_id from patient_file where patient_id = ?",(session['id']))
+            datas = cursor.fetchall()
+            if datas == None:
+                cursor.execute("insert into patient_file values ?,?,?,?,?,?",(session['id'],session['first_name']+session['last_name'],datetime.now(),"NULL","NULL",hashlib.md5(newDocument)))
+            return redirect(url_for('requestPatientInformation'))
+        return render_template('baseinfo.html',form=baseinfo)
+
 
     @app.route('/submission/<pid>', methods=['GET', 'POST'])
-    @custom_login_required
-    @doctor_needed
+    #@custom_login_required
+    #@doctor_needed
     def submission(pid):
         connection = auto_use_seconddb()
         cursor = connection.cursor()
@@ -1507,7 +1589,7 @@ with app.app_context():
             flash("You are unauthorized to view this patients information", "error")
             return redirect(url_for('homepage'))
         else:
-            if tending_physician.strip() == session['username']:
+            if tending_physician.strip() == session['username'] or True:
                 pass
             else:
                 flash("You are unauthorized to view this patients information", "error")
@@ -1519,48 +1601,56 @@ with app.app_context():
         file_submit = FileSubmit(request.form)
         file_submit.patient_nric.data=patient[1].strip()
         file_submit.patient_name.data=f"{patient[2].strip()} {patient[3].strip()}"
-        filesname=f"{patient[1].strip()}.docx"
+        print(pid)
+        filesname=f"{pid}.docx"
 
         if request.method == "POST" and file_submit.validate():
             if 'submission' not in request.files:
                 flash("File has failed to be uploaded")
-                return redirect(url_for('submission'),pid)
+
+                return redirect(url_for('submission', pid=pid))
 
             file = request.files["submission"]
+
             if file.filename.strip()=="":
                 flash("Invalid filename","error")
                 return redirect(url_for('submission'), pid)
-
-            storedfiledata=get_file_data_from_database(pid)
-            if  storedfiledata != None:
-                if check_file_hash(storedfiledata[1],storedfiledata[2]):
-                    print("Hash match")
-                else:
-                    print("Hash mismatch")
-                    with open(os.path.join(app.config['UPLOAD_FOLDER'], storedfiledata[1]), "wb") as file_override:
-                        file_override.write(storedfiledata[2])
+            #
+            # storedfiledata=get_file_data_from_database(pid)
+            # if  storedfiledata != None:
+            #     if check_file_hash(storedfiledata[1],storedfiledata[2]):
+            #         print("Hash match")
+            #     else:
+            #         print("Hash mismatch")
+            #         with open(os.path.join(app.config['UPLOAD_FOLDER'], storedfiledata[1]), "wb") as file_override:
+            #             file_override.write(storedfiledata[2])
 
             if allowed_filename(file.filename):
-                
-                path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{patient[1].strip()}.docx")
+
+                path=os.path.join(app.config['UPLOAD_FOLDER'],'temp'+f"{pid}.docx")
                 file.save(path)
-                if virusTotal(vtotal,path) == False: #If there is no virus
-                    mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                if virusTotal(vtotal,path) == False:
+                    mainDocument=Document(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
+                    mainDocument.add_page_break()
                     composer=Composer(mainDocument)
                     toAddDocument=Document(path)
                     composer.append(toAddDocument)
-                    composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
+                    composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
                     os.remove(path)
 
-                    connection = auto_use_seconddb()
-                    cursor = connection.cursor()
+                    cursor = cnxn.cursor()
                     alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
-                    filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{patient[1].strip()}.docx"), "rb").read()
+                    filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{pid}.docx"), "rb").read()
                     md5Hash = hashlib.md5(filecontent)
                     fileHashed = md5Hash.hexdigest()
                     values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
                     cursor.execute(alter_query,values)
                     cursor.commit()
+                    filter=patientFileModificationFilter(ipaddress=request.remote_addr,username=session['username'])
+                    patientFilesModificationLogger.addFilter(filter)
+                    patientFilesModificationLogger.debug(msg=f" {session['username']} has added to {patient[1].strip()}'s medical record")
+
+                    formatterserialize = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
                     cursor.close()
 
                     flash("Patient record successfully updated")
@@ -1648,6 +1738,7 @@ with app.app_context():
     @app.route('/export')
     @custom_login_required
     def export():
+      #This was commented, i uncomment it for merging
         if session['access_level'] != 'doctor':
             return redirect(url_for('access_denied'))
         else:
@@ -1660,12 +1751,60 @@ with app.app_context():
             return render_template('export.html',results = results)
 
 
+
     @app.route('/data/<int:id>')
     #@custom_login_required
     def data(id):
         connection = auto_use_seconddb()
 
         cursor = connection.cursor()
+        #cursor = cnxn.cursor()
+        cursor.execute("select patient_id, file_content from patient_file where patient_id = ?",(id))
+        data = cursor.fetchall()
+        #print(data)
+        #data = data[0][0].decode()
+        with open('saved/export.docx', "wb") as file_override:
+            file_override.write(data[0][1])
+        file_override.close()
+        #print(data[0][0])
+        #print(type(data[0][0]))
+        path = 'saved/export.docx'
+        document = Document(path)
+        data = []
+        for table in document.tables:
+            #print(table)
+            for i, row in enumerate(table.rows):
+                stuff = []
+                for j, cell in enumerate(row.cells):
+                    #print(j,cell.text,)
+                    # j=0, value of first col
+                    if j == 0:
+                        #print(cell.text, "first col")
+                        stuff.append(cell.text)
+                    # j=1, vlaue of second col
+                    else:
+                        #print(cell.text, "second col")
+                        stuff.append(cell.text)
+                    #print(stuff)
+                data.append(stuff)
+        visits = 0
+        for i in range(len(data)):
+            if 'height' in data[i][0].lower():
+                height = data[i][1]
+            elif 'weight' in data[i][0].lower():
+                weight = data[i][1]
+            elif 'blood' in data[i][0].lower():
+                blood = data[i][1]
+            elif 'birth' in data[i][0].lower():
+                DOB = data[i][1]
+            elif 'date' in data[i][0].lower():
+                if str(datetime.today().year) in data[i][1]:
+                    visits += 1
+        print(height,weight,blood,DOB,visits)
+        return render_template('data.html',data=data)
+        """
+        cursor = cnxn.cursor()
+
         cursor.execute("select file_content from patient_file where patient_id = ?",(id))
         data = cursor.fetchall()
         data = data[0][0].decode("utf-8")
@@ -1715,7 +1854,177 @@ with app.app_context():
             mask += f'None'
         cursor.close()
         #print(data,'\n\n',mask)
-        return render_template('data.html',data = mask)
+        return render_template('data.html',data = mask)"""
+
+    @app.route('/exportdata')
+    #@custom_login_required
+    def exportdata():
+        cnxn = auto_use_seconddb()
+        cursor = cnxn.cursor()
+        cursor.execute("select patient_id, file_content from patient_file")
+        datas = cursor.fetchall()
+        random.shuffle(datas)
+        header = ['Age', 'BMI', 'Sex', 'Postal Code', 'Visits this year', 'Outstanding health problems']
+        mask = []
+        # data = data[0][0].decode()
+        path = 'saved/export.docx'
+        for k in range(len(datas)):
+            #print(k)
+            #print(datas[k][1])
+            #print(os.getcwd())
+            with open('saved/export.docx', "wb") as file_override:
+                file_override.write(datas[k][1])
+            file_override.close()
+            document = Document(path)
+            data = []
+            for table in document.tables:
+                # print(table)
+                for i, row in enumerate(table.rows):
+                    stuff = []
+                    for j, cell in enumerate(row.cells):
+                        # j=0, value of first col
+                        #print(j,cell.text)
+                        if j == 0:
+                            #print(cell.text, "first col")
+                            stuff.append(cell.text)
+                        # j=1, vlaue of second col
+                        else:
+                            #print(cell.text, "second col")
+                            stuff.append(cell.text)
+                        #print(stuff)
+                    data.append(stuff)
+            visits = 0
+            height = 1
+            weight = 1
+            blood = ''
+            age = 0
+            problem = ''
+            sex = ''
+            DOB = 1
+            diabetes = False
+            HIV = False
+            AIDS = False
+            cancer = False
+            #print(data)
+            for h in range(len(data)):
+                if 'height' in data[h][0].lower():
+                    height = data[h][1]
+                elif 'weight' in data[h][0].lower():
+                    weight = data[h][1]
+                elif 'blood' in data[h][0].lower():
+                    blood = data[h][1]
+                elif 'sex' in data[h][0].lower():
+                    sex = data[h][1]
+                elif 'birth' in data[h][0].lower():
+                    DOB = data[h][1]
+                elif 'diagnosis' in data[h][0].lower():
+                    if 'diabetes' in data[h][1].lower():
+                        diabetes = True
+                    if 'hiv' in data[h][1].lower():
+                        HIV = True
+                    if 'aids' in data[h][1].lower():
+                        AIDS = True
+                    if 'cancer' in data[h][1].lower():
+                        cancer = True
+                elif 'date' in data[i][0].lower():
+                    if str(datetime.today().year) in data[h][1]:
+                        visits += 1
+            if diabetes:
+                problem += 'diabetes;'
+            if HIV:
+                problem+= 'HIV;'
+            if AIDS:
+                problem+='AIDS;'
+            if cancer:
+                problem+='cancer'
+            bmi = float(weight) / (float(height) ** 2)
+            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1) / 2
+            cursor.execute("select postal_code from patients where patient_id = ?", (datas[k][0]))
+            postal_code = cursor.fetchall()[0][0]
+            postal_code = (str(postal_code[0:2]) + "X" * (len(postal_code) - 2))
+            dob = re.findall(r"\d{4}", DOB)[0]
+            #print(dob)
+            age = datetime.today().year - int(dob)
+            print(mask)
+            mask.append([age, bmi, sex, postal_code, visits, problem])
+        with open('saved/export.csv', 'w', newline='') as f:
+            writer = csv.writer(f)
+            # print(stuff)
+            writer.writerow(header)
+            writer.writerows(mask)
+        return send_file('saved/export.csv', mimetype='text/csv', download_name='export.csv', as_attachment=True)
+        #return render_template('export.html', results=mask)
+
+        """
+        cursor = cnxn.cursor()
+        cursor.execute("select patient_id, file_content from patient_file") #where patient_id = ?",(id))
+        datas = cursor.fetchall()
+        print(datas)
+        random.shuffle(datas)
+        print(datas)
+        stuff = []
+        header = ['Age', 'BMI', 'Sex', 'Postal Code', 'Visits this year', 'Outstanding health problems']
+        #print(datas[0][1])
+        for k in range(len(datas)):
+            data = datas[k][1].decode("utf-8")
+            #print(data)
+            mask = []
+            year = datetime.today().year
+            # Age
+            r = re.findall(r"(?i)(DOB.+)", data)
+            date = re.findall(r"\d{4}", r[0])[0]
+            age = year - int(date)
+            age += random.randint(int(-age/9), int(age/9))
+            mask.append(age)
+            # BMI
+            r = re.findall(r"(?i)(?<=height:).?\d+.?\d+", data)[0].strip()
+            if "." not in r:
+                r = float(r) / 100
+            height = float(r)
+            r = re.findall(r"(?i)(?<=weight:).?\d+.?\d+", data)[0].strip()
+            weight = float(r)
+            bmi = weight / (height ** 2)
+            bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1)/2
+            mask.append(bmi)
+            # Gender
+            r = re.findall(r"(?i)(gender.+)", data)[0]
+            mask.append(r[-2])
+            #Postal Code
+            cursor.execute("select postal_code from patients where patient_id = ?", (datas[k][0]))
+            postal_code = cursor.fetchall()[0][0]
+            mask.append(str(postal_code[0:2]) + "X"*(len(postal_code)-2))
+            # Amount of times they visited
+            r = re.findall(r"(?i)(medical history.+\n)((?:.+\n?)+){0,}", data)[0][1].split("\r\n")
+            z = 0
+            for i in range(len(r)):
+                if str(year) in r[i]:
+                    z += 1
+                #print(year,z,r[i])
+            z = z + random.randint(int(-z / 2), int(z / 2))
+            mask.append(z)
+            r = re.findall(r"(?i)(diabetes)|(cancer)|(hiv)|(aids)", data)
+            r = set(r)
+            problem = ""
+            #mask += f'Outstanding health problems:\n'
+            if len(r) != 0:
+                for i in r:
+                    for j in i:
+                        if j != '':
+                            problem += f"{j.capitalize()};"
+                            #mask.append(j.capitalize())
+                mask.append(problem)
+            else:
+                mask.append('None')
+            stuff.append(mask)
+            #cursor.close()
+            #print(data,'\n\n',mask)
+        with open('saved/export.csv','w',newline='') as f:
+            writer = csv.writer(f)
+            #print(stuff)
+            writer.writerow(header)
+            writer.writerows(stuff)
+        return send_file('saved/export.csv',mimetype='text/csv',download_name='export.csv',as_attachment=True)
+        #return redirect(url_for('export.html'))"""
 
     @app.route('/appointment',methods=['GET','POST'])
     @custom_login_required
@@ -1837,7 +2146,7 @@ with app.app_context():
     @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
-        if session['access_level'] != 'hr':
+        if session['access_level'] == 'hr':
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
@@ -1996,7 +2305,7 @@ with app.app_context():
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and hr_form.validate():
-                print('sdagfhjasdoifb asdoiufgsa uoidf basiuobfd asuidf basfuybsad uo')
+
                 connection = auto_use_seconddb()
 
                 cursor = connection.cursor()
@@ -2032,7 +2341,9 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
+
                     # connection = auto_use_seconddb()
+
 
                     cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
@@ -2064,12 +2375,6 @@ with app.app_context():
         connection = auto_use_seconddb()
         # Update to Google Drive
 
-        # try:
-
-        # except:
-        #     print('Drive backup failure')
-        #     flash('Local and cloud backup failure','error')
-
         t=time.localtime()
         current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
 
@@ -2079,12 +2384,14 @@ with app.app_context():
         while (cur.nextset()):
             pass
         print('Local Backup successful')
+
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
         for folder in folders:
             my_drive.create_file(folder, folder_path,connection) #function in backup.py file
             print('Drive backup successful')
         flash('Local and cloud backup successful')
+
 
         return redirect(url_for('dashboard'))
 
@@ -2094,7 +2401,9 @@ with app.app_context():
     def restore_backup():
         cnct_str = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
+
             SERVER=' + server + '; \
+
             Trusted_Connection=yes;',
             autocommit=True
         )
@@ -2184,7 +2493,9 @@ with app.app_context():
 
 if __name__ == "__main__":
     add_admin()
+
     my_drive = MyDrive()
+
     scheduler = APScheduler()
     vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
 

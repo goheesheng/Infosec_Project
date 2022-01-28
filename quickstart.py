@@ -43,6 +43,7 @@ def main():
         results = service.files().list(
             pageSize=10, fields="nextPageToken, files(id, name)").execute()
         items = results.get('files', [])
+
         if not items:
             print('No files found.')
             return
