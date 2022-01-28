@@ -23,14 +23,13 @@ from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register
 from functools import wraps
 import pyodbc
 import textwrap
-from mssql_auth import database, server,backup_server
+from mssql_auth import database, server
 from flask_qrcode import QRcode
 from datetime import datetime
 from pydrive.drive import GoogleDrive
 
 context = ssl.create_default_context()
 
-<<<<<<< Updated upstream
 salt = bcrypt.gensalt()
 cnxn = pyodbc.connect(
     'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -38,14 +37,6 @@ cnxn = pyodbc.connect(
     DATABASE=' + database + ';\
     Trusted_Connection=yes;'
 )
-=======
-salt = bcrypt.gensalt() 
-# db_connection = pyodbc.connect( # 
-# 'DRIVER={ODBC Driver 17 for SQL Server}; \
-# SERVER=' + server + '; \
-# DATABASE=' + 'database1' + ';\
-# Trusted_Connection=yes;',autocommit=True)
->>>>>>> Stashed changes
 
 
 # dont u touch u gay boi
@@ -68,24 +59,9 @@ salt = bcrypt.gensalt()
 
 #         return block
 
-<<<<<<< Updated upstream
 #     @property
 #     def last_block(self):
 #         return self.chain[-1]
-=======
-    # Update to Google Drive
-    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-    try:
-        for folder in folders:
-            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-        print('Drive backup successful')
-    except:
-        pass
-    scheduler.remove_all_jobs()
-    time.sleep(15)
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
->>>>>>> Stashed changes
 
 #     def new_transaction(self, sender, recipient, hashval):
 #         transaction = {
@@ -134,7 +110,7 @@ def custom_login_required(f):
         # print(session['login'],'wrapper')
         if session is None:
             return redirect(url_for('login'))
-
+# fix this later ES
 
         if 'expirydate' in app.config:
             if app.config['expirydate']<= datetime.utcnow():
@@ -142,6 +118,20 @@ def custom_login_required(f):
                 app.config['expirydate']=None
                 return redirect(url_for('login'))
 
+
+        # if session.get('csrf_token') is None:
+        #     print('session modifed')
+        #     ipaddress=request.remote_addr
+        #     try:
+        #         if app.config['lastusername'] is not None:
+        #             filter=cookieFilter(ipaddress,app.config['lastusername'])
+        #         else:
+        #             filter = cookieFilter(ipaddress)
+        #         serializationlogger.addFilter(filter)
+        #         serializationlogger.warning('Cookie has been modified')
+        #         return redirect(url_for('login'))
+        #     except:
+        #         pass
 
         if 'login' not in session or session['login']!=True:
             flash("Please log in to access this page","warning")
@@ -2175,14 +2165,7 @@ with app.app_context():
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and hr_form.validate():
-<<<<<<< Updated upstream
                 cursor = cnxn.cursor()
-=======
-                print('sdagfhjasdoifb asdoiufgsa uoidf basiuobfd asuidf basfuybsad uo')
-                connection = auto_use_seconddb()
-
-                cursor = connection.cursor()
->>>>>>> Stashed changes
                 username = hr_form.username.data
                 firstname = hr_form.firstname.data
                 lastname = hr_form.lastname.data
@@ -2215,13 +2198,7 @@ with app.app_context():
                     cursor.execute(insert_query, values)
                     cursor.commit()
                     cursor.close()
-<<<<<<< Updated upstream
                     cursor = cnxn.cursor()
-=======
-                    # connection = auto_use_seconddb()
-
-                    cursor = connection.cursor()
->>>>>>> Stashed changes
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                                     VALUES (?, ?,?); "
                     values = (username, 'hr', md5Hashed)
@@ -2238,75 +2215,10 @@ with app.app_context():
                 else:
                     flash("Account already exists!")
                     return render_template('register_hr.html', form=hr_form)
-                flash("Created HR")
+
                 return redirect(url_for('dashboard'))
             return render_template('register_hr.html', form=hr_form)
 
-<<<<<<< Updated upstream
-=======
-    #Still need to generate it every 5 mins
-    @custom_login_required
-    @app.route('/backup', methods=['GET', 'POST'])
-    def generate_backup():
-        #checkforifitsrunning
-        #regex to find datetime here
-        connection = auto_use_seconddb()
-        # Update to Google Drive
-
-        # try:
-
-        # except:
-        #     print('Drive backup failure')
-        #     flash('Local and cloud backup failure','error')
-
-        t=time.localtime()
-        current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
-
-        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-        cur = connection.cursor()
-        cur.execute(backup)
-        while (cur.nextset()):
-            pass
-        print('Local Backup successful')
-        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-        for folder in folders:
-            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-            print('Drive backup successful')
-        flash('Local and cloud backup successful')
-
-        return redirect(url_for('dashboard'))
-
-    #This function is used to change back to server1 database1, assuming that vulnerability is resolved.
-    @custom_login_required
-    @app.route('/restore', methods=['GET', 'POST'])
-    def restore_backup():
-        cnct_str = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + server + '; \
-            Trusted_Connection=yes;',
-            autocommit=True
-        )
-        executelock = ("alter database database1 set offline with rollback immediate ")
-        releaselock = ("alter database database1 set online")
-        cur = cnct_str.cursor()
-        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-        print(folders[-1],'123123')
-        statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
-        create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-        cur.execute(create_db)
-        cur.execute(executelock)
-        cur.execute(statement)
-        while cur.nextset():
-            pass
-        cur.execute(releaselock)
-        cur.close()
-        print("restore_backup completed successfully")
-        flash("Using the primary Database from Server 1!",'success')
-        return redirect(url_for('dashboard'))
-
->>>>>>> Stashed changes
     @app.route('/remove/<string:identifier>/<string:table>', methods=['GET', 'POST'])
     def remove(identifier,table):
         cursor = cnxn.cursor()
@@ -2385,19 +2297,5 @@ with app.app_context():
         print("Writing to SQL database1")
 
 if __name__ == "__main__":
-<<<<<<< Updated upstream
     # add_admin()
     app.run(port=5001)
-=======
-    add_admin()
-    my_drive = MyDrive()
-    scheduler = APScheduler()
-    vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
-
-    scheduler.init_app(app)
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
-    scheduler.start()
-    app.run()
-
-    atexit.register(lambda: scheduler.shutdown())
->>>>>>> Stashed changes
