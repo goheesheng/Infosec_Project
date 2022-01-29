@@ -1,12 +1,8 @@
 from enum import auto
 import hashlib
-
-
-
 from inspect import CO_NESTED
 import logging
 import ssl, csv
-
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -50,7 +46,7 @@ salt = bcrypt.gensalt()
 
 db_connection = pyodbc.connect( # 
 'DRIVER={ODBC Driver 17 for SQL Server}; \
-SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
+SERVER=' + server+ '; \
 DATABASE=' + 'database1' + ';\
 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
@@ -96,7 +92,7 @@ def autonomous_backup():
         pass
     scheduler.remove_all_jobs()
     time.sleep(15)
-    scheduler.add_job(id = 'Scheduled Task',func = inomous_backup, trigger="interval", minutes=60)
+    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
 
     cur.close()
     # flash('Local and cloud backup successful')
@@ -108,7 +104,6 @@ app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
-app.config['restoredSecondDB']=False
 
 
 # def login_required(requireslogin):
@@ -166,15 +161,12 @@ def custom_login_required(f):
 
 def auto_use_seconddb():
     try:  #Try the first server if connection can be established
-        db_connection = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server}; \
 
-            SERVER=' + 'DESKTOP-75MSPGF' + '; \
-
-            DATABASE=' + 'database1' + ';\
-            Trusted_Connection=yes;'
-            , autocommit=True
-        )
+        db_connection = pyodbc.connect( # 
+        'DRIVER={ODBC Driver 17 for SQL Server}; \
+        SERVER=' + server+ '; \
+        DATABASE=' + 'database1' + ';\
+        Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
         print('Using first server db!')
         cur = db_connection.cursor()
 
@@ -182,10 +174,9 @@ def auto_use_seconddb():
             try:
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
+                SERVER=' + backup_server+ '; \
                 DATABASE=' + 'database1' + ';\
-                Trusted_Connection=yes;' \
-                ,autocommit=True)
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 cur = db_connection.cursor()
                 should_backup = True 
                 folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
@@ -202,12 +193,11 @@ def auto_use_seconddb():
                     should_backup = False
                     
                 if should_backup == False: #don't need to backup as it is already backed up.
-                    db_connection = pyodbc.connect( # need use back the recovered db  
+                    db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + 'DESKTOP-75MSPGF' + '; \
+                    SERVER=' + backup_server+ '; \
                     DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes;' \
-                    ,autocommit=True)
+                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                     print('DB had been backed up.')
                     print("Using second db")
                 else:
@@ -216,7 +206,7 @@ def auto_use_seconddb():
                     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
                     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
                     statement = (
-                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
                     create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
                     print(cur.execute(create_db),'createdb')
                     cur.execute(create_db)
@@ -225,20 +215,19 @@ def auto_use_seconddb():
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    db_connection = pyodbc.connect( # need use back the recovered db  
+                    db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
+                    SERVER=' + backup_server+ '; \
                     DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes;' \
-                    ,autocommit=True)
+                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                     print("Update and restore secondary db ")
                     print("Using second db!")
             except: #if secondary db was deleted, it will auto restore 
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
-                Trusted_Connection=yes;' \
-                ,autocommit=True)
+                SERVER=' + backup_server+ '; \
+                DATABASE=' + 'database1' + ';\
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 cur = db_connection.cursor()
 
                 executelock = ("alter database database1 set offline with rollback immediate ")
@@ -246,7 +235,7 @@ def auto_use_seconddb():
                 folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
                 folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
                 statement = (
-                    f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.SQLEXPRESS01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
                 create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
                 print(cur.execute(create_db),'createdb')
                 cur.execute(create_db)
@@ -255,12 +244,11 @@ def auto_use_seconddb():
                 while cur.nextset():
                     pass
                 cur.execute(releaselock)
-                db_connection = pyodbc.connect( # need use back the recovered db  
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'DESKTOP-75MSPGF\SMSSQL15.MSSQLSERVER01' + '; \
-                DATABASE=' + 'database1' + ';\
-                Trusted_Connection=yes;' \
-                ,autocommit=True)
+                db_connection = pyodbc.connect( # 
+                            'DRIVER={ODBC Driver 17 for SQL Server}; \
+                            SERVER=' + server+ '; \
+                            DATABASE=' + 'database1' + ';\
+                            Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 print("Restored second db as it was never created.")
                 print("Using second db!")
                 print(';')
@@ -2399,21 +2387,19 @@ with app.app_context():
     @custom_login_required
     @app.route('/restore', methods=['GET', 'POST'])
     def restore_backup():
-        cnct_str = pyodbc.connect(
+
+        cnct_str = pyodbc.connect( # 
             'DRIVER={ODBC Driver 17 for SQL Server}; \
-
-            SERVER=' + server + '; \
-
-            Trusted_Connection=yes;',
-            autocommit=True
-        )
+            SERVER=' + server+ '; \
+            DATABASE=' + 'database1' + ';\
+            Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
         executelock = ("alter database database1 set offline with rollback immediate ")
         releaselock = ("alter database database1 set online")
         cur = cnct_str.cursor()
         folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
         folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
         print(folders[-1])
-        statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.SQLEXPRESS\\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
+        statement = f"RESTORE DATABASE database1 FROM  DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}' WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\MSSQL\\DATA\\database_log.ldf', REPLACE" #  file name and db must be the same
         create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
         cur.execute(create_db)
         cur.execute(executelock)

@@ -7,7 +7,7 @@ GO
 
 --Restore certificate with reference to earlier private key and decrypt it with same password. (using the shared password)
 CREATE CERTIFICATE SERVERCERT
-FROM FILE= 'C:\Backup\Server.cer'
+FROM FILE= 'C:\BACKUP\ServerCert.cer'
 WITH PRIVATE KEY (FILE='C:\Backup\ServerCert_Cert_Key.pvk',DECRYPTION BY PASSWORD ='certPASSWORD')
 GO
 
@@ -22,10 +22,6 @@ GO
 
 --Restore DB
 USE master
-GO
-RESTORE DATABASE [database1]
-FROM DISK =N'C:\Backup\database1.bak'
 
-
-
+RESTORE DATABASE [database1] FROM  DISK = N'C:\BACKUP\database1.bak' WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE
 
