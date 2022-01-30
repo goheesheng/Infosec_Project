@@ -38,6 +38,8 @@ from virustotal import virusTotal
 import os.path,base64
 from virustotal_python import Virustotal
 from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 context = ssl.create_default_context()
 
@@ -98,6 +100,11 @@ def autonomous_backup():
 
 app = Flask(__name__)
 # sched = APScheduler()
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "10 per minute"]
+)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
