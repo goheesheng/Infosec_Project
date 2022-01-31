@@ -2,7 +2,11 @@ from enum import auto
 import hashlib
 from inspect import CO_NESTED
 import logging
+#from flask_limiter import Limiter
+#from flask_limiter.util import get_remote_address
+from multiprocessing import connection
 import ssl, csv
+from tkinter import DOTBOX
 from typing import ContextManager
 import pyqrcode
 from docx import Document
@@ -13,7 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from flask_mobility import Mobility
 import os
 from datetime import *
-from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory
+from flask import Flask, request, render_template, g, redirect, url_for, flash, session,send_from_directory, send_file
 import pyotp
 import os
 import smtplib
@@ -44,11 +48,11 @@ context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
 
-db_connection = pyodbc.connect( # 
-'DRIVER={ODBC Driver 17 for SQL Server}; \
-SERVER=' + server+ '; \
-DATABASE=' + 'database1' + ';\
-Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+# db_connection = pyodbc.connect( # 
+# 'DRIVER={ODBC Driver 17 for SQL Server}; \
+# SERVER=' + server+ '; \
+# DATABASE=' + 'database1' + ';\
+# Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
 patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
 patientFilesModificationLogger.setLevel(logging.DEBUG)
@@ -101,6 +105,11 @@ def autonomous_backup():
 
 app = Flask(__name__)
 # sched = APScheduler()
+# limiter = Limiter(
+#     app,
+#     key_func=get_remote_address,
+#     default_limits=["200 per day", "10 per minute"]
+# )
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
@@ -226,7 +235,6 @@ def auto_use_seconddb():
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + backup_server+ '; \
-                DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 cur = db_connection.cursor()
 
@@ -246,7 +254,7 @@ def auto_use_seconddb():
                 cur.execute(releaselock)
                 db_connection = pyodbc.connect( # 
                             'DRIVER={ODBC Driver 17 for SQL Server}; \
-                            SERVER=' + server+ '; \
+                            SERVER=' + backup_server+ '; \
                             DATABASE=' + 'database1' + ';\
                             Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 print("Restored second db as it was never created.")
@@ -1470,7 +1478,11 @@ with app.app_context():
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
-            if session["access_level"] == "patient":
+
+            if session["access_level"] != "patient" or session["access_level"] != "doctor":
+                return redirect(url_for("access_denied"))
+                
+            elif session["access_level"] == "patient":
 
 
                 print(app.config['UPLOAD_FOLDER'],'kkb')
@@ -1486,7 +1498,7 @@ with app.app_context():
                     flash("No medical record exists for your account", "error")
                     return redirect(url_for('homepage'))
 
-            if session["access_level"] == "doctor":
+            elif session["access_level"] == "doctor":
                 return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
 
         if request.method == "POST":
@@ -1496,32 +1508,35 @@ with app.app_context():
                     connection = auto_use_seconddb()
                     cursor = connection.cursor()
                     #Checking if patient exists in database with NRIC/USERNAME
+                    patient_nric = '%'+patient_nric+'%'
                     patient = cursor.execute("select * from patients where username like ?",(patient_nric)).fetchone()
                     if patient is not None:
                         retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
                         print(retrieved)
                         if retrieved is None:
-                            # Creating Base Document File for patient,insert file name,content,md5... into db
-                            # cursor = cnxn.cursor()
-                            patient_name=f"{patient[2].strip()} {patient[3].strip()}"
-                            insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
-                            newDocument=Document()
-                            newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
-                            newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"))
-                            filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[1].strip()}.docx"),"rb").read()
-                            md5Hash = hashlib.md5(filecontent)
-                            fileHashed = md5Hash.hexdigest()
-                            VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
-                            cursor.execute(insert_query, VALUES)
-                            cursor.commit()
-                            cursor.close()
-                        else:
-                            file_name=str(patient[0])+".docx"
-                            file_content=retrieved[2]
-                            stored_hash=retrieved[6]
-                            if not(check_file_hash(file_name,stored_hash)) or True:
-                                with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
-                                    file_override.write(file_content)
+                            flash("no paitnet file exists","error")
+                            return redirect(url_for('requestPatientInformation'))
+                        #     # Creating Base Document File for patient,insert file name,content,md5... into db
+                        #     # cursor = cnxn.cursor()
+                        #     patient_name=f"{patient[2].strip()} {patient[3].strip()}"
+                        #     insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
+                        #     newDocument=Document()
+                        #     newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
+                        #     newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[0]}.docx"))
+                        #     filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[0]}.docx"),"rb").read()
+                        #     md5Hash = hashlib.md5(filecontent)
+                        #     fileHashed = md5Hash.hexdigest()
+                        #     VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
+                        #     cursor.execute(insert_query, VALUES)
+                        #     cursor.commit()
+                        #     cursor.close()
+                        # else:
+                        #     file_name=str(patient[0])+".docx"
+                        #     file_content=retrieved[2]
+                        #     stored_hash=retrieved[6]ient
+                        #     if not(check_file_hash(file_name,stored_hash)) or True:
+                        #         with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
+                        #             file_override.write(file_content)
                         print(session,'here')
                         return redirect(url_for("submission", pid=patient[0]))
 
@@ -1533,6 +1548,10 @@ with app.app_context():
 
     @app.route('/baseinfo',methods=["GET","POST"])
     def baseinfo():
+        
+        if session["access_level"] !='patient':
+            flash("invalid access","errr")
+            return redirect(url_for("homepage"))
         baseinfo = Baseinfo(request.form)
         if request.method == "POST":
             height = baseinfo.height.data
@@ -1557,11 +1576,22 @@ with app.app_context():
                 row_cells[1].text = content[i]
             newDocument.add_page_break()
             newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{session['id']}.docx"))
-            cursor = cnxn.cursor()
+            filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'],f"{session['id']}.docx"),"rb").read()
+            print(newDocument,filecontent)
+            cnxn = auto_use_seconddb()
+            cursor= cnxn.cursor()
             cursor.execute("select patient_id from patient_file where patient_id = ?",(session['id']))
-            datas = cursor.fetchall()
+            datas = cursor.fetchval()
+            md5Hash = hashlib.md5(filecontent)
+            fileHashed = md5Hash.hexdigest()
+            #print('im gay',datas)
             if datas == None:
-                cursor.execute("insert into patient_file values ?,?,?,?,?,?",(session['id'],session['first_name']+session['last_name'],datetime.now(),"NULL","NULL",hashlib.md5(newDocument)))
+                insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
+                VALUES = (session['id'], f"{session['id']}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
+                #cursor.execute("insert into patient_file values ?,?,?,?,?,?,?",(session['id'],session['first_name']+session['last_name'],filecontent,datetime.now(),"NULL","NULL",fileHashed))
+                cursor.execute(insert_query, VALUES)
+                cursor.commit()
+                cursor.close()
             return redirect(url_for('requestPatientInformation'))
         return render_template('baseinfo.html',form=baseinfo)
 
@@ -1575,6 +1605,7 @@ with app.app_context():
         tending_physician = cursor.execute("select tending_physician from patients where patient_id=?", (pid)).fetchone()[0]
         if tending_physician is None:
             flash("You are unauthorized to view this patients information", "error")
+            #splunk
             return redirect(url_for('homepage'))
         else:
             if tending_physician.strip() == session['username'] or True:
@@ -1602,6 +1633,7 @@ with app.app_context():
 
             if file.filename.strip()=="":
                 flash("Invalid filename","error")
+                #splunk
                 return redirect(url_for('submission'), pid)
             #
             # storedfiledata=get_file_data_from_database(pid)
@@ -1625,7 +1657,7 @@ with app.app_context():
                     composer.append(toAddDocument)
                     composer.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{pid}.docx"))
                     os.remove(path)
-
+                    cnxn = auto_use_seconddb()
                     cursor = cnxn.cursor()
                     alter_query = textwrap.dedent("UPDATE patient_file set file_content=?,file_last_modified_time=?,name_of_staff_that_modified_it=?,id_of_staff_modified_it=?,md5sum=? where patient_id=?;")
                     filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{pid}.docx"), "rb").read()
@@ -1645,9 +1677,11 @@ with app.app_context():
                     return redirect(url_for('homepage'))
                 else:
                     flash("U are virus","error")
+                    #splunk
                     return redirect(url_for("submission", pid=pid))
             else:
                 flash("Invalid filetype or filename",'error')
+                #splunk
                 return redirect(url_for("submission", pid=pid))
 
                 # return redirect(url_for("submission",file=filesname ))
@@ -1657,7 +1691,7 @@ with app.app_context():
         return redirect(url_for('homepage'))
     @app.route('/assignDoctor',methods=['GET','POST'])
     @custom_login_required
-    # @hr_needed
+    @hr_needed
     def assignDoctor():
         doctor_patient_form = Assign_PhysiciantForm(request.form)
         connection = auto_use_seconddb()
@@ -1679,6 +1713,7 @@ with app.app_context():
             cursor.close()
         else:
             flash("There is no patient or doctor to be assigned!", "error")
+            #splunk
             return redirect(url_for('hmepage'))
 
 
@@ -1727,7 +1762,7 @@ with app.app_context():
     @custom_login_required
     def export():
       #This was commented, i uncomment it for merging
-        if session['access_level'] != 'doctor':
+        if session['access_level'] not in ['doctor','researcher']:
             return redirect(url_for('access_denied'))
         else:
             connection = auto_use_seconddb()
@@ -1931,10 +1966,11 @@ with app.app_context():
             postal_code = cursor.fetchall()[0][0]
             postal_code = (str(postal_code[0:2]) + "X" * (len(postal_code) - 2))
             dob = re.findall(r"\d{4}", DOB)[0]
-            #print(dob)
+            print(dob)
             age = datetime.today().year - int(dob)
             print(mask)
             mask.append([age, bmi, sex, postal_code, visits, problem])
+            
         with open('saved/export.csv', 'w', newline='') as f:
             writer = csv.writer(f)
             # print(stuff)
@@ -2044,6 +2080,7 @@ with app.app_context():
             if existingappointment[0] == None:
                 return render_template('appointment.html', form=appointment)
             else:
+                #splunk
                 flash(f'You have an existing appointment booked on: {existingappointment[0]}','error')
                 return render_template('appointment.html', form=appointment)
 
@@ -2134,7 +2171,7 @@ with app.app_context():
     @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
-        if session['access_level'] == 'hr':
+        if session['access_level'] != 'hr':
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
@@ -2230,21 +2267,21 @@ with app.app_context():
                         break
 
                 if check:
-                    insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
+                    connection = auto_use_seconddb()
+                    cur = connection.cursor()
+                    insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,address,postal_code,company) \
                                                 VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
                     values = (username, firstname, lastname, md5Hashed,
                             email, otp_code, phone_no, 'researcher', address, postal_code, company)
-                    cursor.execute(insert_query, values)
-                    cursor.commit()
-                    cursor.close()
+                    cur.execute(insert_query, values)
+                    cur.commit()
                     connection = auto_use_seconddb()
-                    cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                                 VALUES (?, ?,?); "
                     values = (username, 'researcher', md5Hashed)
-                    cursor.execute(insert_query, values)
-                    cursor.commit()
-                    cursor.close()
+                    cur.execute(insert_query, values)
+                    cur.commit()
+                    cur.close()
                     print('Sending email OTP...')
                     qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                     image = pyqrcode.create(qr)
@@ -2253,25 +2290,28 @@ with app.app_context():
                     os.remove('image.png')
                 else:
                     check = False
+            else:
+                check = False
 
 
             if check:
-                insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,postal_code,address,company) \
+                print('check')
+                connection = auto_use_seconddb()
+                cur = connection.cursor()
+                insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,address,postal_code,company) \
                                             VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
                 values = (username, firstname, lastname, md5Hashed,
                         email, otp_code, phone_no, 'researcher', address, postal_code, company)
-                cursor.execute(insert_query, values)
-                cursor.commit()
-                cursor.close()
-                connection = auto_use_seconddb()
+                cur.execute(insert_query, values)
+                cur.commit()
 
                 cursor = connection.cursor()
                 insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                             VALUES (?, ?,?); "
                 values = (username, 'researcher', md5Hashed)
-                cursor.execute(insert_query, values)
-                cursor.commit()
-                cursor.close()
+                cur.execute(insert_query, values)
+                cur.commit()
+                cur.close()
                 print('Sending email OTP...')
                 qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                 image = pyqrcode.create(qr)
@@ -2387,11 +2427,9 @@ with app.app_context():
     @custom_login_required
     @app.route('/restore', methods=['GET', 'POST'])
     def restore_backup():
-
         cnct_str = pyodbc.connect( # 
             'DRIVER={ODBC Driver 17 for SQL Server}; \
             SERVER=' + server+ '; \
-            DATABASE=' + 'database1' + ';\
             Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
         executelock = ("alter database database1 set offline with rollback immediate ")
         releaselock = ("alter database database1 set online")
