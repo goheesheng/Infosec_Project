@@ -1,6 +1,7 @@
 from enum import auto
 import hashlib
-
+from PIL import Image
+from api_logic import execute_request, check_confidence, train_face
 from inspect import CO_NESTED
 import logging
 import ssl, csv
@@ -40,22 +41,24 @@ from virustotal_python import Virustotal
 from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from config import Config
+
 
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
 db_connection = pyodbc.connect( # 
 'DRIVER={ODBC Driver 17 for SQL Server}; \
-SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
+SERVER=' + 'DESKTOP-DMO8V7F\MSSQLSERVER01' + '; \
 DATABASE=' + 'database1' + ';\
 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
-patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
+'''patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
 patientFilesModificationLogger.setLevel(logging.DEBUG)
 formatterserialize=logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
 file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
 file_handlerModification.setFormatter(formatterserialize)
-patientFilesModificationLogger.addHandler(file_handlerModification)
+patientFilesModificationLogger.addHandler(file_handlerModification)'''
 
 
 class patientFileModificationFilter(logging.Filter):
@@ -100,6 +103,7 @@ def autonomous_backup():
 
 app = Flask(__name__)
 # sched = APScheduler()
+app.config.from_object(Config)
 limiter = Limiter(
     app,
     key_func=get_remote_address,
@@ -167,7 +171,7 @@ def auto_use_seconddb():
     try:  #Try the first server if connection can be established
         db_connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server}; \
-            SERVER=' + 'LAPTOP-3MCBQP3T\SQLEXPRESS' + '; \
+            SERVER=' + 'DESKTOP-DMO8V7F\MSSQLSERVER01' + '; \
             DATABASE=' + 'database1' + ';\
             Trusted_Connection=yes;'
             , autocommit=True
@@ -179,7 +183,7 @@ def auto_use_seconddb():
             try:
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + 'DESKTOP-75MSPGF\MSSQL15.MSSQLSERVER01' + '; \
+                SERVER=' + 'DESKTOP-DMO8V7F\MSSQLSERVER01' + '; \
                 DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes;' \
                 ,autocommit=True)
@@ -1183,6 +1187,7 @@ with app.app_context():
                 return redirect(url_for('login'))
 
         elif admin_login_form.staff_submit.data and admin_login_form.validate():
+
             passed = False
             username = admin_login_form.username.data
             password = admin_login_form.password.data
@@ -1190,17 +1195,18 @@ with app.app_context():
             md5Hashed = md5Hash.hexdigest()
             cursor = auto_use_seconddb().cursor()
             print(cursor)
+            print(md5Hashed)
             access_info = cursor.execute(
                 "select * from access_list where username = ? and pass_hash = ?",
                 (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-
+            print(access_info)
 
             #added md5Hashed password in access_list table so to user username and hashed password for checking if it is in both access_list table and unqiue role tables
             #check whether in access list table
             if access_info != None:
 
                 cnxn = auto_use_seconddb()
-            
+                print(cnxn)
                 # session['username'] = access_info[0].strip()
                 # session['access_list'] = access_info[1].strip()
                 access_level_username = access_info[0].strip()
@@ -1393,7 +1399,10 @@ with app.app_context():
                 # print(session['username'],'ididididnananananannana')
                 # cursor.close()
                 session['otp-semi-login'] = True
-                return redirect(url_for("otpvalidation"))
+                if session['access_level'] == "doctor":
+                    return redirect(url_for("otpvalidationdoctor"))
+                else:
+                    return redirect(url_for("otpvalidation"))
             else:
                 print('fail login')
                 flash("Wrong username or password", "error")
@@ -1411,12 +1420,13 @@ with app.app_context():
         else:
             cnxn = auto_use_seconddb()
 
-            if request.method=="POST":
+            if request.method == "POST":
                 cursor = cnxn.cursor()
-                access_list={'patient':'patients','doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+                access_list = {'patient': 'patients', 'doctor': 'doctors', 'researcher': 'researchers', 'hr': 'hr',
+                               'head_admin': 'head_admin'}
                 if session['access_level'] in access_list and session['otp-semi-login']:
-                    query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
-                    otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+                    query = f"select otp_code from {access_list[session['access_level']]} where username = ?"
+                    otp_seed = cursor.execute(query, (session['username'])).fetchone()[0]
 
                 otp = int(request.form.get("otp"))
                 print(otp_seed)
@@ -1427,9 +1437,8 @@ with app.app_context():
                     session['login'] = True
                     cursor.close()
                     # session['login'] = True
-                    print(session['login'],'sslogin')
-                    print(session,'check sesison')
-
+                    print(session['login'], 'sslogin')
+                    print(session, 'check sesison')
                     return redirect(url_for('homepage'))
                 else:
                     print("wrong")
@@ -1438,6 +1447,52 @@ with app.app_context():
                     return redirect(url_for("otpvalidation"))
             if request.method == "GET":
                 return render_template("loginotp.html")
+
+
+    @app.route("/validationdoctor", methods=["GET","POST"])
+    def otpvalidationdoctor():
+        if 'otp-semi-login' not in session:
+            return redirect(url_for('access_denied'))
+        else:
+            cnxn = auto_use_seconddb()
+
+            if request.method=="POST":
+                cursor = cnxn.cursor()
+                access_list={'doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+                if session['access_level'] in access_list and session['otp-semi-login']:
+                    query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
+                    otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+
+                otp = int(request.form.get("otp"))
+                print("hello")
+                print(otp)
+                file = request.files['file']
+                print('1')
+                image = Image.open(file)
+                print('2')
+                image.save('photo.jpg')
+                print('3')
+                json_obj = execute_request()
+                print('4')
+                flag = check_confidence(json_obj)
+                print('flagtest'+str(flag))
+                print(pyotp.TOTP(otp_seed).now())
+                # verifying submitted OTP with PyOTP
+                if pyotp.TOTP(otp_seed).verify(otp):
+                    print("correct")
+                    session['login'] = True
+                    cursor.close()
+                    # session['login'] = True
+                    print(session['login'],'sslogin')
+                    print(session,'check sesison')
+                    return render_template('homepage.html')
+                else:
+                    print("wrong")
+                    cursor.close()
+                    flash("Wrong OTP", "error")
+                    return redirect(url_for("otpvalidationdoctor"))
+            if request.method == "GET":
+                return render_template("loginotpadmin.html")
 
     ####What is this lmao
     @app.route('/passwordreset', methods=['GET', 'POST']) 
@@ -2137,7 +2192,7 @@ with app.app_context():
     @custom_login_required
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
-        if session['access_level'] == 'hr':
+        if session['access_level'] != 'hr':
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
@@ -2154,6 +2209,11 @@ with app.app_context():
                 otp_code = pyotp.random_base32()
                 md5Hash = hashlib.md5(doc_form.password.data.encode("utf-8"))
                 md5Hashed = md5Hash.hexdigest()
+                print('1')
+                for file in request.files.getlist("upload_field"):
+                    image = Image.open(file)
+                    image.save('photo.jpg')
+                    train_face(username)
                 tables=["patients", "researchers", "hr", "head_admin", "doctors"]
                 check = True
                 for table in tables:
