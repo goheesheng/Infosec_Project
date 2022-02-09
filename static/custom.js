@@ -26,12 +26,19 @@ function snap() {
 function upload() {
     var photo = document.getElementById('image').src;
     var form = document.getElementById('loginForm');
-    photo = dataURItoBlob(photo)
+
     var formData = new FormData(form);
     formData.append("file", photo);
-    var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("POST", "/validationdoctor", false);
-    xmlhttp.send(formData);
+    fetch(`${window.origin}/validationdoctor`, {
+        method:'POST',
+        credentials: "include",
+        body: formData,
+        cache: 'no-cache'
+    })
+
+    // var xmlhttp = new XMLHttpRequest();
+    // xmlhttp.open("POST", "/validationdoctor", false);
+    // xmlhttp.send(formData);
 }
 function dataURItoBlob(dataURI) {
     // convert base64/URLEncoded data component to raw binary data held in a string

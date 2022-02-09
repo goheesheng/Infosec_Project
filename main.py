@@ -1,5 +1,6 @@
 from enum import auto
 import hashlib
+import urllib.request
 from PIL import Image
 from api_logic import execute_request, check_confidence, train_face
 from inspect import CO_NESTED
@@ -1462,30 +1463,24 @@ with app.app_context():
                 if session['access_level'] in access_list and session['otp-semi-login']:
                     query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
                     otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
-
                 otp = int(request.form.get("otp"))
+                urllib.request.urlretrieve(request.form.get("file"), 'photo.jpg')
                 print("hello")
                 print(otp)
-                file = request.files['file']
-                print('1')
-                image = Image.open(file)
-                print('2')
-                image.save('photo.jpg')
-                print('3')
                 json_obj = execute_request()
                 print('4')
                 flag = check_confidence(json_obj)
                 print('flagtest'+str(flag))
                 print(pyotp.TOTP(otp_seed).now())
                 # verifying submitted OTP with PyOTP
-                if pyotp.TOTP(otp_seed).verify(otp):
+                if pyotp.TOTP(otp_seed).verify(otp) and flag:
                     print("correct")
                     session['login'] = True
                     cursor.close()
                     # session['login'] = True
                     print(session['login'],'sslogin')
                     print(session,'check sesison')
-                    return render_template('homepage.html')
+                    return redirect(url_for('homepage'))
                 else:
                     print("wrong")
                     cursor.close()
