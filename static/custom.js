@@ -35,6 +35,11 @@ function upload() {
         body: formData,
         cache: 'no-cache'
     })
+        .then((response)=>{
+            if(response.redirected){
+                window.location.href = response.url;
+            }
+        })
 
     // var xmlhttp = new XMLHttpRequest();
     // xmlhttp.open("POST", "/validationdoctor", false);
