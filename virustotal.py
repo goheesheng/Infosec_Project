@@ -1,12 +1,17 @@
+from re import X
 from virustotal_python import Virustotal
 import os.path,base64
-from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
+from pprint import pprint
+
+from forms import Otp # pprint is used to pretty print in good json format instead of in a line
 # # v2 example
 # vtotal = Virustotal(API_KEY="Insert API key here.")
 
 # v3 example
 vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
-print(vtotal)
+
+# print(vtotal)
+
 def virusTotal(vtotal,filepath):
 
     # You can provide True to the `COMPATIBILITY_ENABLED` parameter to preserve the old response format of virustotal-python versions prior to 0.1.0
@@ -91,10 +96,12 @@ def virusTotal(vtotal,filepath):
     else:
         return False
 
-if __name__ == "__main__":
-    if virusTotal(vtotal,'saved\\virustest.txt') is False:
-        print('This file is clean!')
-    else:
-        print('This file is malicious!')
+# if __name__ == "__main__":
+
+#     if virusTotal(vtotal,'saved\\virus.txt') is False:
+
+#         print('This file is clean!')
+#     else:
+#         print('This file is malicious!')
 
 

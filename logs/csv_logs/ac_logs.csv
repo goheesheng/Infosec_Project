@@ -1,0 +1,11 @@
+Time,Level,Message,IP Address,Username,Page visited
+"2022-02-14 17:13:04,065",WARNING,code 401,127.0.0.1,,None
+"2022-02-14 17:41:50,896",WARNING,code 401,127.0.0.1,,None
+"2022-02-14 17:41:51,585",WARNING,code 401,127.0.0.1,,None
+"2022-02-14 17:42:28,577",WARNING,code 401,127.0.0.1,,None
+"2022-02-14 18:28:31,516",WARNING,code 401,127.0.0.1,123456y,requestPatientInformation
+"2022-02-14 18:28:36,679",WARNING,code 401,127.0.0.1,123456y,export
+"2022-02-14 18:34:42,215",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
+"2022-02-14 18:36:56,676",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
+"2022-02-14 18:37:18,130",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
+"2022-02-14 18:38:00,729",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation

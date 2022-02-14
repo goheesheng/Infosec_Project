@@ -1,9 +1,9 @@
 import re
-from wtforms import StringField, validators, SubmitField, FileField, PasswordField, DecimalField, MultipleFileField
+from wtforms import StringField, validators, SubmitField, FileField, PasswordField, DecimalField,MultipleFileField  #AlphaSpace, AlphaNumeric,
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField, DateField
-from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
-#from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
-from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
+# from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
+# from wtforms.fields.html5 import DateField #Used for wtforms versions below 3.0.0
+# from wtforms.fields.datetime import DateField #Used for wtforms version 3.0.0 onwards
 
 
 
@@ -40,7 +40,7 @@ class Register(Form):
     username = StringField('NRIC', [validators.DataRequired(),validators.Regexp(re.compile('^[a-zA-Z]\d{7}[a-zA-Z]$'),message= "Username can contain only alphanumeric characters!")],render_kw={"placeholder": "E.g T1234567T"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
@@ -57,7 +57,7 @@ class RegisterDoctor(Form):
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     department = StringField("Department", [validators.Length(min=1, max=400), validators.DataRequired()])
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
@@ -74,7 +74,7 @@ class RegisterResearcher(Form):
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     company = StringField("Company", [validators.Length(min=1, max=400), validators.DataRequired()])
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
@@ -90,7 +90,7 @@ class RegisterHr(Form):
     username = StringField('Staff ID', [validators.DataRequired(),validators.Regexp(re.compile('^\d{6}[A-Za-z]$'),message= "Only first 6 digits and 1 alphabet at the end!!")],render_kw={"placeholder": "E.g 123456K"})
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})
@@ -116,7 +116,7 @@ class RegisterHr(Form):
 class General_UpdateForm(Form):
     firstname = StringField("First Name", [validators.Length(min=1, max=400), validators.DataRequired()])
     lastname = StringField("Last Name", [validators.Length(min=1, max=400), validators.DataRequired()])
-    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired(),Integer()],render_kw={"placeholder": "E.g 8898 2898"})
+    phone_no = StringField('Phone Number', [validators.Length(min=8, max=15), validators.DataRequired()],render_kw={"placeholder": "E.g 8898 2898"})
     email = StringField('Email Address', [validators.DataRequired(),validators.Email(), validators.Regexp('^.+@[^.].*\.[a-z]{2,10}$', message="Invalid email address.")],render_kw={"placeholder": "E.g you@example.com"})
     address = TextAreaField('Address', [validators.DataRequired()],render_kw={"placeholder": "E.g 898 Yishun Ring Road"})
     postal_code = StringField('Postal Code', [validators.Length(min=6, max=6), validators.DataRequired()], render_kw={"placeholder": "889906"})

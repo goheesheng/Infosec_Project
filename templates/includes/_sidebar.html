@@ -36,11 +36,12 @@
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                         Input Base Information
                     </a>
+                
                  </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -81,8 +82,8 @@
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -124,8 +125,8 @@
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -163,12 +164,15 @@
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                         Human Resource Dashboard
                     </a>
+                    <a class="nav-link" href="/assignDoctor">
+                        <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        Assign Physician
+                    </a>
                    
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
             </div>
         </nav>
     </div>
@@ -209,8 +213,8 @@
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+                
             </div>
         </nav>
     </div>

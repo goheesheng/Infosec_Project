@@ -1,0 +1,7 @@
+2022-02-14 17:16:17,572;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:16:38,187;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:16:48,392;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:18:27,052;DEBUG; 222222y has retrieved T1234567t's medical record;127.0.0.1;222222y
+2022-02-14 17:19:23,979;DEBUG; 222222y has added to T1234567t's medical record;127.0.0.1;222222y
+2022-02-14 17:25:44,577;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:28:33,334;DEBUG; 222222y has added to T1234567t's medical record;127.0.0.1;222222y

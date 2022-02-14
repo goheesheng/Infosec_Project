@@ -1,11 +1,13 @@
-#ENTER YOUR OWN SERVER CONNECTION FOR MSSQLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-# server = 'GOHDESKTOP\SQLEXPRESS'
-# server = 'DESKTOP-THO3HBG\SQLEXPRESS'
-#server = 'DESKTOP-75MSPGF'
-server = 'LAPTOP-3MCBQP3T\SQLEXPRESS'
-# server = 'LAPTOP-8BJG1SP8'
-# server = 'DESKTOP-DMO8V7F\SQLEXPRESS'
+
+#ENTER YOUR OWN SERVER CONNECTION FOR MSSQL
+
+
+
+#EeSheng-Desktop
+server = "GOHDESKTOP"
+backup_server ="GOHDESKTOP\MSSQLSERVER01"
+
 
 database = 'database1'
 
