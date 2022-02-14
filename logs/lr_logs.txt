@@ -1,0 +1,21 @@
+2022-02-14 17:14:47,615;DEBUG;t0335871i;has failed to be redirected to otpvalidation page
+2022-02-14 17:15:20,181;DEBUG;T1234567t;has been redirected to otpvalidation page
+2022-02-14 17:15:33,186;DEBUG;T1234567t;has failed to login to Angel Health
+2022-02-14 17:15:52,309;DEBUG;T1234567t;has sucessfully login to Angel Health
+2022-02-14 17:17:30,643;DEBUG;222222y;has been redirected to otpvalidation page
+2022-02-14 17:17:38,232;DEBUG;222222y;has failed to login to Angel Health
+2022-02-14 17:17:52,269;DEBUG;222222y;has sucessfully login to Angel Health
+2022-02-14 17:24:57,509;DEBUG;T1234567t;has been redirected to otpvalidation page
+2022-02-14 17:25:08,412;DEBUG;T1234567t;has failed to login to Angel Health
+2022-02-14 17:25:16,630;DEBUG;T1234567t;has sucessfully login to Angel Health
+2022-02-14 17:26:25,275;DEBUG;222222y;has been redirected to otpvalidation page
+2022-02-14 17:26:39,594;DEBUG;222222y;has failed to login to Angel Health
+2022-02-14 17:26:50,431;DEBUG;222222y;has sucessfully login to Angel Health
+2022-02-14 18:27:33,693;DEBUG;123456y;has been redirected to otpvalidation page
+2022-02-14 18:28:07,686;DEBUG;123456y;has failed to login to Angel Health
+2022-02-14 18:28:19,409;DEBUG;123456y;has sucessfully login to Angel Health
+2022-02-14 18:33:16,842;DEBUG;111111y;has been redirected to otpvalidation page
+2022-02-14 18:33:28,181;DEBUG;111111y;has failed to login to Angel Health
+2022-02-14 18:33:47,552;DEBUG;111111y;has failed to login to Angel Health
+2022-02-14 18:34:06,387;DEBUG;111111y;has failed to login to Angel Health
+2022-02-14 18:34:25,005;DEBUG;111111y;has sucessfully login to Angel Health

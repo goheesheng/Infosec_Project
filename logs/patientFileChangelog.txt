@@ -1,20 +1,7 @@
-2022-01-30 17:23:25,221:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 17:28:24,957:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 17:29:14,088:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 17:30:24,861:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 17:59:37,203:DEBUG:T0987654A's has retrieved their own medical record:127.0.0.1:action performed by:T0987654A
-2022-01-30 19:04:18,028:DEBUG: 222222y has added to T1234567t's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:05:25,366:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 19:06:26,162:DEBUG: 222222y has added to T1234567t's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:07:05,734:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 19:07:30,789:DEBUG:T1234567t's has retrieved their own medical record:127.0.0.1:action performed by:T1234567t
-2022-01-30 19:13:47,324:DEBUG: 222222y has retrieved T1234567t's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:39:51,133:DEBUG: 222222y has retrieved T1234567t's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:39:56,314:DEBUG: 222222y has added to t0335871i's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:40:01,547:DEBUG: 222222y has retrieved T1234567t's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 19:45:17,580:DEBUG: 222222y has added to t0335871i's medical record:127.0.0.1:action performed by:222222y
-2022-01-30 20:00:06,147:DEBUG:t0335871i's has retrieved their own medical record:127.0.0.1:action performed by:t0335871i
-2022-01-30 20:05:40,813:DEBUG:t0335871i's has retrieved their own medical record:127.0.0.1:action performed by:t0335871i
-2022-01-30 20:05:48,087:DEBUG:t0335871i's has retrieved their own medical record:127.0.0.1:action performed by:t0335871i
-2022-01-30 20:06:32,475:DEBUG: 222222y has added to t0335871i's medical record:127.0.0.1:action performed by:222222y
-2022-01-31 10:23:19,528:DEBUG: 222222y has added to t0335871i's medical record:127.0.0.1:action performed by:222222y
+2022-02-14 17:16:17,572;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:16:38,187;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:16:48,392;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:18:27,052;DEBUG; 222222y has retrieved T1234567t's medical record;127.0.0.1;222222y
+2022-02-14 17:19:23,979;DEBUG; 222222y has added to T1234567t's medical record;127.0.0.1;222222y
+2022-02-14 17:25:44,577;DEBUG;T1234567t's has retrieved their own medical record;127.0.0.1;T1234567t
+2022-02-14 17:28:33,334;DEBUG; 222222y has added to T1234567t's medical record;127.0.0.1;222222y

@@ -30,7 +30,7 @@ from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register
 from functools import wraps
 import pyodbc
 import textwrap
-from customlogging import patientFileModificationFilter,converTxtToCSV
+from customlogging import converTxtToCSV, patientFileModificationFilter,db_log,lr_log,ac_log,virus_log
 from mssql_auth import database, server,backup_server
 
 from flask_qrcode import QRcode
@@ -44,8 +44,6 @@ import os.path,base64
 from virustotal_python import Virustotal
 from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 from ps import psrun
-import csv
-
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
@@ -55,6 +53,8 @@ salt = bcrypt.gensalt()
 # DATABASE=' + 'database1' + ';\
 # Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
+
+
 patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
 patientFilesModificationLogger.setLevel(logging.DEBUG)
 formatterserialize=logging.Formatter('%(asctime)s;%(levelname)s;%(message)s;%(ipaddress)s;%(username)s')
@@ -62,171 +62,98 @@ file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
 file_handlerModification.setFormatter(formatterserialize)
 patientFilesModificationLogger.addHandler(file_handlerModification)
 
-# loginLogger=logging.getLogger(__name__+"login")
-# loginLogger.setLevel(logging.DEBUG)
-# login_handlerModification=logging.FileHandler('logs/login_logs.txt')
-# login_handlerModification.setFormatter(login_register_Formatter)
-# loginLogger.addHandler(login_handlerModification)
 
-# registerLogger=logging.getLogger(__name__+"register")
-# registerLogger.setLevel(logging.DEBUG)
-# register_HandlerModification=logging.FileHandler('logs/register_logs.txt')
-# register_HandlerModification.setFormatter(login_register_Formatter)
-# registerLogger.addHandler(register_HandlerModification)
 
-# databaseLogger=logging.getLogger(__name__+"database")
-# databaseLogger.setLevel(logging.DEBUG)
-# database_HandlerModification=logging.FileHandler('logs/database_logs.txt')
-# database_HandlerModification.setFormatter(database_formatter)
-# databaseLogger.addHandler(database_HandlerModification)
+db_logLogger=logging.getLogger(__name__+"db_log")
+db_logLogger.setLevel(logging.CRITICAL)
+db_formatter=logging.Formatter('%(asctime)s;%(levelname)s;%(message)s')
+db_logLoggerModification=logging.FileHandler('logs/db_logs.txt')
+db_logLoggerModification.setFormatter(db_formatter)
+db_logLogger.addHandler(db_logLoggerModification)
 
-# accessControlLogger=logging.getLogger(__name__+"access_control")
-# accessControlLogger.setLevel(logging.DEBUG)
-# accessControl_HandlerModification=logging.FileHandler('logs/access_control_logs.txt')
-# accessControl_HandlerModification.setFormatter(access_control_formatter)
-# accessControlLogger.addHandler(accessControl_HandlerModification)
+lr_logLogger=logging.getLogger(__name__+"lr_log")
+lr_logLogger.setLevel(logging.DEBUG)
+lr_formatter=logging.Formatter('%(asctime)s;%(levelname)s;%(username)s;%(message)s')
+lr_logLoggerModification=logging.FileHandler('logs/lr_logs.txt')
+lr_logLoggerModification.setFormatter(lr_formatter)
+lr_logLogger.addHandler(lr_logLoggerModification)
 
-# virusLogger=logging.getLogger(__name__+"virus")
-# virusLogger.setLevel(logging.DEBUG)
-# virus_HandlerModification=logging.FileHandler('logs/virus_logs.txt')
-# virus_HandlerModification.setFormatter(virus_formatter)
-# virusLogger.addHandler(virus_HandlerModification)
 
-# db_logLogger=logging.getLogger(__name__+"patientFileModification")
-# patientFilesModificationLogger.setLevel(logging.CRITICAL)
-# formatterserialize=logging.Formatter('%(asctime)s:%(levelname)s:%(message)s:%(ipaddress)s:%(username)s')
-# file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
-# file_handlerModification.setFormatter(formatterserialize)
-# patientFilesModificationLogger.addHandler(file_handlerModification)
+ac_logLogger=logging.getLogger(__name__+"ac_log")
+ac_logLogger.setLevel(logging.WARNING)
+ac_formatter=logging.Formatter('%(asctime)s;%(levelname)s;%(message)s;%(ipaddress)s;%(username)s;%(page_visited)s')
+ac_logLoggerModification=logging.FileHandler('logs/ac_logs.txt')
+ac_logLoggerModification.setFormatter(ac_formatter)
+ac_logLogger.addHandler(ac_logLoggerModification)
+
+virus_logLogger=logging.getLogger(__name__+"virus_log")
+virus_logLogger.setLevel(logging.CRITICAL)
+virus_formatter=logging.Formatter('%(asctime)s;%(levelname)s;%(message)s;%(ipaddress)s;%(username)s')
+virus_logLoggerModification=logging.FileHandler('logs/virus_logs.txt')
+virus_logLoggerModification.setFormatter(virus_formatter)
+virus_logLogger.addHandler(virus_logLoggerModification)
 
 
 
-def autonomous_backup():
-    connection = auto_use_seconddb()
-    t = time.localtime()
-    current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
 
-    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-    cur = connection.cursor()
-    cur.execute(backup)
-    while (cur.nextset()):
-        pass
-    print('Local Backup successful')
+# def autonomous_backup():
+#     auto_use_seconddb()
+#     # t = time.localtime()
+#     # current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
 
-    # Update to Google Drive
-    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-    try:
-        for folder in folders:
-            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-        print('Drive backup successful')
-    except:
-        pass
+#     # backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+#     # cur = connection.cursor()
+#     # cur.execute(backup)
+#     # while (cur.nextset()):n
+#     #     pass
+#     # print('Local Backup successful')
+
+#     # Update to Google Drive
+#     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+#     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
+#     my_drive.create_file(folders[-1], folder_path) #function in backup.py file
+#     print('Drive backup successful')
+#     print("autonomous backup")
+
+#     scheduler.remove_all_jobs()
+#     # time.sleep(15)
+#     scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", seconds=10)
+
+#     # flash('Local and cloud backup successful')
+
+
+def autonomous_conversion():
+    converTxtToCSV()
     scheduler.remove_all_jobs()
-    time.sleep(15)
-    cur.close()
-    login_log_file="logs/login_logs"
-    register_log_file="logs/register_logs"
-    db_log_file="logs/database_logs"
-    access_control_log_file="logs/access_control_logs"
-    virus_log_file="logs/virus_logs"
+    scheduler.add_job(id = 'Scheduled Task',func = autonomous_conversion, trigger="interval", minutes=30)
 
-    login_file_txt=login_log_file+".txt"
-    login_file_csv=login_log_file+".csv"
-
-    register_file_txt=register_log_file+".txt"
-    register_file_csv=register_log_file+".csv"
-
-    db_file_txt=db_log_file+".txt"
-    db_file_csv=db_log_file+".csv"
-
-    access_control_log_file_text=access_control_log_file+".txt"
-    access_control_log_file_csv=access_control_log_file+".csv"
-
-    virus_log_file_txt=virus_log_file+".txt"
-    virus_log_file_csv=virus_log_file+".csv"
-
-    login_log_field=['Time','Level','Message','IP Address','Username','Result']
-    register_log_field=['Time','Level','Message','IP Address','Username','Result']
-    access_control_log_field=['Time','Level','Message','IP Address','Username','Result','Page visited']
-    db_log_field=['Time','Level','Message','IP Address','Username','Result','Server','Database']
-    virus_log_field=['Time','Level','Message','IP Address','Username','Result']
-
-    list_of_text_files=[login_file_txt,register_file_txt,db_file_txt,access_control_log_file_text,virus_log_file_txt]
-    list_of_csv_files=[login_file_csv,register_file_csv,db_file_csv,access_control_log_file_csv,virus_log_file_csv]
-    list_of_fields=[login_log_field,register_log_field,db_log_field,access_control_log_field,virus_log_field]
-
-    def convert_csv(log_file,output_file,fields):
-        in_txt=csv.reader(open(log_file,"r"),delimiter=";")
-        out_txt=csv.writer(open(output_file,'w'))
-        out_txt.writerow(fields)
-        out_txt.writerows(in_txt)
-
-
-    for index in range(len(list_of_text_files)):
-        print(list_of_text_files[index],list_of_csv_files[index],list_of_fields[index])
-        convert_csv(list_of_text_files[index],list_of_csv_files[index],list_of_fields[index])
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
-
-    # flash('Local and cloud backup successful')
 
 
 
 app = Flask(__name__)
-# sched = APScheduler()
-# limiter = Limiter(
-#     app,
-#     key_func=get_remote_address,
-#     default_limits=["200 per day", "10 per minute"]
-# )
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
-
-# def login_required(requireslogin):
-#     @wraps(requireslogin)
-#     def decorated_func(*args, **kwargs):
-#         if "access" not in session:  # No session info or user not in db
-#             flash("Invalid User")
-#             return redirect(url_for('login'))
-#         else:
-#             return requireslogin(*args, **kwargs)
-
-#     return decorated_func
-
-
+app.config['previousState']="None"
 
 def custom_login_required(f):
     @wraps(f)
     def wrap(*args,**kwargs):
-        # print(session['login'],'wrapper')
         if session is None:
+            flash("Please log in to access this page","error")
+            print(request.referrer)
+            filter = ac_log(request.referrer,request.remote_addr,"")
+            ac_logLogger.addFilter(filter)
+            ac_logLogger.warning(msg=f"code 401")
             return redirect(url_for('login'))
-# fix this later ES
-
-        if 'expirydate' in app.config:
-            if app.config['expirydate']<= datetime.utcnow():
-                flash('session expired','warning')
-                app.config['expirydate']=None
-                return redirect(url_for('login'))
-
-
-        # if session.get('csrf_token') is None:
-        #     print('session modifed')
-        #     ipaddress=request.remote_addr
-        #     try:
-        #         if app.config['lastusername'] is not None:
-        #             filter=cookieFilter(ipaddress,app.config['lastusername'])
-        #         else:
-        #             filter = cookieFilter(ipaddress)
-        #         serializationlogger.addFilter(filter)
-        #         serializationlogger.warning('Cookie has been modified')
-        #         return redirect(url_for('login'))
-        #     except:
-        #         pass
 
         if 'login' not in session or session['login']!=True:
-            flash("Please log in to access this page","warning")
+            print(request.referrer)
+            flash("Please log in to access this page","error")
+            filter = ac_log(request.referrer,request.remote_addr,"")
+            ac_logLogger.addFilter(filter)
+            ac_logLogger.warning(msg=f"code 401")
             return redirect(url_for('login'))
 
 
@@ -236,14 +163,19 @@ def custom_login_required(f):
 
     return wrap
 
+
+
 def auto_use_seconddb():
 
         x=psrun("Get-Service 'MSSQLSERVER' | Select-Object -Property Status").stdout.read()
         print(x)
-
+        db_dict = {}
         #Primary Server not runningre
         if b'Stopped' in x:
-            # session['db'] = 'Backup Server'
+            try:
+                session['db'] = 'Backup Server'
+            except:
+                pass
             t = time.localtime()
 
             current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
@@ -255,139 +187,147 @@ def auto_use_seconddb():
                 DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 cur = db_connection.cursor()
-                should_backup = True 
+                if app.config['previousState']=="secondary":
+                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    cur = db_connection.cursor()
+                    cur.execute(backup)
+                    while (cur.nextset()):
+                        pass
+                    print('Local Backup successful')
+                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                    my_drive.create_file(folders[-1], folder_path) #function in backup.py file
+                    filter = db_log('primary')
+                    db_logLogger.addFilter(filter)
+                    db_logLogger.critical(
+                        msg=f"secondary server was successfully backed up"
+                    )
+
+                db_connection = pyodbc.connect( # 
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + backup_server+ '; \
+                DATABASE=' + 'database1' + ';\
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                print("Update and restore secondary db ")
+                print("Using second db!")
+                executelock = ("alter database database1 set offline with rollback immediate ")
+                releaselock = ("alter database database1 set online")
                 folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
                 folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                drive_files = my_drive.list_files()
+                statement = (
+                    f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+                create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
+                print(cur.execute(create_db),'createdb')
+                cur.execute(create_db)
+                cur.execute(executelock)
+                cur.execute(statement)
+                while cur.nextset():
+                    pass
+                cur.execute(releaselock)
+                app.config['previousState']="secondary"
+                filter = db_log(app.config['previousState'])
+                db_logLogger.addFilter(filter)
+                db_logLogger.critical(
+                    msg=f"primary server is down"
+                )
+                db_logLogger.critical(
+                    msg=f"connection to {app.config['previousState']} server successful"
+                )
 
-                # for files in drive_files:
-                get_dbfiles = cur.execute('SELECT folder_id from google ORDER BY backup_date DESC').fetchval() # get latest file
-                print(drive_files,'drivefiles')
-                print(get_dbfiles.strip(),'latest file')
-                
-                if get_dbfiles.strip() in drive_files:
-                    print(get_dbfiles.strip(),'not working')
-                    should_backup = False
-                    
-                if should_backup == False: #don't need to backup as it is already backed up.
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server+ '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print('DB had been backed up.')
-                    print("Using second db")
-                    return db_connection
-
-                else:
-                    
-                    executelock = ("alter database database1 set offline with rollback immediate ")
-                    releaselock = ("alter database database1 set online")
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    statement = (
-                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
-                    create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-                    print(cur.execute(create_db),'createdb')
-                    cur.execute(create_db)
-                    cur.execute(executelock)
-                    cur.execute(statement)
-                    while cur.nextset():
-                        pass
-                    cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
-
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server+ '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print("Update and restore secondary db ")
-                    print("Using second db!")
-                    
-                    return db_connection
+                return db_connection
 
             except: #if secondary db was deleted, it will auto restore 
-                try:
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server+ '; \
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    cur = db_connection.cursor()
+                db_connection = pyodbc.connect( # 
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + backup_server+ '; \
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                cur = db_connection.cursor()
 
-                    executelock = ("alter database database1 set offline with rollback immediate ")
-                    releaselock = ("alter database database1 set online")
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    statement = (
-                            f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
-                    create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-                    print(cur.execute(create_db),'createdb')
-                    cur.execute(create_db)
-                    cur.execute(executelock)
-                    cur.execute(statement)
-                    while cur.nextset():
-                        pass
-                    cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
-
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                executelock = ("alter database database1 set offline with rollback immediate ")
+                releaselock = ("alter database database1 set online")
+                folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                if len(folders)==0:
                     try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
+                        backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                        cur = db_connection.cursor()
+                        cur.execute(backup)
+                        while (cur.nextset()):
+                            pass
+                        print('Local Backup successful')
+                        folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
+                        my_drive.create_file(folders[-1], folder_path) #function in backup.py file
                     except:
-                        pass
-                    db_connection = pyodbc.connect( # 
-                                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                                SERVER=' + backup_server+ '; \
-                                DATABASE=' + 'database1' + ';\
-                                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print("Restored second db as it was never created.")
-                    print("Using second db!")
-                    print(';')
-                    return db_connection   
-                except:
-                    
+                        last_file= my_drive.last_file()
+                        my_drive.download_file(last_file)
+                        folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                        filter = db_log('secondary')
+                        db_logLogger.addFilter(filter)
+                        db_logLogger.critical(
+                                msg=f"there is no backup files in local storage"
+                            )
+                        db_logLogger.critical(
+                            msg=f"pulling backup files from cloud storage"
+                        )
+
+                statement = (
+                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\MSSQL15.MSSQLSERVER01\\MSSQL\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+                create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
+                print(cur.execute(create_db),'createdb')
+                cur.execute(create_db)
+                cur.execute(executelock)
+                cur.execute(statement)
+                while cur.nextset():
+                    pass
+                cur.execute(releaselock)
+                backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                cur = db_connection.cursor()
+                cur.execute(backup)
+                while (cur.nextset()):
+                    pass
+                folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
+                my_drive.create_file(folders[-1], folder_path) #function in backup.py file
+                print('Local Backup and drive successful')
+
+                db_connection = pyodbc.connect( # 
+                            'DRIVER={ODBC Driver 17 for SQL Server}; \
+                            SERVER=' + backup_server+ '; \
+                            DATABASE=' + 'database1' + ';\
+                            Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+
+                print("Restored second db as it was never created.")
+                print("Using second db!")
+                print(';')
+                app.config['previousState']="secondary"
+                filter = db_log(app.config['previousState'])
+                db_logLogger.addFilter(filter)
+                db_logLogger.critical(
+                    msg=f"{app.config['previousState']} server was deleted"
+            )
+                db_logLogger.critical(
+                    msg=f"{app.config['previousState']} server database was restored"
+                )
+                db_logLogger.critical(
+                    msg=f"connection to {app.config['previousState']} server successful"
+                )
+
+
+
+                return db_connection   
+
+
         else:
-            # session['db'] = 'Primary Server'
-
-            # try:  #Try the first server if connection can be established
-
-            #     db_connection = pyodbc.connect( # 
-            #     'DRIVER={ODBC Driver 17 for SQL Server}; \
-            #     SERVER=' + server+ '; \
-            #     DATABASE=' + 'database1' + ';\
-            #     Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-            #     print('Using first server db!')
-            #     cur = db_connection.cursor()
-            #     print(db_connection,'db')
-            #     return db_connection
-            # except: 
+            try:
+                session['db'] = 'Primary Server'
+            except:
+                pass
             t = time.localtime()
-
             current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+            
             try: # If unable to connect to primary server, restore the primary server DB using the bak file from first server db and use the second server connection immediately, as we may not know if first server db is compromised
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -395,116 +335,143 @@ def auto_use_seconddb():
                 DATABASE=' + 'database1' + ';\
                 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 cur = db_connection.cursor()
-                should_backup = True 
-                folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                folders = os.listdir(folder_path) #['folder1', 'folder2'] list foldern
-                drive_files = my_drive.list_files()
 
-                # for files in drive_files:
-                get_dbfiles = cur.execute('SELECT folder_id from google ORDER BY backup_date DESC').fetchval() # get latest file
-                print(drive_files,'drivefiles')
-                print(get_dbfiles.strip(),'latest file')
-                
-                if get_dbfiles.strip() in drive_files:
-                    print(get_dbfiles.strip(),'not working')
-                    should_backup = False
-                    
-                if should_backup == False: #don't need to backup as it is already backed up.
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server+ '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print('DB had been backed up.')
-                    print("Using primary server")
-                    return db_connection
-
-                else:
-                    executelock = ("alter database database1 set offline with rollback immediate ")
-                    releaselock = ("alter database database1 set online")
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    statement = (
-                        f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
-                    create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-                    print(cur.execute(create_db),'createdb')
-                    cur.execute(create_db)
-                    cur.execute(executelock)
-                    cur.execute(statement)
-                    while cur.nextset():
-                        pass
-                    cur.execute(releaselock)
+                if app.config['previousState']=="primary" or app.config['previousState']=="None" :    
                     backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
+                    cur = db_connection.cursor()
                     cur.execute(backup)
                     while (cur.nextset()):
                         pass
                     print('Local Backup successful')
-
-                    # Update to Google Drive
                     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
                     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + server+ '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print("Update and restore primary db ")
-                    print("Using primary db!")
-                    print(db_connection,'db')
-                    return db_connection
+
+                    my_drive.create_file(folders[-1], folder_path) #function in backup.py file
+                    filter = db_log('primary')
+                    db_logLogger.addFilter(filter)
+                    db_logLogger.critical(
+                        msg=f"primary server was successfully backed up"
+                    )
+
+                        
+              
+                executelock = ("alter database database1 set offline with rollback immediate ")
+                releaselock = ("alter database database1 set online")
+                folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                # if len(folders)==0:
+                #     backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                #     cur = db_connection.cursor()
+                #     cur.execute(backup)
+                #     while (cur.nextset()):
+                #         pass
+                #     print('Local Backup successful')
+
+                statement = (f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
+                create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
+                print(cur.execute(create_db),'createdb')
+                cur.execute(create_db)
+                cur.execute(executelock)
+                cur.execute(statement)
+                while cur.nextset():
+                    pass
+                cur.execute(releaselock)
+                
+
+                
+                db_connection = pyodbc.connect( # 
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server+ '; \
+                DATABASE=' + 'database1' + ';\
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                print("Update and restore primary db ")
+                print("Using primary db!")
+                print(db_connection,'db')
+                app.config['previousState']="primary"
+                filter = db_log(app.config['previousState'])
+                db_logLogger.addFilter(filter)
+                db_logLogger.critical(
+                    msg=f"connection to {app.config['previousState']} server successful"
+                )
+                return db_connection
 
             except:
                     db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
                     SERVER=' + server+ '; \
+                    DATABASE=' + 'master' + ';\
                     Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                     cur = db_connection.cursor()
+                    # backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    # cur.execute(backup)
+                    # while (cur.nextset()):
+                    #     pass
+                    # print('Local Backup successful')
+
 
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
                     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
                     folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
+                    if len(folders)==0:
+                        try:
+                            backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                            cur = db_connection.cursor()
+                            cur.execute(backup)
+                            while (cur.nextset()):
+                                pass
+                            print('Local Backup successful')
+                            folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                            folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
+                            my_drive.create_file(folders[-1], folder_path) #function in backup.py file
+                        except:
+                            last_file= my_drive.last_file()
+                            my_drive.download_file(last_file)
+                            folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                            filter = db_log('primary')
+                            db_logLogger.addFilter(filter)
+                            db_logLogger.critical(
+                                msg=f"there is no backup files in local storage"
+                            )
+                            db_logLogger.critical(
+                                msg=f"pulling backup files from cloud storage"
+                            )
+
                     statement = (
                             f"RESTORE DATABASE database1 FROM  DISK = 'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{folders[-1]}'  WITH RECOVERY, MOVE 'database' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database.mdf',MOVE 'database_log' TO 'C:\\Program Files\\Microsoft SQL Server\\MSSQL15.MSSQLSERVER\\MSSQL\\DATA\\database_log.ldf', REPLACE" ) #  file name and db must be the same
                     create_db = ("IF NOT EXISTS( SELECT * FROM sys.databases WHERE name = 'database1' ) BEGIN CREATE DATABASE database1 ; END;")
-                    print(cur.execute(create_db),'createdb')
                     cur.execute(create_db)
                     cur.execute(executelock)
                     cur.execute(statement)
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
 
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
                     db_connection = pyodbc.connect( # 
                                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                                 SERVER=' + server+ '; \
                                 DATABASE=' + 'database1' + ';\
                                 Trusted_Connection=yes; Encrypt=yes; TrustServerCertificate=yes',autocommit=True)
                     print("Restored primary db as it was never created.")
+ 
+
                     print("Using primary db!")
                     print(';')
+                    app.config['previousState']="primary"
+                    filter = db_log(app.config['previousState'])
+                    db_logLogger.addFilter(filter)
+                    db_logLogger.critical(
+                        msg=f"{app.config['previousState']} server was deleted"
+                    )
+                    db_logLogger.critical(
+                        msg=f"{app.config['previousState']} server database was restored"
+                    )
+                    db_logLogger.critical(
+                        msg=f"connection to {app.config['previousState']} server successful"
+                    )
+
                     return db_connection
 
 
@@ -613,7 +580,12 @@ def get_file_data_from_database(patient_id):
 
 @app.context_processor
 def inject_templates_with_session_date():
-    return dict(session)
+    try:
+        print('no session[\'db\'')
+        return dict(session, server = session['db'])
+    except:
+        return dict(session)
+        
 
 with app.app_context():
     @app.route('/homepage')
@@ -641,18 +613,36 @@ with app.app_context():
     @app.route('/dashboard')
     @custom_login_required
     def dashboard():
-        cnxn = auto_use_seconddb()
-        cursor = cnxn.cursor()
-        patients = cursor.execute("SELECT * FROM patients").fetchall()
-        doctors = cursor.execute("SELECT * FROM doctors").fetchall()
-        hr = cursor.execute("SELECT * FROM hr").fetchall()
-        researcher = cursor.execute("SELECT * FROM researchers").fetchall()
-        return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
-
+        if session['access_level'] == 'head_admin' or session['access_level'] == 'hr':
+            cnxn = auto_use_seconddb()
+            cursor = cnxn.cursor()
+            patients = cursor.execute("SELECT * FROM patients").fetchall()
+            doctors = cursor.execute("SELECT * FROM doctors").fetchall()
+            hr = cursor.execute("SELECT * FROM hr").fetchall()
+            researcher = cursor.execute("SELECT * FROM researchers").fetchall()
+            return render_template('dashboard.html', patients=patients, doctors=doctors, hr=hr, researchers=researcher)
+        else:
+            try:
+                filter = ac_log('dashboard',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('dashboard',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            return redirect(url_for('access_denied'))
 
     @app.route('/401')
     def access_denied():
-        return render_template('401.html')
+        if session['login'] != True:
+            return render_template('401.html')
+        else:
+            flash('Access denied','error')
+            return redirect(url_for('homepage'))
 
 
     @app.route('/404')
@@ -698,6 +688,9 @@ with app.app_context():
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
+                connection = auto_use_seconddb()
+                
+                cursor = connection.cursor()
                 pattern = ('^\d{6}[A-Za-z]$')
                 username = input("Enter New Head Admin ID: ")
                 result = re.match(pattern,username)
@@ -705,9 +698,7 @@ with app.app_context():
                     print("Only first 6 digits and 1 alphabet at the end!")
                     username = input("Enter New Head Admin ID: ")
                     result = re.match(pattern,username)
-                connection = auto_use_seconddb()
-                
-                cursor = connection.cursor()
+
 
                 check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
@@ -746,9 +737,8 @@ with app.app_context():
                               email,otp_code,phone_no,'head_admin',postal_code,address)
                     cursor.execute(insert_query, values)
                     cursor.commit()
-                    cursor.close()
-                    connection = auto_use_seconddb()
-                    cursor = connection.cursor()
+                    # connection = auto_use_seconddb()
+                    # cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                             VALUES (?, ?,?); "
                     values = (username,'head_admin',md5Hashed)
@@ -762,6 +752,11 @@ with app.app_context():
                     SendMail("image.png", email, "Head Admin")
                     os.remove('image.png')
                     print('Successful creating Head Admin')
+                    filter = lr_log(username)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"successfully registered as Head Admin staff with Angel Health"
+                    )
                     cursor = connection.cursor()
                     check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                     print("List of Head Admins:")
@@ -808,6 +803,11 @@ with app.app_context():
                     check = cursor.execute("DELETE FROM access_list WHERE username = ?", (key))  # prevent sql injection
                     cursor.commit()
                     print(f"{key} was removed as Head Admin.")
+                    filter = lr_log(key)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f",Head Admin staff has been removed from Angel Health"
+                    )
                     check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                     print("List of Head Admins:")
                     for x in check:
@@ -854,7 +854,7 @@ with app.app_context():
         
 
             if update_user_form.password.data == '' and update_user_form.confirmPassword.data == '':
-                print('did not update [asswprd')
+                print('did not update password')
                 pass
             else:
                 md5Hash = hashlib.md5(update_user_form.password.data.encode("utf-8"))
@@ -892,7 +892,11 @@ with app.app_context():
 
             print(user_info)
             print(session['id'],'this is session')
-
+            filter = lr_log(session['username'])
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"has updated his/her profile"
+            )
             cursor.close()
 
             return redirect(url_for('viewUser'))
@@ -953,7 +957,11 @@ with app.app_context():
             session['access_level'] =  user_info[8].strip()
             print(user_info)
             print(session['id'],'this is session')
-
+            filter = lr_log(session['username'])
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"has updated his/her profile"
+            )
             cursor.close()
 
             return redirect(url_for('viewUser'))
@@ -1014,7 +1022,11 @@ with app.app_context():
             print(session['id'],'this is session')
 
             cursor.close()
-
+            filter = lr_log(session['username'])
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"has updated his/her profile"
+            )
             return redirect(url_for('viewUser'))
         elif request.method == 'POST' and update_user_form.validate() and session['access_level'] == 'doctor': 
             cnxn = auto_use_seconddb()
@@ -1071,7 +1083,11 @@ with app.app_context():
             session['access_level'] =  user_info[10].strip()
             print(user_info)
             print(session['id'],'this is session')
-
+            filter = lr_log(session['username'])
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"has updated his/her profile"
+            )
             cursor.close()
 
             return redirect(url_for('viewUser'))
@@ -1129,7 +1145,11 @@ with app.app_context():
             session['access_level'] =  user_info[11].strip()
             print(user_info)
             print(session['id'],'this is session')
-
+            filter = lr_log(session['username'])
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"has updated his/her profile"
+            )
             cursor.close()
 
             return redirect(url_for('viewUser'))
@@ -1210,132 +1230,7 @@ with app.app_context():
             update_user_form.postal_code.data = get_postal_code
             update_user_form.email.data = get_email
 
-    
 
-        # elif request.method == 'POST' and update_user_form.validate() and session['Head_Admin'] == False:  # customer side
-        #     if session['admin']:
-        #         users_dict = {}
-        #         db = shelve.open('storage.db', 'w')
-        #         users_dict = db['Users']
-
-        #         user = users_dict.get(nric)
-        #         user.set_first_name(update_user_form.first_name.data)
-        #         user.set_last_name(update_user_form.last_name.data)
-        #         user.set_race(update_user_form.race.data)
-        #         user.set_phone_no(update_user_form.phone_no.data)
-        #         user.set_email(update_user_form.email.data)
-        #         user.set_gender(update_user_form.gender.data)
-        #         if update_user_form.password.data == '' and update_user_form.confirm_password.data == '':
-        #             print('did not update/ ')
-        #             pass
-        #         else:
-        #             user.set_password(update_user_form.password.data)
-        #         print('updated')
-        #         user.set_address_1(update_user_form.address_1.data)
-        #         user.set_address_2(update_user_form.address_2.data)
-        #         user.set_postal_code(update_user_form.postal_code.data)
-
-        #         db['Users'] = users_dict
-        #         db.close()
-        #         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
-
-        #         return redirect(url_for('retrieve_users'))
-        #     elif session['admin'] == False:
-        #         users_dict = {}
-        #         db = shelve.open('storage.db', 'w')
-        #         users_dict = db['Users']
-
-        #         user = users_dict.get(nric)
-        #         user.set_first_name(update_user_form.first_name.data)
-        #         user.set_last_name(update_user_form.last_name.data)
-        #         user.set_race(update_user_form.race.data)
-        #         user.set_phone_no(update_user_form.phone_no.data)
-        #         user.set_email(update_user_form.email.data)
-        #         user.set_gender(update_user_form.gender.data)
-        #         # if nothing is filled in the webpage, password will not be changed
-        #         if update_user_form.password.data == '' and update_user_form.confirm_password.data == '':
-        #             print('did not update/ ')
-        #             pass
-        #         else:
-        #             user.set_password(update_user_form.password.data)
-        #         user.set_address_1(update_user_form.address_1.data)
-        #         user.set_address_2(update_user_form.address_2.data)
-        #         user.set_postal_code(update_user_form.postal_code.data)
-
-        #         db['Users'] = users_dict
-        #         db.close()
-        #         session['user_updated'] = user.get_first_name() + ' ' + user.get_last_name()
-
-        #         return redirect(url_for('upload', nric=nric))
-
-      
-        # elif request.method == 'GET' and session['Head_Admin'] == True:  # get method
-        #     users_dict = {}
-        #     db = shelve.open('storage.db', 'r')
-        #     users_dict = db['Users']
-        #     db.close()
-
-        #     user = users_dict.get(nric)
-        #     update_user_form.first_name.data = user.get_first_name()
-        #     update_user_form.last_name.data = user.get_last_name()
-        #     update_user_form.race.data = user.get_race()
-        #     update_user_form.phone_no.data = user.get_phone_no()
-        #     update_user_form.email.data = user.get_email()
-        #     update_user_form.gender.data = user.get_gender()
-        #     update_user_form.password.data = user.get_password()
-        #     update_user_form.address_1.data = user.get_address_1()
-        #     update_user_form.address_2.data = user.get_address_2()
-        #     update_user_form.postal_code.data = user.get_postal_code()
-        #     update_user_form.become_admin.data = user.get_check_admin()
-        # users_dict = {}
-        # try:
-        #     db = shelve.open('storage.db', 'r')
-        #     users_dict = db['Users']
-        #     db.close()
-        # except:
-        #     print("Error retrieving user")
-        # user = users_dict.get(nric)
-        # print(user.get_check_admin())  # check
-        # if user.get_check_admin() == True:
-        #     user.set_check_admin(True)
-
-        # elif user.get_check_admin() == False:
-        #     user.set_check_admin(False)
-
-        # if session['Head_Admin'] == True:
-        #     users_dict = {}
-        #     db = shelve.open('storage.db', 'r')
-        #     db.close()
-
-        #     user = users_dict.get(nric)
-        #     id = session['current_user']  # = nric also can
-        #     return render_template('updateUser.html', form=update_user_form, currentuser=id, nric=user.get_nric())
-        # elif user.get_check_admin() == True:
-
-        #     users_dict = {}
-        #     db = shelve.open('storage.db', 'r')
-        #     users_dict = db['Users']
-        #     db.close()
-
-        #     user = users_dict.get(nric)
-        #     id = session['current_user']  # key of the person who first logged in
-        #     name = users_dict[id].get_first_name()  # to get person who first logged in
-        #     return render_template('updateUser.html', form=update_user_form, currentuser=name, nric=id,
-        #                         check_admin=user.get_check_admin(), profile_pic = user.get_image_destination())
-        # elif user.get_check_admin() == False:
-        #     users_dict = {}
-        #     db = shelve.open('storage.db', 'r')
-        #     users_dict = db['Users']
-        #     db.close()
-
-        #     user = users_dict.get(nric)  # display the customer nric not admin nric
-        #     # bottom 3 is for the nav bar name
-        #     # current user =/= id is because, when Head_Admin login, the nric must still be the customer detail, not the admin id
-        #     user = users_dict.get(nric)
-        #     id = session['current_user']
-        #     print(id)
-        #     name = users_dict[id].get_first_name()
-        #     return render_template('updateUser.html', form=update_user_form, currentuser=name, nric=id,profile_pic = user.get_image_destination())  # show navbar name
             return render_template("updateUser.html", form = update_user_form)
         return render_template("updateUser.html", form = update_user_form)
 
@@ -1376,18 +1271,7 @@ with app.app_context():
             #     ,[access_level]13
             # FROM [database1].[dbo].[patients]
             if user_info != None:
-            #     #alternative way
-            #     access_list = {'patient': 'patients', 'doctor': 'doctors', 'researcher': 'researchers', 'hr': 'hr','head_admin': 'head_admin'}
-            #     if user_info[0] in access_list:
-            #         col_name_query=f"select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = {access_list[user_info]};"
-            #         print(col_name_query)
-            #         col_names = cursor.execute(col_name_query)
-            #         for count,col_name in enumerate(col_names):
-            #             if type(user_info)==str:
-            #                 session[col_name]=user_info[count].strip()
-            #             else:
-            #                 session[col_name]=user_info[count]
-            #
+
                 passed = True
                 print(user_info[0],'id')
                 print(user_info[1].strip(),'id')
@@ -1414,15 +1298,23 @@ with app.app_context():
                 except:
                     session['appointment'] =  None
                 
-                cursor.close()
                 session['otp-semi-login'] = True
                 print('user logged in')
                 flash("Please continue with otp validation before login is successful","success")
+                filter = lr_log(session['username'])
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"has been redirected to otpvalidation page"
+                )
                 return redirect(url_for("otpvalidation"))
             else:
-                cursor.close()
                 print("ERROR")
                 flash("Invalid username or password","error")
+                filter = lr_log(patient_login_form.username.data)
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"has failed to be redirected to otpvalidation page"
+                )
                 return redirect(url_for('login'))
 
         elif admin_login_form.staff_submit.data and admin_login_form.validate():
@@ -1431,7 +1323,7 @@ with app.app_context():
             password = admin_login_form.password.data
             md5Hash = hashlib.md5(password.encode("utf-8"))
             md5Hashed = md5Hash.hexdigest()
-            cursor = auto_use_seconddb().cursor()
+            # cursor = auto_use_seconddb().cursor()
             print(cursor)
             access_info = cursor.execute(
                 "select * from access_list where username = ? and pass_hash = ?",
@@ -1442,7 +1334,7 @@ with app.app_context():
             #check whether in access list table
             if access_info != None:
 
-                cnxn = auto_use_seconddb()
+                # cnxn = auto_use_seconddb()
             
                 # session['username'] = access_info[0].strip()
                 # session['access_list'] = access_info[1].strip()
@@ -1451,13 +1343,11 @@ with app.app_context():
                 print(access_level_username,'username')
                 print(access_level_access_list)
                 #check whether was it created in the individual tables (e.g. is it in doctors or researchers or HR or head_admin tables?)
-                cursor = cnxn.cursor()
                 #Retrieve the unique roles using access_level_access_list
                 if access_level_access_list == "researcher":
                     user_info = cursor.execute(
                     f"select * from researchers where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-                    cursor = cnxn.close()
                     # CREATE TABLE [dbo].[researchers](
                     #     [username] [nchar](30) NOT NULL,0
                     #     [first_name] [nchar](30) NOT NULL,1
@@ -1501,7 +1391,7 @@ with app.app_context():
                     user_info = cursor.execute(
                     f"select * from {access_level_access_list} where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-                    cursor = cnxn.close()
+                    # cursor = cnxn.close()
                         # CREATE TABLE [dbo].[head_admin](
                         # 	[head_admin_id] [int] IDENTITY(1,1) NOT NULL, 0
                         # 	[username] [nchar](30) NOT NULL,1
@@ -1542,7 +1432,7 @@ with app.app_context():
                     user_info = cursor.execute(
                     f"select * from hr where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-                    cursor = cnxn.close()
+                    # cursor = cnxn.close()
                     # CREATE TABLE [dbo].[hr](
                     #     [hr_id] [int] IDENTITY(1,1) NOT NULL,0
                     #     [username] [nchar](10) NOT NULL,1
@@ -1582,7 +1472,7 @@ with app.app_context():
                     user_info = cursor.execute(
                     f"select * from doctors where username = ? and pass_hash = ?",
                     (access_level_username, md5Hashed)).fetchone() #fetchone() dont delete this except others
-                    cursor = cnxn.close()
+                    # cursor = cnxn.close()
                     # CREATE TABLE [dbo].[doctors](
                     #     [staff_id] [int] IDENTITY(1,1) NOT NULL,0
                     #     [username] [nchar](30) NOT NULL,1
@@ -1628,6 +1518,11 @@ with app.app_context():
                 else:
                     print('passfail')
                     passed = False
+                    filter = lr_log(session['username'])
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"has failed to be redirected to otpvalidation page"
+                    )
                     return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             if passed:
                 # session['id'] = identifier.strip() #need strip to remove the spaces
@@ -1636,10 +1531,20 @@ with app.app_context():
                 # print(session['username'],'ididididnananananannana')
                 # cursor.close()
                 session['otp-semi-login'] = True
+                filter = lr_log(session['username'])
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"has been redirected to otpvalidation page"
+                )
                 return redirect(url_for("otpvalidation"))
             else:
                 print('fail login')
                 flash("Wrong username or password", "error")
+                filter = lr_log(session['username'])
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"has failed to be redirected to otpvalidation page"
+                )
                 return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
             # return render_template("404.html")
 
@@ -1650,6 +1555,11 @@ with app.app_context():
     @app.route("/validation", methods=["GET","POST"])
     def otpvalidation():
         if 'otp-semi-login' not in session:
+            filter = ac_log('otp page',request.remote_addr,"")
+            ac_logLogger.addFilter(filter)
+            ac_logLogger.warning(
+                msg=f"code 401"
+            )
             return redirect(url_for('access_denied'))
         else:
             cnxn = auto_use_seconddb()
@@ -1672,12 +1582,23 @@ with app.app_context():
                     # session['login'] = True
                     print(session['login'],'sslogin')
                     print(session,'check sesison')
-
+                    filter = lr_log(session['username'])
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"has sucessfully login to Angel Health"
+                    )
                     return redirect(url_for('homepage'))
                 else:
                     print("wrong")
-                    cursor.close()
                     flash("Wrong OTP", "error")
+                    
+                    cursor.close()
+
+                    filter = lr_log(session['username'])
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"has failed to login to Angel Health"
+                    )
                     return redirect(url_for("otpvalidation"))
             if request.method == "GET":
                 return render_template("loginotp.html")
@@ -1718,7 +1639,6 @@ with app.app_context():
 
     @app.route('/requestPatientInformation',methods=['GET','POST'])
     @custom_login_required
-    @doctor_and_patient_needed
     def requestPatientInformation():
         requestPatientInformationForm=RequestPatientInfo_Form(request.form)
         if request.method=="GET":
@@ -1741,6 +1661,18 @@ with app.app_context():
             elif session["access_level"] == "doctor":
                 return render_template("requestPatientInformation.html", form=requestPatientInformationForm)
             else:
+                try:
+                    filter = ac_log('requestPatientInformation',request.remote_addr,session['username'])
+                    ac_logLogger.addFilter(filter)
+                    ac_logLogger.warning(
+                        msg=f"code 401"
+                    )
+                except:
+                    filter = ac_log('requestPatientInformation',request.remote_addr,session['username'])
+                    ac_logLogger.addFilter(filter)
+                    ac_logLogger.warning(
+                        msg=f"code 401"
+                    )
                 return redirect(url_for("access_denied"))
         if request.method == "POST":
             if  session["access_level"] == "doctor":
@@ -1755,29 +1687,8 @@ with app.app_context():
                         retrieved = cursor.execute("select * from patient_file where patient_id=?", (patient[0])).fetchone()
                         print(retrieved)
                         if retrieved is None:
-                            flash("no paitnet file exists","error")
+                            flash("no patient file exists","error")
                             return redirect(url_for('requestPatientInformation'))
-                        #     # Creating Base Document File for patient,insert file name,content,md5... into db
-                        #     # cursor = cnxn.cursor()
-                        #     patient_name=f"{patient[2].strip()} {patient[3].strip()}"
-                        #     insert_query = textwrap.dedent('''INSERT INTO patient_file  VALUES (?,?,?,?,?,?,?); ''')
-                        #     newDocument=Document()
-                        #     newDocument.add_heading(f"Medical record for {patient_name} with NRIC of {patient[1]}", 0)
-                        #     newDocument.save(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[0]}.docx"))
-                        #     filecontent=open(os.path.join(app.config['UPLOAD_FOLDER'],f"{patient[0]}.docx"),"rb").read()
-                        #     md5Hash = hashlib.md5(filecontent)
-                        #     fileHashed = md5Hash.hexdigest()
-                        #     VALUES = (patient[0], f"{patient[1].strip()}.docx", filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"),"Application",0,fileHashed)
-                        #     cursor.execute(insert_query, VALUES)
-                        #     cursor.commit()
-                        #     cursor.close()
-                        # else:
-                        #     file_name=str(patient[0])+".docx"
-                        #     file_content=retrieved[2]
-                        #     stored_hash=retrieved[6]ient
-                        #     if not(check_file_hash(file_name,stored_hash)) or True:
-                        #         with open(os.path.join(app.config['UPLOAD_FOLDER'], file_name),"wb") as file_override:
-                        #             file_override.write(file_content)
                         print(session,'here')
                         return redirect(url_for("submission", pid=patient[0]))
 
@@ -1875,6 +1786,7 @@ with app.app_context():
             if file.filename.strip()=="":
                 flash("Invalid filename","error")
                 #splunk
+ 
                 return redirect(url_for('submission'), pid)
             #
             # storedfiledata=get_file_data_from_database(pid)
@@ -1904,7 +1816,7 @@ with app.app_context():
                     filecontent = open(os.path.join(app.config['UPLOAD_FOLDER'], f"{pid}.docx"), "rb").read()
                     md5Hash = hashlib.md5(filecontent)
                     fileHashed = md5Hash.hexdigest()
-                    values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), "Staff_ID", 1, fileHashed,patient[0])
+                    values = (filecontent,datetime.now().today().strftime("%m/%d/%Y, %H:%M:%S"), tending_physician[2].strip(), tending_physician[0], fileHashed,patient[0])
                     cursor.execute(alter_query,values)
                     cursor.commit()
                     filter=patientFileModificationFilter(ipaddress=request.remote_addr,username=session['username'])
@@ -1917,11 +1829,20 @@ with app.app_context():
                     flash("Patient record successfully updated")
                     return redirect(url_for('homepage'))
                 else:
-                    flash("U are virus","error")
                     #splunk
+                    filter=virus_log(session['username'],request.remote_addr)
+                    virus_logLogger.addFilter(filter)
+                    virus_logLogger.critical(
+                        msg=f"{session['username']} tried to upload malicious file"
+                    )
                     return redirect(url_for("submission", pid=pid))
             else:
                 flash("Invalid filetype or filename",'error')
+                filter=virus_log(session['username'],request.remote_addr)
+                virus_logLogger.addFilter(filter)
+                virus_logLogger.critical(
+                    msg=f"{session['username']} tried to upload malicious file"
+                )
                 #splunk
                 return redirect(url_for("submission", pid=pid))
 
@@ -1951,7 +1872,6 @@ with app.app_context():
                 patient_name = patient[1].strip() + " " + patient[2].strip()
                 patient_choices.append((patient[0].strip(), patient_name))
             doctor_patient_form.doctor.choices, doctor_patient_form.patient.choices = doctor_choices, patient_choices
-            cursor.close()
         else:
             flash("There is no patient or doctor to be assigned!", "error")
             #splunk
@@ -1959,8 +1879,7 @@ with app.app_context():
 
 
         if request.method=="POST" and doctor_patient_form.validate():
-            connection = auto_use_seconddb()
-            cursor = connection.cursor()
+
             doctor_username,patient_username=doctor_patient_form.doctor.data,doctor_patient_form.patient.data
             print(doctor_username,"entered")
             if doctor_username !="NULL":
@@ -2004,6 +1923,18 @@ with app.app_context():
     def export():
       #This was commented, i uncomment it for merging
         if session['access_level'] not in ['doctor','researcher']:
+            try:
+                filter = ac_log('export',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('export',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             connection = auto_use_seconddb()
@@ -2209,6 +2140,7 @@ with app.app_context():
             dob = re.findall(r"\d{4}", DOB)[0]
             print(dob)
             age = datetime.today().year - int(dob)
+            age += random.randint(int(-age/9),int(age/9))
             print(mask)
             mask.append([age, bmi, sex, postal_code, visits, problem])
             
@@ -2295,6 +2227,18 @@ with app.app_context():
     @custom_login_required
     def appointment():
         if session['access_level'] != 'patient':
+            try:
+                filter = ac_log('appointment',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('appointment',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             appointment = Appointment(request.form)
@@ -2328,6 +2272,18 @@ with app.app_context():
     @app.route('/viewappointment')
     def viewappointment():
         if session['access_level'] != 'patient':
+            try:
+                filter = ac_log('viewappointment',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('viewappointment',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             connection = auto_use_seconddb()
@@ -2351,6 +2307,18 @@ with app.app_context():
     @app.route('/cancelappointment')
     def cancelappointment():
         if session['access_level'] != 'patient':
+            try:
+                filter = ac_log('cancelappointment',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('cancelappointment',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             connection = auto_use_seconddb()
@@ -2402,9 +2370,17 @@ with app.app_context():
             cnxn.commit()
             cursor.close()
             qr = 'otpauth://totp/AngelHealth:' + username + '?secret=' + otp_code
-
+            filter = lr_log(register.username.data)
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"successfully registered as patient with Angel Health"
+            )
             return render_template('displayotp.html', otp=otp_code, qrotp=qr)
-
+        filter = lr_log(register.username.data)
+        lr_logLogger.addFilter(filter)
+        lr_logLogger.debug(
+            msg=f"has failed to register as patient with Angel Health"
+        )
         return render_template('register.html', form=register)
 
 
@@ -2413,6 +2389,18 @@ with app.app_context():
     def register_doctor():
         doc_form = RegisterDoctor(request.form)
         if session['access_level'] != 'hr':
+            try:
+                filter = ac_log('doctor-registration',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('doctor-registration',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and doc_form.validate():
@@ -2464,8 +2452,18 @@ with app.app_context():
                     image.png('image.png', scale=5)
                     SendMail("image.png", email, "Doctor")
                     os.remove('image.png')
+                    filter = lr_log(doc_form.username.data)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"successfully registered as doctor staff with Angel Health"
+                    )
                 else:
                     flash("Account already exists!") #need ensure no repeated email too!
+                    filter = lr_log(doc_form.username.data)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"successfully registered as doctor staff with Angel Health"
+                    )
                     return render_template('register_doctor.html', form=doc_form)
                 return redirect(url_for('dashboard'))
             print(session)
@@ -2476,13 +2474,26 @@ with app.app_context():
     # @custom_login_required
     def register_researcher():
         researcher_form = RegisterResearcher(request.form)
+        connection = auto_use_seconddb()
+        cursor = connection.cursor()
         if session['access_level'] != 'hr':
+            try:
+                filter = ac_log('researchers-registration',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('researchers-registration',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
 
         else:
             if request.method == "POST" and researcher_form.validate():
-                connection = auto_use_seconddb()
-                cursor = connection.cursor()
+
                 username = researcher_form.username.data
                 firstname = researcher_form.firstname.data
                 lastname = researcher_form.lastname.data
@@ -2507,63 +2518,72 @@ with app.app_context():
                         check = False
                         break
 
-                if check:
-                    connection = auto_use_seconddb()
-                    cur = connection.cursor()
-                    insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,address,postal_code,company) \
-                                                VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
-                    values = (username, firstname, lastname, md5Hashed,
-                            email, otp_code, phone_no, 'researcher', address, postal_code, company)
-                    cur.execute(insert_query, values)
-                    cur.commit()
-                    connection = auto_use_seconddb()
-                    insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
-                                                VALUES (?, ?,?); "
-                    values = (username, 'researcher', md5Hashed)
-                    cur.execute(insert_query, values)
-                    cur.commit()
-                    cur.close()
-                    print('Sending email OTP...')
-                    qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
-                    image = pyqrcode.create(qr)
-                    image.png('image.png', scale=5)
-                    SendMail("image.png", email, "Researcher")
-                    os.remove('image.png')
-                else:
-                    check = False
+                # if check:
+
+                #     insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,address,postal_code,company) \
+                #                                 VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
+                #     values = (username, firstname, lastname, md5Hashed,
+                #             email, otp_code, phone_no, 'researcher', address, postal_code, company)
+                #     cursor.execute(insert_query, values)
+                #     cursor.commit()
+                #     connection = auto_use_seconddb()
+                #     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
+                #                                 VALUES (?, ?,?); "
+                #     values = (username, 'researcher', md5Hashed)
+                #     cursor.execute(insert_query, values)
+                #     cursor.commit()
+                #     print('Sending email OTP...')
+                #     qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
+                #     image = pyqrcode.create(qr)
+                #     image.png('image.png', scale=5)
+                #     SendMail("image.png", email, "Researcher")
+                #     os.remove('image.png')
+                #     filter = lr_log(username)
+                #     lr_logLogger.addFilter(filter)
+                #     lr_logLogger.debug(
+                #         msg=f"successfully registered as researcher staff with Angel Health"
+                #     )
+                # else:
+                #     check = False
             else:
                 check = False
 
 
             if check:
                 print('check')
-                connection = auto_use_seconddb()
-                cur = connection.cursor()
+
                 insert_query = "INSERT INTO researchers (username, first_name, last_name, pass_hash,email,otp_code,phone_no,access_level,address,postal_code,company) \
                                             VALUES (?, ?, ?, ?, ?, ?,?,?,?,?,?); "
                 values = (username, firstname, lastname, md5Hashed,
                         email, otp_code, phone_no, 'researcher', address, postal_code, company)
-                cur.execute(insert_query, values)
-                cur.commit()
+                cursor.execute(insert_query, values)
+                cursor.commit()
 
-                cursor = connection.cursor()
                 insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                                             VALUES (?, ?,?); "
                 values = (username, 'researcher', md5Hashed)
-                cur.execute(insert_query, values)
-                cur.commit()
-                cur.close()
+                cursor.execute(insert_query, values)
+                cursor.commit()
                 print('Sending email OTP...')
                 qr = 'otpauth://totp/AngelHealth:' + str(username) + '?secret=' + otp_code
                 image = pyqrcode.create(qr)
                 image.png('image.png', scale=5)
                 SendMail("image.png", email, "Researcher")
                 os.remove('image.png')
+                filter = lr_log(researcher_form.username.data)
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"successfully registered as researcher staff with Angel Health"
+                )
             else:
                 flash("Account already exists!")
+                filter = lr_log(researcher_form.username.data)
+                lr_logLogger.addFilter(filter)
+                lr_logLogger.debug(
+                    msg=f"has failed to register as researcher staff with Angel Health"
+                )
                 return render_template('register_researcher.html', form=researcher_form)
             return redirect(url_for('dashboard'))
-        return render_template('register_researcher.html', form=researcher_form)
 
 
     @app.route('/hr-registration', methods=['GET', 'POST'])
@@ -2571,6 +2591,18 @@ with app.app_context():
     def register_hr():
         hr_form = RegisterHr(request.form)
         if session['access_level'] != 'head_admin':
+            try:
+                filter = ac_log('hr-registration',request.remote_addr,session['username'])
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
+            except:
+                filter = ac_log('hr-registration',request.remote_addr,"")
+                ac_logLogger.addFilter(filter)
+                ac_logLogger.warning(
+                    msg=f"code 401"
+                )
             return redirect(url_for('access_denied'))
         else:
             if request.method == "POST" and hr_form.validate():
@@ -2628,8 +2660,18 @@ with app.app_context():
                     image.png('image.png', scale=5)
                     SendMail("image.png", email, "HR")
                     os.remove('image.png')
+                    filter = lr_log(username)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"successfully registered as HR staff with Angel Health"
+                    )
                 else:
                     flash("Account already exists!")
+                    filter = lr_log(username)
+                    lr_logLogger.addFilter(filter)
+                    lr_logLogger.debug(
+                        msg=f"has failed to register as HR staff with Angel Health"
+                    )
                     return render_template('register_hr.html', form=hr_form)
                 flash("Created HR")
                 return redirect(url_for('dashboard'))
@@ -2702,6 +2744,11 @@ with app.app_context():
             cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
             cursor.commit()
             flash(f'{identifier} has been deleted!')
+            filter = lr_log(identifier.strip())
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"doctor staff has been removed from Angel Health"
+            )
             cursor.close()
         elif table == 'patient':
             cursor.execute('DELETE FROM patients WHERE username=?', (identifier))
@@ -2709,6 +2756,11 @@ with app.app_context():
             cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
             cursor.commit()
             flash(f'{identifier} has been deleted!')
+            filter = lr_log(identifier.strip())
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"patient has been removed from Angel Health"
+            )
             cursor.close()
         elif table == 'hr':
             cursor.execute('DELETE FROM hr WHERE username=?', (identifier))
@@ -2716,6 +2768,11 @@ with app.app_context():
             cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
             cursor.commit()
             flash(f'{identifier} has been deleted!')
+            filter = lr_log(identifier.strip())
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"HR staff has been removed from Angel Health"
+            )
             cursor.close()
         elif table == 'researcher':
             cursor.execute('DELETE FROM researchers WHERE username=?', (identifier))
@@ -2723,6 +2780,11 @@ with app.app_context():
             cursor.execute('DELETE FROM access_list WHERE username=?',(identifier))
             cursor.commit()
             flash(f'{identifier} has been deleted!')
+            filter = lr_log(identifier.strip())
+            lr_logLogger.addFilter(filter)
+            lr_logLogger.debug(
+                msg=f"researcher staff has been removed from Angel Health"
+            )
             cursor.close()
         return redirect(url_for('dashboard'))
 
@@ -2761,12 +2823,11 @@ if __name__ == "__main__":
 
     my_drive = MyDrive()
 
-    scheduler = APScheduler()
     vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
-
+    scheduler = APScheduler()
     scheduler.init_app(app)
-    scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
+    scheduler.add_job(id = 'Scheduled Task',func = autonomous_conversion, trigger="interval", seconds=10)
     scheduler.start()
     app.run()
 
-    atexit.register(lambda: scheduler.shutdown())
+    # atexit.register(lambda: scheduler.shutdown())

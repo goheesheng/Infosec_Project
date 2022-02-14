@@ -3,12 +3,14 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from apiclient.http import MediaFileUpload
+from googlesearch import search
+from apiclient.http import MediaFileUpload,MediaIoBaseDownload
 from mssql_auth import database, server
 from glob import glob
 import os
 import pyodbc
 import time
+import io
 
 
 
@@ -57,7 +59,41 @@ class MyDrive():
             print(fileid_list)
             return fileid_list
 
-    def create_file(self, filename, path,connection):
+    def last_file(self, page_size=10):
+        # Call the Drive v3 API
+        results = self.service.files().list(
+            pageSize=page_size, fields="nextPageToken, files(id, name)").execute()
+        items = results.get('files', [])
+        fileid_list = []
+        if not items:
+            print('No files found.')
+        else:
+            print('Files found in drive')
+            # print('items',items)
+            fileid_list.append(items[0]['name'])
+            fileid_list.append(items[0]['id'])
+            # for item in items:
+            #     print(u'{0} ({1})'.format(item['name'], item['id']))
+            #     fileid_dict[item['id']]=item['name']
+            # print(fileid_list[0])
+            return fileid_list
+
+    def download_file(self,file_id):
+        
+    
+        request = self.service.files().get_media(fileId=file_id[1])
+        fh=io.FileIO(f"C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{file_id[0]}",'wb')
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            print("Download %d%%." % int(status.progress() * 100))
+
+        
+
+   
+
+    def create_file(self, filename, path):
         folder_id = "1gXysKHVy8QXGKs-rhSLwDpnW9O3Gkh-_" #is on google drive URL
         
         media = MediaFileUpload(f"{path}{filename}")
@@ -85,60 +121,24 @@ class MyDrive():
             # DATABASE=' + 'database1' + ';\
             # Trusted_Connection=yes;'
             # )
-            cursor = connection
+        #     cursor = connection
 
 
-            sql_backup = "INSERT INTO google(folder_id, backup_date) VALUES (?, ?)"
-            parameters = (file.get('id'),current_time)
-            cursor.execute(sql_backup, parameters)
-            cursor.commit()
-            print('update google table')
-        else: # To update files in drive
-            pass
-            # for file in response.get('files', []):
-            #     # Process change
-            #
-            #     update_file = self.service.files().update(
-            #         fileId=file.get('id'),
-            #         media_body=media,
-            #     ).execute()
-            #     print(f'Updated File')
-
-    # def create_folder(self, filename,path):
-    #     cnxn = pyodbc.connect(
-    #     'DRIVER={ODBC Driver 17 for SQL Server}; \
-    #     SERVER=' + server + '; \
-    #     DATABASE=' + database + ';\
-    #     Trusted_Connection=yes;'
-    #     )
-    #     cursor = cnxn.cursor()
-
-    #     folder_id = "1gXysKHVy8QXGKs-rhSLwDpnW9O3Gkh-_" #ISPJ root/parent folder id is on google drive URL
-    #     file_metadata = {
-    #         'name': filename,
-    #         'parents': [folder_id], #need to pass  as list
-    #         'mimeType': 'application/vnd.google-apps.folder'
-    #     }
-    #     file = self.service.files().create(body=file_metadata,fields='id').execute()
-    #     print ('Folder ID: %s' % file.get('id'))
-
-    #     folder_name_list = []
-    #     for root, directories, files in os.walk(path, topdown=True):
-    #         for name in directories:
-    #             abs_folder_path = os.path.join(root, name)
-    #             if abs_folder_path not in folder_name_list:
-    #                 print(abs_folder_path,'absfolder')
-    #                 folder_name_list.append(abs_folder_path)
-    #             else:
-    #                 pass
-    #     print(folder_name_list,'list')
-    #     for x in folder_name_list:
-    #         print(x,'xxxxx')
-    #         insert_query = "INSERT INTO google (folder_name,folder_id,folder_path) VALUES (?, ?, ?); "
-    #         values = (str(filename),str(file.get('id')),str(x))
-    #     cursor.execute(insert_query, values)
-    #     cursor.commit()
-    #     cursor.close()
+        #     sql_backup = "INSERT INTO google(folder_id, backup_date) VALUES (?, ?)"
+        #     parameters = (file.get('id'),current_time)
+        #     cursor.execute(sql_backup, parameters)
+        #     cursor.commit()
+        #     print('update google table')
+        # else: # To update files in drive
+        #     pass
+        #     # for file in response.get('files', []):
+        #     #     # Process change
+        #     #
+        #     #     update_file = self.service.files().update(
+        #     #         fileId=file.get('id'),
+        #     #         media_body=media,
+        #     #     ).execute()
+        #     #     print(f'Updated File')
 
 
 def main():
@@ -168,7 +168,8 @@ def main():
     # print(folder_path)
 
 
-    my_drive.list_files()
+    last_file= my_drive.last_file()
+    my_drive.download_file(last_file)
     # for folder in folders:
     #     my_drive.create_file(folder, folder_path)
 

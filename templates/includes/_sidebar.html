@@ -32,19 +32,16 @@
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                         Medical Record
                     </a>
-                    <a class="nav-link" href="/appointment">
+                    <a class="nav-link" href="/baseinfo">
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                        Appointment
+                        Input base information
                     </a>
-                    <a class="nav-link" href="/viewappointment">
-                        <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                        View appointment
-                    </a>
+                
                  </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -85,8 +82,8 @@
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -128,8 +125,8 @@
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+
             </div>
         </nav>
     </div>
@@ -167,12 +164,15 @@
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                         Human Resource Dashboard
                     </a>
+                    <a class="nav-link" href="/assignDoctor">
+                        <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        Assign Physician
+                    </a>
                    
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
             </div>
         </nav>
     </div>
@@ -205,16 +205,16 @@
             <div class="sb-sidenav-menu">
                 <div class="nav">
                     <div class="sb-sidenav-menu-heading">Services</div>
-                    <a class="nav-link" href="#">
+                    <a class="nav-link" href="/export">
                         <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                        #
+                        Export
                     </a>
                    
                 </div>
             </div>
             <div class="sb-sidenav-footer">
-                <div class="small">Logged in as:</div>
-                {{session['patients']}}
+                <div class="small">Logged in as:{{session['username']}}</div>
+                
             </div>
         </nav>
     </div>

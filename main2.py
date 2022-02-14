@@ -30,7 +30,7 @@ from forms import FileSubmit, Patient_Login_form, Admin_Login_form,Otp, Register
 from functools import wraps
 import pyodbc
 import textwrap
-from customlogging import patientFileModificationFilter,converTxtToCSV
+from customlogging import patientFileModificationFilter
 from mssql_auth import database, server,backup_server
 
 from flask_qrcode import QRcode
@@ -44,11 +44,10 @@ import os.path,base64
 from virustotal_python import Virustotal
 from pprint import pprint # pprint is used to pretty print in good json format instead of in a line
 from ps import psrun
-import csv
-
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
+
 # db_connection = pyodbc.connect( # 
 # 'DRIVER={ODBC Driver 17 for SQL Server}; \
 # SERVER=' + server+ '; \
@@ -62,35 +61,7 @@ file_handlerModification=logging.FileHandler('logs/patientFileChangelog.txt')
 file_handlerModification.setFormatter(formatterserialize)
 patientFilesModificationLogger.addHandler(file_handlerModification)
 
-# loginLogger=logging.getLogger(__name__+"login")
-# loginLogger.setLevel(logging.DEBUG)
-# login_handlerModification=logging.FileHandler('logs/login_logs.txt')
-# login_handlerModification.setFormatter(login_register_Formatter)
-# loginLogger.addHandler(login_handlerModification)
 
-# registerLogger=logging.getLogger(__name__+"register")
-# registerLogger.setLevel(logging.DEBUG)
-# register_HandlerModification=logging.FileHandler('logs/register_logs.txt')
-# register_HandlerModification.setFormatter(login_register_Formatter)
-# registerLogger.addHandler(register_HandlerModification)
-
-# databaseLogger=logging.getLogger(__name__+"database")
-# databaseLogger.setLevel(logging.DEBUG)
-# database_HandlerModification=logging.FileHandler('logs/database_logs.txt')
-# database_HandlerModification.setFormatter(database_formatter)
-# databaseLogger.addHandler(database_HandlerModification)
-
-# accessControlLogger=logging.getLogger(__name__+"access_control")
-# accessControlLogger.setLevel(logging.DEBUG)
-# accessControl_HandlerModification=logging.FileHandler('logs/access_control_logs.txt')
-# accessControl_HandlerModification.setFormatter(access_control_formatter)
-# accessControlLogger.addHandler(accessControl_HandlerModification)
-
-# virusLogger=logging.getLogger(__name__+"virus")
-# virusLogger.setLevel(logging.DEBUG)
-# virus_HandlerModification=logging.FileHandler('logs/virus_logs.txt')
-# virus_HandlerModification.setFormatter(virus_formatter)
-# virusLogger.addHandler(virus_HandlerModification)
 
 # db_logLogger=logging.getLogger(__name__+"patientFileModification")
 # patientFilesModificationLogger.setLevel(logging.CRITICAL)
@@ -124,50 +95,9 @@ def autonomous_backup():
         pass
     scheduler.remove_all_jobs()
     time.sleep(15)
-    cur.close()
-    login_log_file="logs/login_logs"
-    register_log_file="logs/register_logs"
-    db_log_file="logs/database_logs"
-    access_control_log_file="logs/access_control_logs"
-    virus_log_file="logs/virus_logs"
-
-    login_file_txt=login_log_file+".txt"
-    login_file_csv=login_log_file+".csv"
-
-    register_file_txt=register_log_file+".txt"
-    register_file_csv=register_log_file+".csv"
-
-    db_file_txt=db_log_file+".txt"
-    db_file_csv=db_log_file+".csv"
-
-    access_control_log_file_text=access_control_log_file+".txt"
-    access_control_log_file_csv=access_control_log_file+".csv"
-
-    virus_log_file_txt=virus_log_file+".txt"
-    virus_log_file_csv=virus_log_file+".csv"
-
-    login_log_field=['Time','Level','Message','IP Address','Username','Result']
-    register_log_field=['Time','Level','Message','IP Address','Username','Result']
-    access_control_log_field=['Time','Level','Message','IP Address','Username','Result','Page visited']
-    db_log_field=['Time','Level','Message','IP Address','Username','Result','Server','Database']
-    virus_log_field=['Time','Level','Message','IP Address','Username','Result']
-
-    list_of_text_files=[login_file_txt,register_file_txt,db_file_txt,access_control_log_file_text,virus_log_file_txt]
-    list_of_csv_files=[login_file_csv,register_file_csv,db_file_csv,access_control_log_file_csv,virus_log_file_csv]
-    list_of_fields=[login_log_field,register_log_field,db_log_field,access_control_log_field,virus_log_field]
-
-    def convert_csv(log_file,output_file,fields):
-        in_txt=csv.reader(open(log_file,"r"),delimiter=";")
-        out_txt=csv.writer(open(output_file,'w'))
-        out_txt.writerow(fields)
-        out_txt.writerows(in_txt)
-
-
-    for index in range(len(list_of_text_files)):
-        print(list_of_text_files[index],list_of_csv_files[index],list_of_fields[index])
-        convert_csv(list_of_text_files[index],list_of_csv_files[index],list_of_fields[index])
     scheduler.add_job(id = 'Scheduled Task',func = autonomous_backup, trigger="interval", minutes=60)
 
+    cur.close()
     # flash('Local and cloud backup successful')
 
 
@@ -182,6 +112,7 @@ app = Flask(__name__)
 QRcode(app)
 app.config['SECRET_KEY'] = "secret key"
 app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(),'saved')
+app.config['db_name'] = 'urmum'
 
 # def login_required(requireslogin):
 #     @wraps(requireslogin)
@@ -243,7 +174,10 @@ def auto_use_seconddb():
 
         #Primary Server not runningre
         if b'Stopped' in x:
-            # session['db'] = 'Backup Server'
+            try:
+                session['db'] = 'Backup Server'
+            except:
+                pass
             t = time.localtime()
 
             current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
@@ -280,7 +214,29 @@ def auto_use_seconddb():
                     return db_connection
 
                 else:
-                    
+                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    cur = db_connection.cursor()
+                    cur.execute(backup)
+                    while (cur.nextset()):
+                        pass
+                    print('Local Backup successful')
+
+                    # Update to Google Drive
+                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                    try:
+                        for folder in folders:
+                            my_drive.create_file(folder, folder_path,db_connection) #function in backup.py file
+                        print('Drive backup successful')
+                    except:
+                        pass
+                    db_connection = pyodbc.connect( # 
+                    'DRIVER={ODBC Driver 17 for SQL Server}; \
+                    SERVER=' + backup_server+ '; \
+                    DATABASE=' + 'database1' + ';\
+                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                    print("Update and restore secondary db ")
+                    print("Using second db!")
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
                     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
@@ -295,39 +251,23 @@ def auto_use_seconddb():
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
 
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
-                    db_connection = pyodbc.connect( # 
-                    'DRIVER={ODBC Driver 17 for SQL Server}; \
-                    SERVER=' + backup_server+ '; \
-                    DATABASE=' + 'database1' + ';\
-                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                    print("Update and restore secondary db ")
-                    print("Using second db!")
                     
-                    return db_connection
+                return db_connection
 
             except: #if secondary db was deleted, it will auto restore 
-                try:
                     db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
                     SERVER=' + backup_server+ '; \
                     Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                     cur = db_connection.cursor()
+                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    cur = db_connection.cursor()
+                    cur.execute(backup)
+                    while (cur.nextset()):
+                        pass
+                    print('Local Backup successful')
+
 
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
@@ -343,36 +283,34 @@ def auto_use_seconddb():
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
 
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
                     db_connection = pyodbc.connect( # 
                                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                                 SERVER=' + backup_server+ '; \
                                 DATABASE=' + 'database1' + ';\
                                 Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                    # Update to Google Drive
+                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                    try:
+                        for folder in folders:
+                            my_drive.create_file(folder, folder_path,db_connection) #function in backup.py file
+                        print('Drive backup successful')
+                    except:
+                        pass
                     print("Restored second db as it was never created.")
                     print("Using second db!")
                     print(';')
                     return db_connection   
-                except:
-                    
-        else:
-            # session['db'] = 'Primary Server'
 
+        else:
+            try:
+                session['db'] = 'Primary Server'
+            except:
+                pass
+            t = time.localtime()
+
+            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
             # try:  #Try the first server if connection can be established
 
             #     db_connection = pyodbc.connect( # 
@@ -385,9 +323,6 @@ def auto_use_seconddb():
             #     print(db_connection,'db')
             #     return db_connection
             # except: 
-            t = time.localtime()
-
-            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
             try: # If unable to connect to primary server, restore the primary server DB using the bak file from first server db and use the second server connection immediately, as we may not know if first server db is compromised
                 db_connection = pyodbc.connect( # 
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
@@ -420,6 +355,17 @@ def auto_use_seconddb():
                     return db_connection
 
                 else:
+                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    cur = db_connection.cursor()
+                    cur.execute(backup)
+                    while (cur.nextset()):
+                        pass
+                    print('Local Backup successful')
+
+                    # Update to Google Drive
+                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
                     folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
@@ -434,22 +380,7 @@ def auto_use_seconddb():
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
 
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
                     db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
                     SERVER=' + server+ '; \
@@ -458,14 +389,27 @@ def auto_use_seconddb():
                     print("Update and restore primary db ")
                     print("Using primary db!")
                     print(db_connection,'db')
+                    try:
+                        for folder in folders:
+                            my_drive.create_file(folder, folder_path,db_connection) #function in backup.py file
+                        print('Drive backup successful')
+                    except:
+                        pass
                     return db_connection
 
             except:
                     db_connection = pyodbc.connect( # 
                     'DRIVER={ODBC Driver 17 for SQL Server}; \
                     SERVER=' + server+ '; \
+                    DATABASE=' + 'master' + ';\
                     Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                     cur = db_connection.cursor()
+                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
+                    cur.execute(backup)
+                    while (cur.nextset()):
+                        pass
+                    print('Local Backup successful')
+
 
                     executelock = ("alter database database1 set offline with rollback immediate ")
                     releaselock = ("alter database database1 set online")
@@ -481,28 +425,22 @@ def auto_use_seconddb():
                     while cur.nextset():
                         pass
                     cur.execute(releaselock)
-                    backup = f"BACKUP DATABASE [database1] TO DISK = N'C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\{current_time}.bak'"
-                    cur = connection.cursor()
-                    cur.execute(backup)
-                    while (cur.nextset()):
-                        pass
-                    print('Local Backup successful')
 
-                    # Update to Google Drive
-                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
-                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
-                    try:
-                        for folder in folders:
-                            my_drive.create_file(folder, folder_path,connection) #function in backup.py file
-                        print('Drive backup successful')
-                    except:
-                        pass
                     db_connection = pyodbc.connect( # 
                                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                                 SERVER=' + server+ '; \
                                 DATABASE=' + 'database1' + ';\
                                 Trusted_Connection=yes; Encrypt=yes; TrustServerCertificate=yes',autocommit=True)
                     print("Restored primary db as it was never created.")
+                        # Update to Google Drive
+                    folder_path = "C:\\Users\\Gaming-Pro\\OneDrive\\Desktop\\SQL BACKUP\\"
+                    folders = os.listdir(folder_path) #['folder1', 'folder2'] list folder
+                    try:
+                        for folder in folders:
+                            my_drive.create_file(folder, folder_path,db_connection) #function in backup.py file
+                        print('Drive backup successful')
+                    except:
+                        pass
                     print("Using primary db!")
                     print(';')
                     return db_connection
@@ -613,7 +551,12 @@ def get_file_data_from_database(patient_id):
 
 @app.context_processor
 def inject_templates_with_session_date():
-    return dict(session)
+    try:
+        print('no session[\'db\'')
+        return dict(session, server = session['db'])
+    except:
+        return dict(session)
+        
 
 with app.app_context():
     @app.route('/homepage')
@@ -698,6 +641,9 @@ with app.app_context():
         while True:
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
+                connection = auto_use_seconddb()
+                
+                cursor = connection.cursor()
                 pattern = ('^\d{6}[A-Za-z]$')
                 username = input("Enter New Head Admin ID: ")
                 result = re.match(pattern,username)
@@ -705,9 +651,7 @@ with app.app_context():
                     print("Only first 6 digits and 1 alphabet at the end!")
                     username = input("Enter New Head Admin ID: ")
                     result = re.match(pattern,username)
-                connection = auto_use_seconddb()
-                
-                cursor = connection.cursor()
+
 
                 check = cursor.execute("SELECT username FROM head_admin WHERE username = ?",
                                        (username)).fetchval()  # prevent sql injection
@@ -746,9 +690,8 @@ with app.app_context():
                               email,otp_code,phone_no,'head_admin',postal_code,address)
                     cursor.execute(insert_query, values)
                     cursor.commit()
-                    cursor.close()
-                    connection = auto_use_seconddb()
-                    cursor = connection.cursor()
+                    # connection = auto_use_seconddb()
+                    # cursor = connection.cursor()
                     insert_query = "INSERT INTO access_list (username,access_level,pass_hash) \
                             VALUES (?, ?,?); "
                     values = (username,'head_admin',md5Hashed)

@@ -5,7 +5,7 @@
         <h1 class="mt-4">Tables</h1>
         <ol class="breadcrumb mb-4">
             <li class="breadcrumb-item"><a href="#">Export</a></li>
-            <li class="breadcrumb-item active">Table</li>
+            <li class="breadcrumb-item active"></li>
         </ol>
         <div class="card mb-4">
             <div class="card-header">
@@ -13,20 +13,7 @@
                 Export data
             </div>
             <div class="card-body">
-                <table id="datatablesSimple">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Data</th>
-                        </tr>
-                    </thead>
-                    {% for result in results %}
-                    <tr>
-                        <td>{{ result['patient_id'] }}</td>
-                        <td><a href="/data/{{ result['patient_id'] }}">data</a></td>
-                    </tr>
-                    {% endfor %}
-                </table>
+            
                 <a href="/exportdata"><button type="submit" class="btn btn-primary">Export Data</button></a>
             </div>
         </div>
