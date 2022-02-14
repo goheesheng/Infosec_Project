@@ -1740,6 +1740,7 @@ with app.app_context():
                 if pyotp.TOTP(otp_seed).verify(otp) and flag:
                     print("correct")
                     session['login'] = True
+                    train_face(session["username"])
                     cursor.close()
                     # session['login'] = True
                     print(session['login'],'sslogin')

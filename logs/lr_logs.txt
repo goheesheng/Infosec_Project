@@ -31,3 +31,4 @@
 2022-02-15 04:57:50,519;DEBUG;123412a;has been redirected to otpvalidation page
 2022-02-15 05:00:43,185;DEBUG;111111h;has been redirected to otpvalidation page
 2022-02-15 05:00:53,360;DEBUG;111111h;has sucessfully login to Angel Health
+2022-02-15 05:25:48,338;DEBUG;123412a;has been redirected to otpvalidation page
