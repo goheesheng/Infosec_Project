@@ -19,3 +19,15 @@
 2022-02-14 18:33:47,552;DEBUG;111111y;has failed to login to Angel Health
 2022-02-14 18:34:06,387;DEBUG;111111y;has failed to login to Angel Health
 2022-02-14 18:34:25,005;DEBUG;111111y;has sucessfully login to Angel Health
+2022-02-15 03:55:33,753;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 03:55:48,138;DEBUG;123412a;has sucessfully login to Angel Health
+2022-02-15 03:56:40,102;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 03:56:45,683;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 03:57:07,740;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 03:57:46,537;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 03:58:50,333;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 04:04:20,583;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 04:49:04,623;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 04:57:50,519;DEBUG;123412a;has been redirected to otpvalidation page
+2022-02-15 05:00:43,185;DEBUG;111111h;has been redirected to otpvalidation page
+2022-02-15 05:00:53,360;DEBUG;111111h;has sucessfully login to Angel Health
