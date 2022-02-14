@@ -1,4 +1,5 @@
 import re
+
 from wtforms import StringField, validators, SubmitField, FileField, PasswordField, DecimalField  #AlphaSpace, AlphaNumeric
 from wtforms import Form, StringField, SelectField, TextAreaField, validators, PasswordField, BooleanField, FileField, PasswordField, IntegerField, DateField
 # from wtforms_validators import AlphaSpace, AlphaNumeric, Integer
@@ -49,6 +50,7 @@ class Register(Form):
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])'), message= "Password must contain 10-20 characters, number, uppercase, lowercase, special character."),
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
+
     submit = SubmitField("Submit")
 
 class RegisterDoctor(Form):
@@ -65,6 +67,7 @@ class RegisterDoctor(Form):
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])'), message= "Password must contain 10-20 characters, number, uppercase, lowercase, special character."),
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
+    upload_field = MultipleFileField("Upload Face(s)")
     submit = SubmitField("Submit")
 
 class RegisterResearcher(Form):
@@ -81,6 +84,7 @@ class RegisterResearcher(Form):
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])'), message= "Password must contain 10-20 characters, number, uppercase, lowercase, special character."),
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
+
     submit = SubmitField("Submit")
 
 class RegisterHr(Form):
@@ -96,6 +100,7 @@ class RegisterHr(Form):
         validators.Regexp(re.compile('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])'), message= "Password must contain 10-20 characters, number, uppercase, lowercase, special character."),
     ])
     confirmPassword = PasswordField('Re-enter Password', [validators.DataRequired(),validators.EqualTo('password',message='Both password fields must be equal!')])
+    image = MultipleFileField("Upload Face(s)")
     submit = SubmitField("Submit")
 
 # class Admin_UpdateUserForm(Form):
