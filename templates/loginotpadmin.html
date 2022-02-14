@@ -1,0 +1,56 @@
+{% extends "baseForNoAccess.html" %}
+{% block content %}
+{% from "includes/_formHelper.html" import render_field %}
+    <script src="static/webcam.js"></script>
+    <script src="static/custom.js"></script>
+<div id="layoutAuthentication">
+    <div id="layoutAuthentication_content">
+        <main>
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-5">
+                        <div class="card shadow-lg border-0 rounded-lg mt-5">
+                            <div class="card-header"><h3 class="text-center font-weight-light my-4">Login</h3></div>
+                            <div class="card-body">
+                              <form method="POST" id="loginForm" action="">
+                                <div class="form-group">
+                                  <label for="otp">Generated OTP</label>
+                                  <input type="hidden" name="secret" value="{{ secret }}" required>
+                                  <input type="number" class="form-control" id="otp" name="otp" required>
+                                </div>
+                                <div class="text-center">
+                                  <button type="button" class="btn btn-primary" onclick="upload()">Authenticate User</button>
+                                </div>
+                              </form>
+                                <div id="my_camera"></div>
+<br>
+<input type="button" onclick="snap()" value="Snap">
+<br>
+<hr>
+<div id="results"></div>
+                            </div>
+                            <div class="card-footer text-center py-3">
+                                <div class="small"><a href="/register">Need an account? Sign up!</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="layoutAuthentication_footer">
+        <footer class="py-4 bg-light mt-auto">
+            <div class="container-fluid px-4">
+                <div class="d-flex align-items-center justify-content-between small">
+                    <div class="text-muted">Copyright &copy; Your Website 2021</div>
+                    <div>
+                        <a href="#">Privacy Policy</a>
+                        &middot;
+                        <a href="#">Terms &amp; Conditions</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+{% endblock %}
