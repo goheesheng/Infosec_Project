@@ -380,16 +380,12 @@ def auto_use_seconddb():
                     pass
                 cur.execute(releaselock)
 
+                db_connection = pyodbc.connect( # 
+                            'DRIVER={ODBC Driver 17 for SQL Server}; \
+                            SERVER=' + server+ '; \
+                            DATABASE=' + 'database1' + ';\
+                            Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
 
-
-                db_connection = pyodbc.connect( #
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server+ '; \
-                DATABASE=' + 'database1' + ';\
-                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                print("Update and restore primary db ")
-                print("Using primary db!")
-                print(db_connection,'db')
                 app.config['previousState']="primary"
                 filter = db_log(app.config['previousState'])
                 db_logLogger.addFilter(filter)
@@ -1753,6 +1749,48 @@ with app.app_context():
                     return redirect(url_for("otpvalidationdoctor"))
             if request.method == "GET":
                 return render_template("loginotpadmin.html")
+
+    @app.route("/validationdoctor", methods=["GET","POST"])
+    def otpvalidationdoctor():
+        if 'otp-semi-login' not in session:
+            return redirect(url_for('access_denied'))
+        else:
+            cnxn = auto_use_seconddb()
+
+            if request.method=="POST":
+                cursor = cnxn.cursor()
+                access_list={'doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
+                if session['access_level'] in access_list and session['otp-semi-login']:
+                    query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
+                    otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
+                otp = int(request.form.get("otp"))
+                urllib.request.urlretrieve(request.form.get("file"), 'photo.jpg')
+                print("hello")
+                print(otp)
+                json_obj = execute_request()
+                print(json_obj)
+                print('4')
+                flag = check_confidence(json_obj)
+                print('flagtest'+str(flag))
+                print(pyotp.TOTP(otp_seed).now())
+                # verifying submitted OTP with PyOTP
+                if pyotp.TOTP(otp_seed).verify(otp) and flag:
+                    print("correct")
+                    session['login'] = True
+                    train_face(session["username"])
+                    cursor.close()
+                    # session['login'] = True
+                    print(session['login'],'sslogin')
+                    print(session,'check sesison')
+                    return redirect(url_for('homepage'))
+                else:
+                    print("wrong")
+                    cursor.close()
+                    flash("Wrong OTP", "error")
+                    return redirect(url_for("otpvalidationdoctor"))
+            if request.method == "GET":
+                return render_template("loginotpadmin.html")
+
 
     ####What is this lmao
     @app.route('/passwordreset', methods=['GET', 'POST']) 
