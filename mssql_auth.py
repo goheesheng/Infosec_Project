@@ -5,7 +5,8 @@
 
 
 #EeSheng-Desktop
-server = "GOHDESKTOP"
+# server = "GOHDESKTOP"
+server = "DESKTOP-DMO8V7F\MSSQLSERVER01"
 backup_server ="GOHDESKTOP\MSSQLSERVER01"
 
 
