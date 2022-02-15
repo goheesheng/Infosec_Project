@@ -221,3 +221,327 @@ Time,Level,Message
 "2022-02-14 18:38:04,500",CRITICAL,primary server is down
 "2022-02-14 18:38:04,500",CRITICAL,connection to secondary server successful
 "2022-02-14 18:38:07,135",CRITICAL,secondary server was successfully backed up
+"2022-02-14 18:38:10,524",CRITICAL,primary server is down
+"2022-02-14 18:38:10,525",CRITICAL,connection to secondary server successful
+"2022-02-14 21:48:33,652",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:48:34,060",CRITICAL,connection to primary server successful
+"2022-02-14 21:48:47,286",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:48:47,690",CRITICAL,connection to primary server successful
+"2022-02-14 21:48:50,212",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:48:53,578",CRITICAL,connection to primary server successful
+"2022-02-14 21:48:59,744",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:49:00,129",CRITICAL,connection to primary server successful
+"2022-02-14 21:49:02,668",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:49:06,034",CRITICAL,connection to primary server successful
+"2022-02-14 21:50:03,109",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:50:03,473",CRITICAL,connection to primary server successful
+"2022-02-14 21:50:05,852",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:50:09,281",CRITICAL,connection to primary server successful
+"2022-02-14 21:50:56,329",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:50:56,689",CRITICAL,connection to primary server successful
+"2022-02-14 21:51:01,314",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:51:04,695",CRITICAL,connection to primary server successful
+"2022-02-14 21:51:09,822",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:51:10,187",CRITICAL,connection to primary server successful
+"2022-02-14 21:51:12,535",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:51:15,898",CRITICAL,connection to primary server successful
+"2022-02-14 21:51:32,114",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:51:32,486",CRITICAL,connection to primary server successful
+"2022-02-14 21:51:34,808",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:51:38,180",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:10,176",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:10,533",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:12,904",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:16,260",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:24,538",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:24,907",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:27,289",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:30,656",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:36,853",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:40,241",CRITICAL,connection to primary server successful
+"2022-02-14 21:52:48,342",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:52:48,711",CRITICAL,connection to primary server successful
+"2022-02-14 21:57:35,404",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:57:35,782",CRITICAL,connection to primary server successful
+"2022-02-14 21:57:42,679",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:57:46,065",CRITICAL,connection to primary server successful
+"2022-02-14 21:57:48,476",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:57:51,865",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:11,687",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:12,048",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:24,503",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:27,891",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:30,231",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:30,597",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:34,650",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:35,007",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:37,501",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:37,869",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:56,872",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:57,234",CRITICAL,connection to primary server successful
+"2022-02-14 21:58:59,629",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:58:59,998",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:02,435",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:02,788",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:16,747",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:17,109",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:25,111",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:25,468",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:27,904",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:28,276",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:35,021",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:35,379",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:37,798",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:38,160",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:48,756",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:49,107",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:51,454",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:54,804",CRITICAL,connection to primary server successful
+"2022-02-14 21:59:57,118",CRITICAL,primary server was successfully backed up
+"2022-02-14 21:59:57,464",CRITICAL,connection to primary server successful
+"2022-02-14 22:00:57,074",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:01:00,456",CRITICAL,connection to primary server successful
+"2022-02-14 22:01:02,829",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:01:06,453",CRITICAL,connection to primary server successful
+"2022-02-14 22:01:06,550",CRITICAL,primary server was deleted
+"2022-02-14 22:01:06,550",CRITICAL,primary server database was restored
+"2022-02-14 22:01:06,550",CRITICAL,connection to primary server successful
+"2022-02-14 22:01:32,390",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:01:35,764",CRITICAL,connection to primary server successful
+"2022-02-14 22:03:48,443",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:03:48,805",CRITICAL,connection to primary server successful
+"2022-02-14 22:03:54,935",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:03:58,291",CRITICAL,connection to primary server successful
+"2022-02-14 22:04:19,503",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:04:22,857",CRITICAL,connection to primary server successful
+"2022-02-14 22:04:29,003",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:04:32,378",CRITICAL,connection to primary server successful
+"2022-02-14 22:06:42,807",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:06:43,164",CRITICAL,connection to primary server successful
+"2022-02-14 22:06:45,611",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:06:48,980",CRITICAL,connection to primary server successful
+"2022-02-14 22:06:55,281",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:06:55,639",CRITICAL,connection to primary server successful
+"2022-02-14 22:07:10,506",CRITICAL,primary server was deleted
+"2022-02-14 22:07:10,506",CRITICAL,primary server database was restored
+"2022-02-14 22:07:10,507",CRITICAL,connection to primary server successful
+"2022-02-14 22:07:16,164",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:07:19,547",CRITICAL,connection to primary server successful
+"2022-02-14 22:07:41,790",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:07:42,161",CRITICAL,connection to primary server successful
+"2022-02-14 22:07:51,811",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:07:52,220",CRITICAL,connection to primary server successful
+"2022-02-14 22:07:54,631",CRITICAL,primary server was successfully backed up
+"2022-02-14 22:07:54,997",CRITICAL,connection to primary server successful
+"2022-02-15 13:49:47,949",CRITICAL,primary server was successfully backed up
+"2022-02-15 13:49:48,349",CRITICAL,connection to primary server successful
+"2022-02-15 14:08:24,167",CRITICAL,primary server was deleted
+"2022-02-15 14:08:24,168",CRITICAL,primary server database was restored
+"2022-02-15 14:08:24,168",CRITICAL,connection to primary server successful
+"2022-02-15 14:08:44,562",CRITICAL,primary server was deleted
+"2022-02-15 14:08:44,562",CRITICAL,primary server database was restored
+"2022-02-15 14:08:44,563",CRITICAL,connection to primary server successful
+"2022-02-15 14:09:40,974",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:09:44,353",CRITICAL,connection to primary server successful
+"2022-02-15 14:26:46,012",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:26:49,374",CRITICAL,connection to primary server successful
+"2022-02-15 14:28:02,056",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:28:02,441",CRITICAL,connection to primary server successful
+"2022-02-15 14:28:16,497",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:28:16,870",CRITICAL,connection to primary server successful
+"2022-02-15 14:30:32,732",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:30:33,118",CRITICAL,connection to primary server successful
+"2022-02-15 14:30:44,898",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:30:45,305",CRITICAL,connection to primary server successful
+"2022-02-15 14:30:55,045",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:30:55,416",CRITICAL,connection to primary server successful
+"2022-02-15 14:31:08,514",CRITICAL,primary server was deleted
+"2022-02-15 14:31:08,515",CRITICAL,primary server database was restored
+"2022-02-15 14:31:08,515",CRITICAL,connection to primary server successful
+"2022-02-15 14:31:21,663",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:31:25,029",CRITICAL,connection to primary server successful
+"2022-02-15 14:34:07,784",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:34:11,146",CRITICAL,connection to primary server successful
+"2022-02-15 14:36:44,874",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:36:45,238",CRITICAL,connection to primary server successful
+"2022-02-15 14:36:55,148",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:36:55,515",CRITICAL,connection to primary server successful
+"2022-02-15 14:37:44,458",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:37:47,859",CRITICAL,connection to primary server successful
+"2022-02-15 14:38:38,848",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:38:39,238",CRITICAL,connection to primary server successful
+"2022-02-15 14:39:30,810",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:39:34,205",CRITICAL,connection to primary server successful
+"2022-02-15 14:44:43,909",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:44:44,305",CRITICAL,connection to primary server successful
+"2022-02-15 14:44:53,125",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:44:53,500",CRITICAL,connection to primary server successful
+"2022-02-15 14:45:42,297",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:45:42,670",CRITICAL,connection to primary server successful
+"2022-02-15 14:45:45,081",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:45:45,454",CRITICAL,connection to primary server successful
+"2022-02-15 14:46:18,798",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:46:19,197",CRITICAL,connection to primary server successful
+"2022-02-15 14:48:35,704",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:48:39,103",CRITICAL,connection to primary server successful
+"2022-02-15 14:48:41,498",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:48:44,904",CRITICAL,connection to primary server successful
+"2022-02-15 14:48:55,835",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:48:56,205",CRITICAL,connection to primary server successful
+"2022-02-15 14:48:58,578",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:49:01,951",CRITICAL,connection to primary server successful
+"2022-02-15 14:49:09,282",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:49:09,651",CRITICAL,connection to primary server successful
+"2022-02-15 14:49:12,054",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:49:15,444",CRITICAL,connection to primary server successful
+"2022-02-15 14:49:42,469",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:49:42,833",CRITICAL,connection to primary server successful
+"2022-02-15 14:49:45,217",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:49:48,607",CRITICAL,connection to primary server successful
+"2022-02-15 14:50:45,286",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:50:45,666",CRITICAL,connection to primary server successful
+"2022-02-15 14:50:48,021",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:50:51,392",CRITICAL,connection to primary server successful
+"2022-02-15 14:50:59,793",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:00,158",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:02,583",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:05,950",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:13,248",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:13,640",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:16,447",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:19,852",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:45,924",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:46,300",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:48,718",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:52,084",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:56,189",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:51:56,549",CRITICAL,connection to primary server successful
+"2022-02-15 14:51:59,011",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:52:02,384",CRITICAL,connection to primary server successful
+"2022-02-15 14:52:04,782",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:52:05,138",CRITICAL,connection to primary server successful
+"2022-02-15 14:52:42,051",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:52:42,436",CRITICAL,connection to primary server successful
+"2022-02-15 14:53:15,693",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:53:19,070",CRITICAL,connection to primary server successful
+"2022-02-15 14:53:25,534",CRITICAL,primary server was successfully backed up
+"2022-02-15 14:53:25,918",CRITICAL,connection to primary server successful
+"2022-02-15 14:53:51,555",CRITICAL,primary server was deleted
+"2022-02-15 14:53:51,555",CRITICAL,primary server database was restored
+"2022-02-15 14:53:51,555",CRITICAL,connection to primary server successful
+"2022-02-15 14:54:10,208",CRITICAL,primary server is down
+"2022-02-15 14:54:10,208",CRITICAL,connection to secondary server successful
+"2022-02-15 14:55:04,933",CRITICAL,primary server is down
+"2022-02-15 14:55:04,933",CRITICAL,connection to secondary server successful
+"2022-02-15 14:55:15,357",CRITICAL,connection to primary server successful
+"2022-02-15 15:12:45,652",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:12:46,059",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:01,948",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:13:05,340",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:07,793",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:13:11,162",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:43,002",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:13:43,374",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:45,865",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:13:49,253",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:56,950",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:13:57,302",CRITICAL,connection to primary server successful
+"2022-02-15 15:13:59,812",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:14:03,199",CRITICAL,connection to primary server successful
+"2022-02-15 15:14:05,646",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:14:06,025",CRITICAL,connection to primary server successful
+"2022-02-15 15:14:20,542",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:14:23,924",CRITICAL,connection to primary server successful
+"2022-02-15 15:14:57,928",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:14:58,310",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:03,270",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:06,674",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:21,746",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:22,134",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:24,546",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:27,928",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:32,075",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:32,490",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:35,089",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:38,775",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:38,809",CRITICAL,primary server was deleted
+"2022-02-15 15:15:38,809",CRITICAL,primary server database was restored
+"2022-02-15 15:15:38,809",CRITICAL,connection to primary server successful
+"2022-02-15 15:15:41,376",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:15:41,833",CRITICAL,connection to primary server successful
+"2022-02-15 15:16:05,872",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:16:09,238",CRITICAL,connection to primary server successful
+"2022-02-15 15:16:18,357",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:16:21,728",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:25,446",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:25,801",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:30,627",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:30,997",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:41,636",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:41,988",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:44,406",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:44,774",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:52,043",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:52,404",CRITICAL,connection to primary server successful
+"2022-02-15 15:17:55,066",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:17:55,505",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:03,549",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:03,914",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:06,424",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:06,776",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:17,286",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:17,656",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:20,182",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:20,562",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:37,139",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:37,505",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:42,067",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:42,446",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:53,617",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:53,992",CRITICAL,connection to primary server successful
+"2022-02-15 15:18:56,649",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:18:57,045",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:01,864",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:02,276",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:04,935",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:05,345",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:11,680",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:12,078",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:14,562",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:14,944",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:17,347",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:17,739",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:22,023",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:22,435",CRITICAL,connection to primary server successful
+"2022-02-15 15:19:54,336",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:19:54,731",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:01,591",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:02,015",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:07,344",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:07,722",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:16,653",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:17,075",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:19,581",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:19,957",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:24,787",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:25,180",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:27,569",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:27,943",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:34,486",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:34,877",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:37,386",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:37,773",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:44,851",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:45,210",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:47,607",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:47,998",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:52,795",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:53,158",CRITICAL,connection to primary server successful
+"2022-02-15 15:20:56,888",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:20:57,253",CRITICAL,connection to primary server successful
+"2022-02-15 15:21:07,784",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:21:08,144",CRITICAL,connection to primary server successful
+"2022-02-15 15:23:31,590",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:23:31,977",CRITICAL,connection to primary server successful
+"2022-02-15 15:23:34,576",CRITICAL,primary server was successfully backed up
+"2022-02-15 15:23:34,941",CRITICAL,connection to primary server successful

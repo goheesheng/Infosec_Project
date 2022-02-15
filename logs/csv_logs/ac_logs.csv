@@ -9,3 +9,5 @@ Time,Level,Message,IP Address,Username,Page visited
 "2022-02-14 18:36:56,676",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
 "2022-02-14 18:37:18,130",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
 "2022-02-14 18:38:00,729",WARNING,code 401,127.0.0.1,111111y,requestPatientInformation
+"2022-02-15 15:23:28,903",WARNING,code 401,127.0.0.1,333333y,requestPatientInformation
+"2022-02-15 15:23:29,562",WARNING,code 401,127.0.0.1,333333y,requestPatientInformation
