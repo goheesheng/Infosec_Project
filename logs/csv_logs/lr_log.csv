@@ -20,3 +20,78 @@ Time,Level,Username,Message
 "2022-02-14 18:33:47,552",DEBUG,111111y,has failed to login to Angel Health
 "2022-02-14 18:34:06,387",DEBUG,111111y,has failed to login to Angel Health
 "2022-02-14 18:34:25,005",DEBUG,111111y,has sucessfully login to Angel Health
+"2022-02-14 21:48:47,696",DEBUG,T1234567t,has failed to be redirected to otpvalidation page
+"2022-02-14 21:49:00,133",DEBUG,T1234567t,has failed to be redirected to otpvalidation page
+"2022-02-14 21:50:03,477",DEBUG,T1234567t,has failed to be redirected to otpvalidation page
+"2022-02-14 21:50:39,583",DEBUG,None,has failed to register as patient with Angel Health
+"2022-02-14 21:50:56,700",DEBUG,S1234567s,successfully registered as patient with Angel Health
+"2022-02-14 21:51:10,200",DEBUG,S1234567s,has been redirected to otpvalidation page
+"2022-02-14 21:51:32,493",DEBUG,S1234567s,has failed to login to Angel Health
+"2022-02-14 21:52:10,539",DEBUG,S1234567s,has failed to login to Angel Health
+"2022-02-14 21:52:24,914",DEBUG,S1234567s,has sucessfully login to Angel Health
+"2022-02-14 21:57:35,784",DEBUG,222222y,has failed to be redirected to otpvalidation page
+"2022-02-14 21:57:46,069",DEBUG,222222y,has failed to be redirected to otpvalidation page
+"2022-02-14 21:58:12,054",DEBUG,222222y,has failed to be redirected to otpvalidation page
+"2022-02-14 21:58:27,898",DEBUG,123456y,has been redirected to otpvalidation page
+"2022-02-14 21:58:35,011",DEBUG,123456y,has failed to login to Angel Health
+"2022-02-14 21:58:57,238",DEBUG,123456y,has sucessfully login to Angel Health
+"2022-02-14 21:59:25,477",DEBUG,123123y,has been redirected to otpvalidation page
+"2022-02-14 21:59:35,382",DEBUG,123123y,has failed to login to Angel Health
+"2022-02-14 21:59:49,110",DEBUG,123123y,has sucessfully login to Angel Health
+"2022-02-14 22:01:06,561",DEBUG,878787y,successfully registered as doctor staff with Angel Health
+"2022-02-14 22:01:10,605",DEBUG,878787y,successfully registered as doctor staff with Angel Health
+"2022-02-14 22:01:35,773",DEBUG,878787y,successfully registered as doctor staff with Angel Health
+"2022-02-14 22:03:58,292",DEBUG,None,has failed to register as researcher staff with Angel Health
+"2022-02-14 22:04:26,541",DEBUG,121212y,successfully registered as researcher staff with Angel Health
+"2022-02-14 22:06:52,775",DEBUG,313131y,successfully registered as doctor staff with Angel Health
+"2022-02-14 22:07:52,230",DEBUG,313131y,has been redirected to otpvalidation page
+"2022-02-15 14:09:10,645",DEBUG,123456y,successfully registered as Head Admin staff with Angel Health
+"2022-02-15 14:19:03,684",DEBUG,909090u,successfully registered as Head Admin staff with Angel Health
+"2022-02-15 14:25:27,752",DEBUG,232323y,successfully registered as Head Admin staff with Angel Health
+"2022-02-15 14:30:45,307",DEBUG,123456y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:30:55,417",DEBUG,123456y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:31:25,031",DEBUG,123456y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:33:57,506",DEBUG,232323y,successfully registered as Head Admin staff with Angel Health
+"2022-02-15 14:34:11,148",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:36:45,239",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:36:45,239",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:36:55,516",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:36:55,516",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:37:47,860",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:38:39,241",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:39:34,206",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:44:53,503",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:45:45,456",DEBUG,232323y,has failed to be redirected to otpvalidation page
+"2022-02-15 14:48:39,110",DEBUG,232323y,has been redirected to otpvalidation page
+"2022-02-15 14:48:56,209",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:49:09,655",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:49:42,840",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:50:45,670",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:51:00,165",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:51:13,646",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:51:46,306",DEBUG,232323y,has failed to login to Angel Health
+"2022-02-15 14:51:56,556",DEBUG,232323y,has sucessfully login to Angel Health
+"2022-02-15 14:53:23,155",DEBUG,111111y,successfully registered as HR staff with Angel Health
+"2022-02-15 15:13:05,348",DEBUG,111111y,has been redirected to otpvalidation page
+"2022-02-15 15:13:43,380",DEBUG,111111y,has failed to login to Angel Health
+"2022-02-15 15:13:57,309",DEBUG,111111y,has sucessfully login to Angel Health
+"2022-02-15 15:14:27,070",DEBUG,None,has failed to register as patient with Angel Health
+"2022-02-15 15:14:58,318",DEBUG,T1234567t,successfully registered as patient with Angel Health
+"2022-02-15 15:15:22,143",DEBUG,T1234567t,has been redirected to otpvalidation page
+"2022-02-15 15:15:32,496",DEBUG,T1234567t,has failed to login to Angel Health
+"2022-02-15 15:15:38,814",DEBUG,T1234567t,has sucessfully login to Angel Health
+"2022-02-15 15:16:23,817",DEBUG,None,has failed to register as patient with Angel Health
+"2022-02-15 15:17:25,807",DEBUG,T9876543B,successfully registered as patient with Angel Health
+"2022-02-15 15:17:41,994",DEBUG,T9876543B,has been redirected to otpvalidation page
+"2022-02-15 15:17:52,408",DEBUG,T9876543B,has failed to login to Angel Health
+"2022-02-15 15:18:03,918",DEBUG,T9876543B,has failed to login to Angel Health
+"2022-02-15 15:18:17,660",DEBUG,T9876543B,has sucessfully login to Angel Health
+"2022-02-15 15:18:54,001",DEBUG,111111y,has been redirected to otpvalidation page
+"2022-02-15 15:19:02,281",DEBUG,111111y,has failed to login to Angel Health
+"2022-02-15 15:19:12,082",DEBUG,111111y,has sucessfully login to Angel Health
+"2022-02-15 15:19:22,435",DEBUG,None,has failed to register as researcher staff with Angel Health
+"2022-02-15 15:19:58,958",DEBUG,333333y,successfully registered as researcher staff with Angel Health
+"2022-02-15 15:20:17,084",DEBUG,333333y,has been redirected to otpvalidation page
+"2022-02-15 15:20:25,184",DEBUG,333333y,has failed to login to Angel Health
+"2022-02-15 15:20:34,882",DEBUG,333333y,has failed to login to Angel Health
+"2022-02-15 15:20:45,214",DEBUG,333333y,has sucessfully login to Angel Health

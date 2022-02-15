@@ -31,7 +31,7 @@ from functools import wraps
 import pyodbc
 import textwrap
 from customlogging import converTxtToCSV, patientFileModificationFilter,db_log,lr_log,ac_log,virus_log
-from mssql_auth import database, server,backup_server
+from mssql_auth import server,backup_server
 
 from flask_qrcode import QRcode
 from datetime import datetime
@@ -173,7 +173,7 @@ def auto_use_seconddb():
         #Primary Server not runningre
         if b'Stopped' in x:
             try:
-                session['db'] = 'Backup Server'
+                session['db'] = 'Secondary Node'
             except:
                 pass
             t = time.localtime()
@@ -322,7 +322,7 @@ def auto_use_seconddb():
 
         else:
             try:
-                session['db'] = 'Primary Server'
+                session['db'] = 'Primary Node'
             except:
                 pass
             t = time.localtime()
@@ -378,15 +378,11 @@ def auto_use_seconddb():
                 cur.execute(releaselock)
                 
 
-                
                 db_connection = pyodbc.connect( # 
-                'DRIVER={ODBC Driver 17 for SQL Server}; \
-                SERVER=' + server+ '; \
-                DATABASE=' + 'database1' + ';\
-                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-                print("Update and restore primary db ")
-                print("Using primary db!")
-                print(db_connection,'db')
+                            'DRIVER={ODBC Driver 17 for SQL Server}; \
+                            SERVER=' + server+ '; \
+                            DATABASE=' + 'database1' + ';\
+                            Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
                 app.config['previousState']="primary"
                 filter = db_log(app.config['previousState'])
                 db_logLogger.addFilter(filter)
@@ -686,10 +682,25 @@ with app.app_context():
 
     def add_admin():
         while True:
+            
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
             if key == "Y":
-                connection = auto_use_seconddb()
-                
+                try:
+                    db_connection = pyodbc.connect( 
+                    'DRIVER={ODBC Driver 17 for SQL Server}; \
+                    SERVER=' + server+ '; \
+                    DATABASE=' + 'database1' + ';\
+                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                    connection = db_connection 
+                except:
+                    db_connection = pyodbc.connect( 
+                    'DRIVER={ODBC Driver 17 for SQL Server}; \
+                    SERVER=' + backup_server+ '; \
+                    DATABASE=' + 'database1' + ';\
+                    Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                    connection = db_connection
+
+
                 cursor = connection.cursor()
                 pattern = ('^\d{6}[A-Za-z]$')
                 username = input("Enter New Head Admin ID: ")
@@ -705,8 +716,14 @@ with app.app_context():
 
                 firstname = input("Enter New Head Admin First Name: ")
                 lastname = input("Enter New Head Admin last Name: ")
-                email = input("Enter New Head Admin email: ")
 
+                pattern = ('^.+@[^.].*\.[a-z]{2,10}$')
+                email = input("Enter New Head Admin email: ")
+                result = re.match(pattern,email)
+                while result == None:
+                    print("Wrong email format")
+                    email = input("Enter New Head Admin email: ")
+                    result = re.match(pattern,email)
                 pattern = ('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')
                 admin_password = input("Enter New Head Admin Password: ")
 
@@ -1301,7 +1318,7 @@ with app.app_context():
                 session['otp-semi-login'] = True
                 print('user logged in')
                 flash("Please continue with otp validation before login is successful","success")
-                filter = lr_log(session['username'])
+                filter = lr_log(patient_login_form.username.data)
                 lr_logLogger.addFilter(filter)
                 lr_logLogger.debug(
                     msg=f"has been redirected to otpvalidation page"
@@ -1328,6 +1345,7 @@ with app.app_context():
             access_info = cursor.execute(
                 "select * from access_list where username = ? and pass_hash = ?",
                 (username, md5Hashed)).fetchone() #fetchone() dont delete this except others
+
 
 
             #added md5Hashed password in access_list table so to user username and hashed password for checking if it is in both access_list table and unqiue role tables
@@ -1524,6 +1542,7 @@ with app.app_context():
                         msg=f"has failed to be redirected to otpvalidation page"
                     )
                     return render_template("login.html", patient_login_form=patient_login_form, admin_login_form = admin_login_form)
+            
             if passed:
                 # session['id'] = identifier.strip() #need strip to remove the spaces
                 # session[user_type] = username.strip()
@@ -1531,7 +1550,7 @@ with app.app_context():
                 # print(session['username'],'ididididnananananannana')
                 # cursor.close()
                 session['otp-semi-login'] = True
-                filter = lr_log(session['username'])
+                filter = lr_log(patient_login_form.username.data)
                 lr_logLogger.addFilter(filter)
                 lr_logLogger.debug(
                     msg=f"has been redirected to otpvalidation page"
@@ -1540,7 +1559,7 @@ with app.app_context():
             else:
                 print('fail login')
                 flash("Wrong username or password", "error")
-                filter = lr_log(session['username'])
+                filter = lr_log(patient_login_form.username.data)
                 lr_logLogger.addFilter(filter)
                 lr_logLogger.debug(
                     msg=f"has failed to be redirected to otpvalidation page"
@@ -1602,6 +1621,7 @@ with app.app_context():
                     return redirect(url_for("otpvalidation"))
             if request.method == "GET":
                 return render_template("loginotp.html")
+
 
     ####What is this lmao
     @app.route('/passwordreset', methods=['GET', 'POST']) 
