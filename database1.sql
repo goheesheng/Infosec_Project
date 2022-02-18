@@ -229,9 +229,6 @@ GO
 ALTER DATABASE [database1] SET  READ_WRITE
 GO
 
-USE MASTER
-GO
-BACKUP DATABASE [database1] TO DISK =N'C:\Backup\database1.bak'
 
 
 --Create Master Key

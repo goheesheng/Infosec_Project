@@ -8,3 +8,21 @@ Time,Level,Message,IP Address,Username
 "2022-02-14 17:28:33,334",DEBUG, 222222y has added to T1234567t's medical record,127.0.0.1,222222y
 "2022-02-15 15:16:09,254",DEBUG,T1234567t's has retrieved their own medical record,127.0.0.1,T1234567t
 "2022-02-15 15:18:37,516",DEBUG,T9876543B's has retrieved their own medical record,127.0.0.1,T9876543B
+"2022-02-15 17:07:20,509",DEBUG,T0123456A's has retrieved their own medical record,127.0.0.1,T0123456A
+"2022-02-15 17:10:08,279",DEBUG,T1234567A's has retrieved their own medical record,127.0.0.1,T1234567A
+"2022-02-15 17:12:17,368",DEBUG,T2345678A's has retrieved their own medical record,127.0.0.1,T2345678A
+"2022-02-16 12:28:02,400",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 12:29:20,328",DEBUG, 222222y has added to T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 12:29:50,789",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 12:30:34,458",DEBUG, 222222y has added to T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 12:31:12,182",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 13:05:27,693",DEBUG,T1234567t's has retrieved their own medical record,127.0.0.1,T1234567t
+"2022-02-16 13:06:40,578",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 13:09:37,938",DEBUG, 222222y has added to T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 13:10:05,939",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 13:25:28,711",DEBUG,T1234567T's has retrieved their own medical record,127.0.0.1,T1234567T
+"2022-02-16 14:25:30,717",DEBUG,T1234567t's has retrieved their own medical record,127.0.0.1,T1234567t
+"2022-02-16 14:27:34,995",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 14:28:23,928",DEBUG, 222222y has added to T1234567A's medical record,127.0.0.1,222222y
+"2022-02-16 14:28:54,637",DEBUG, 222222y has retrieved T1234567A's medical record,127.0.0.1,222222y
+"2022-02-18 15:27:34,185",DEBUG,T1234567t's has retrieved their own medical record,127.0.0.1,T1234567t

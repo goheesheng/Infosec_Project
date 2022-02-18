@@ -50,13 +50,6 @@ from ps import psrun
 context = ssl.create_default_context()
 
 salt = bcrypt.gensalt() 
-# db_connection = pyodbc.connect( # 
-# 'DRIVER={ODBC Driver 17 for SQL Server}; \
-# SERVER=' + server+ '; \
-# DATABASE=' + 'database1' + ';\
-# Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
-
-
 
 patientFilesModificationLogger=logging.getLogger(__name__+"patientFileModification")
 patientFilesModificationLogger.setLevel(logging.DEBUG)
@@ -176,14 +169,14 @@ def auto_use_seconddb():
         #Primary Server not runningre
         if b'Stopped' in x:
             try:
-                session['db'] = 'Backup Server'
+                session['db'] = 'Secondary Node'
             except:
                 pass
             t = time.localtime()
 
-            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) #use semicolon cuz window does not allow colon
+            current_time = str(time.strftime("%d %B %Y_%H;%M;%S",t)) 
 
-            try:# If unable to connect to second server, restore the second server DB using the bak file from first server db and use the second server connection immediately, as we may not know if first server db is compromised
+            try:
                 db_connection = pyodbc.connect( #
                 'DRIVER={ODBC Driver 17 for SQL Server}; \
                 SERVER=' + backup_server+ '; \
@@ -325,7 +318,7 @@ def auto_use_seconddb():
 
         else:
             try:
-                session['db'] = 'Primary Server'
+                session['db'] = 'Primary Node'
             except:
                 pass
             t = time.localtime()
@@ -789,10 +782,26 @@ with app.app_context():
 
     def add_admin():
         while True:
+            
             key = input("Do you want to create Head Admin ID and password? (Y/N/Show/Delete)").capitalize()
-            if key == "Y":
-                connection = auto_use_seconddb()
+            try:
+                db_connection = pyodbc.connect( 
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + server+ '; \
+                DATABASE=' + 'database1' + ';\
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                connection = db_connection 
+            except:
+                db_connection = pyodbc.connect( 
+                'DRIVER={ODBC Driver 17 for SQL Server}; \
+                SERVER=' + backup_server+ '; \
+                DATABASE=' + 'database1' + ';\
+                Trusted_Connection=yes; Encrypt=yes;TrustServerCertificate=yes',autocommit=True)
+                connection = db_connection
                 
+            if key == "Y":
+
+
                 cursor = connection.cursor()
                 pattern = ('^\d{6}[A-Za-z]$')
                 username = input("Enter New Head Admin ID: ")
@@ -808,8 +817,14 @@ with app.app_context():
 
                 firstname = input("Enter New Head Admin First Name: ")
                 lastname = input("Enter New Head Admin last Name: ")
-                email = input("Enter New Head Admin email: ")
 
+                pattern = ('^.+@[^.].*\.[a-z]{2,10}$')
+                email = input("Enter New Head Admin email: ")
+                result = re.match(pattern,email)
+                while result == None:
+                    print("Wrong email format")
+                    email = input("Enter New Head Admin email: ")
+                    result = re.match(pattern,email)
                 pattern = ('^(?=\S{10,20}$)(?=.*?\d)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[^A-Za-z\s0-9])')
                 admin_password = input("Enter New Head Admin Password: ")
 
@@ -877,7 +892,6 @@ with app.app_context():
             elif key == "N":
                 break
             elif key == "Show":
-                connection = auto_use_seconddb()
                 cursor = connection.cursor()
                 check = cursor.execute("SELECT * FROM head_admin").fetchall()  # prevent sql injection
                 print("List of Head Admins:")
@@ -891,7 +905,6 @@ with app.app_context():
                 cursor.close()
             elif key == 'Delete':
                 # try:
-                connection = auto_use_seconddb()
                 cursor = connection.cursor()
                 key = input("Enter the Head Admin ID to delete: ")
                 check = cursor.execute("SELECT * FROM head_admin WHERE username = ?",
@@ -1409,6 +1422,8 @@ with app.app_context():
                 lr_logLogger.debug(
                     msg=f"has been redirected to otpvalidation page"
                 )
+                return redirect(url_for('otpvalidation'))
+
 
             else:
                 print("ERROR")
@@ -1709,47 +1724,7 @@ with app.app_context():
             if request.method == "GET":
                 return render_template("loginotp.html")
 
-    @app.route("/validationdoctor", methods=["GET","POST"])
-    def otpvalidationdoctor():
-        if 'otp-semi-login' not in session:
-            return redirect(url_for('access_denied'))
-        else:
-            cnxn = auto_use_seconddb()
-
-            if request.method=="POST":
-                cursor = cnxn.cursor()
-                access_list={'doctor':'doctors','researcher':'researchers','hr':'hr','head_admin':'head_admin'}
-                if session['access_level'] in access_list and session['otp-semi-login']:
-                    query=f"select otp_code from {access_list[session['access_level']]} where username = ?"
-                    otp_seed=cursor.execute(query,(session['username'])).fetchone()[0]
-                otp = int(request.form.get("otp"))
-                urllib.request.urlretrieve(request.form.get("file"), 'photo.jpg')
-                print("hello")
-                print(otp)
-                json_obj = execute_request()
-                print(json_obj)
-                print('4')
-                flag = check_confidence(json_obj)
-                print('flagtest'+str(flag))
-                print(pyotp.TOTP(otp_seed).now())
-                # verifying submitted OTP with PyOTP
-                if pyotp.TOTP(otp_seed).verify(otp) and flag:
-                    print("correct")
-                    session['login'] = True
-                    train_face(session["username"])
-                    cursor.close()
-                    # session['login'] = True
-                    print(session['login'],'sslogin')
-                    print(session,'check sesison')
-                    return redirect(url_for('homepage'))
-                else:
-                    print("wrong")
-                    cursor.close()
-                    flash("Wrong OTP", "error")
-                    return redirect(url_for("otpvalidationdoctor"))
-            if request.method == "GET":
-                return render_template("loginotpadmin.html")
-
+  
     @app.route("/validationdoctor", methods=["GET","POST"])
     def otpvalidationdoctor():
         if 'otp-semi-login' not in session:
@@ -2291,6 +2266,7 @@ with app.app_context():
             cancer = False
             #print(data)
             for h in range(len(data)):
+                print(data[i][0],data[h][1])
                 if 'height' in data[h][0].lower():
                     height = data[h][1]
                 elif 'weight' in data[h][0].lower():
@@ -2310,9 +2286,8 @@ with app.app_context():
                         AIDS = True
                     if 'cancer' in data[h][1].lower():
                         cancer = True
-                elif 'date' in data[i][0].lower():
-                    if str(datetime.today().year) in data[h][1]:
-                        visits += 1
+                elif str(datetime.today().year) in data[h][1]:
+                    visits += 1
             if diabetes:
                 problem += 'diabetes;'
             if HIV:
@@ -2321,6 +2296,7 @@ with app.app_context():
                 problem+='AIDS;'
             if cancer:
                 problem+='cancer'
+            print(visits)
             bmi = float(weight) / (float(height) ** 2)
             bmi += random.randint(int(-bmi / 10), int(bmi / 10)) + random.uniform(-1, 1) / 2
             cursor.execute("select postal_code from patients where patient_id = ?", (datas[k][0]))
@@ -2330,6 +2306,7 @@ with app.app_context():
             print(dob)
             age = datetime.today().year - int(dob)
             age += random.randint(int(-age/9),int(age/9))
+            visits += random.randint(int(-visits/2),int(visits/2))
             print(mask)
             mask.append([age, bmi, sex, postal_code, visits, problem])
             
