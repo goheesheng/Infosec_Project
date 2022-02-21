@@ -6,9 +6,9 @@ def execute_request():
 	--url https://lambda-face-recognition.p.rapidapi.com/recognize 
 	--header 'content-type: multipart/form-data; boundary=---011000010111000001101001' 
 	--header 'x-rapidapi-host: lambda-face-recognition.p.rapidapi.com' 
-	--header 'x-rapidapi-key: 59bfe4aab4mshd7aecd4bc8f59b0p1e6583jsnbd25bc3a99ab' 
+	--header 'x-rapidapi-key: <key> ' 
 	--form files=@photo.jpg 
-	--form albumkey=a54a77b51d1d578453d65d812ff6a4ecc8bbac0a067811b2f30cd6b3797c3bb6 
+	--form albumkey=<key> 
 	--form album=InfosecDoctors'''
     args = shlex.split(bashCommand)
     process = subprocess.Popen(args, stdout=subprocess.PIPE)
@@ -40,10 +40,10 @@ def train_face(user_id):
 	--url https://lambda-face-recognition.p.rapidapi.com/album_train 
 	--header 'content-type: multipart/form-data; boundary=---011000010111000001101001' 
 	--header 'x-rapidapi-host: lambda-face-recognition.p.rapidapi.com' 
-	--header 'x-rapidapi-key: 59bfe4aab4mshd7aecd4bc8f59b0p1e6583jsnbd25bc3a99ab' 
+	--header 'x-rapidapi-key: <key> ' 
 	--form files=@photo.jpg 
 	--form entryid='''+user_id+''' 
-	--form albumkey=a54a77b51d1d578453d65d812ff6a4ecc8bbac0a067811b2f30cd6b3797c3bb6 
+	--form albumkey=<key>  
 	--form album=InfosecDoctors'''
     args = shlex.split(bashCommand)
     process = subprocess.Popen(args, stdout=subprocess.PIPE)
