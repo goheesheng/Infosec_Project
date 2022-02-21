@@ -8,7 +8,7 @@ from forms import Otp # pprint is used to pretty print in good json format inste
 # vtotal = Virustotal(API_KEY="Insert API key here.")
 
 # v3 example
-vtotal = Virustotal(API_KEY="d58689de2b6f2cdec5c1625df76781dcbea39c4e705ae930da24c55f84984f40", API_VERSION="v3")
+vtotal = Virustotal(API_KEY="<key>", API_VERSION="v3")
 
 # print(vtotal)
 
